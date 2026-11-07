@@ -1,48 +1,115 @@
 <Project>
 
     <!--
-    Shared build configuration for all KernelAbstractions packages.
+    ═══════════════════════════════════════════════════════════════════════════
+    Shared build configuration for all KernelR packages.
+    ═══════════════════════════════════════════════════════════════════════════
+
+    This file is automatically imported by MSBuild for every project in the
+    solution. It centralizes settings that must stay consistent across all
+    packages, so individual .csproj files remain small and focused.
 
     Individual .csproj files should only declare:
-      - TargetFramework
-      - PackageId, Version, Description, PackageTags
+      - PackageId, Version (each package has its own version), Description, PackageTags
       - ProjectReference / PackageReference items
+      - FrameworkReference (for ASP.NET Core projects)
+      - InternalsVisibleTo (if needed)
 
-    Everything common (quality gates, symbols, deterministic build, XML docs)
-    is centralized here so the packages stay consistent.
-  -->
+    Everything else (target framework, quality gates, symbols, deterministic
+    build, XML docs, versioning, package metadata, partial-file nesting) is
+    managed here.
+    ═══════════════════════════════════════════════════════════════════════════
+    -->
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Language & Compiler                        -->
+    <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <!-- Language -->
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
 
-        <!-- Documentation -->
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Target Framework                           -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+    </PropertyGroup>
 
-        <!-- Quality -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Quality & Static Analysis                  -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <AnalysisLevel>latest</AnalysisLevel>
         <AnalysisMode>Recommended</AnalysisMode>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    </PropertyGroup>
 
-        <!-- Symbols -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Documentation                              -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Symbols & Source Link                      -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    </PropertyGroup>
 
-        <!-- Deterministic build -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Deterministic Build                        -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
         <Deterministic>true</Deterministic>
         <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
-
-        <!-- Repository (consumed by NuGet packing when PublishRepositoryUrl is true) -->
-        <RepositoryType>git</RepositoryType>
-        <RepositoryUrl>https://github.com/HoseinTorkan/KernelAbstractions</RepositoryUrl>
-        <PublishRepositoryUrl>true</PublishRepositoryUrl>
-
-        <!-- Author / license defaults (overridable per project) -->
-        <Authors>HoseinTorkan</Authors>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Repository & Author Metadata               -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
+        <Authors>HoseinTorkan</Authors>
+        <Company>KernelR</Company>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/HoseinTorkan/KernelR</RepositoryUrl>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Versioning (Centralized Default)           -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
+        <Version>1.0.0</Version>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Test Project Settings                      -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests')) Or $(MSBuildProjectName.EndsWith('.UnitTests')) Or $(MSBuildProjectName.EndsWith('.E2ETests'))">
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Automatic Nesting for Partial Files        -->
+    <!-- (x.y.cs → nested under x.cs)               -->
+    <!-- ═══════════════════════════════════════════ -->
+    <ItemGroup>
+        <Compile Update="**\*.cs"
+                 Condition="$([System.String]::Copy('%(Filename)').Contains('.'))">
+            <DependentUpon>$([System.String]::Copy('%(Filename)').Split('.')[0]).cs</DependentUpon>
+        </Compile>
+    </ItemGroup>
 
 </Project>

@@ -1,21 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Package Metadata                           -->
+    <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-
-        <PackageId>KernelAbstractions.Domain</PackageId>
-        <Version>3.2.0</Version>
+        <PackageId>KernelR.Domain</PackageId>
+        <Version>1.0.0</Version>
         <Description>
-            Core domain abstractions for Domain-Driven Design (DDD) and Clean
-            Architecture in .NET: entities, aggregate roots, strongly-typed
-            identifiers, auditing contracts, repositories, unit of work, and
-            domain events.
+            Foundational building blocks for Domain-Driven Design (DDD) and
+            Clean Architecture in .NET. Provides a rich set of value objects
+            (PhoneNumber, Email, Money, CurrencyCode, NationalCode, PersonName,
+            Url, Size, DataSize) with built-in validation via the Result
+            pattern, plus entities, aggregate roots, strongly-typed identifiers,
+            auditing contracts, repositories, unit of work, and domain events.
+
+            All value objects are immutable, self-validating, and free of any
+            dependency on ASP.NET Core or System.Text.Json, making them usable
+            in any .NET application (Console, WPF, MAUI, ASP.NET Core, etc.).
         </Description>
-        <PackageTags>ddd;clean-architecture;domain;abstractions;strongly-typed-id;auditing;repository;unit-of-work;entities;aggregate-root;marker-interfaces</PackageTags>
+        <PackageTags>ddd;clean-architecture;domain;abstractions;value-objects;strongly-typed-id;auditing;repository;unit-of-work;entities;aggregate-root;marker-interfaces;phone-number;email;money;currency</PackageTags>
     </PropertyGroup>
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Project References                          -->
+    <!-- ═══════════════════════════════════════════ -->
     <ItemGroup>
-      <ProjectReference Include="..\KernelR.Patterns\KernelR.Patterns.csproj" />
+        <ProjectReference Include="..\KernelR.Patterns\KernelR.Patterns.csproj" />
     </ItemGroup>
 
 </Project>

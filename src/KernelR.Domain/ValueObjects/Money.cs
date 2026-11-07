@@ -1,6 +1,7 @@
 using KernelR.Patterns.Results;
-using System.ComponentModel;
-using System.Text.Json.Serialization;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text.Json;
 
 namespace KernelR.Domain.ValueObjects;
 
@@ -26,22 +27,13 @@ namespace KernelR.Domain.ValueObjects;
 ///   </description></item>
 /// </list>
 /// <para>
-/// <b>Error model:</b> The <see cref="Create"/> factory returns <see cref="Result{T}"/>
-/// for recoverable validation failures. Arithmetic operators, by contrast, throw
-/// <see cref="InvalidOperationException"/> on currency mismatch, because mixing
-/// currencies is a programming error rather than a recoverable condition.
-/// </para>
-/// <para>
-/// <b>Currency validation:</b> The currency string is validated by
-/// <see cref="CurrencyCode.Create(string)"/>. If the currency is invalid, the resulting
-/// failure carries the error from <see cref="CurrencyCode"/> (codes
-/// <c>Kernel.ValueObjects.CurrencyCode.EMPTY</c> or
-/// <c>Kernel.ValueObjects.CurrencyCode.INVALID</c>).
+/// <b>Error model:</b> The <see cref="Create(decimal, string)"/> factory returns
+/// <see cref="Result{T}"/> for recoverable validation failures. Arithmetic operators,
+/// by contrast, throw <see cref="InvalidOperationException"/> on currency mismatch,
+/// because mixing currencies is a programming error rather than a recoverable condition.
 /// </para>
 /// </remarks>
-[JsonConverter(typeof(MoneyJsonConverter))]
-[TypeConverter(typeof(MoneyTypeConverter))]
-public readonly record struct Money
+public readonly record struct Money : IParsable<Money>
 {
     /// <summary>
     /// Gets the monetary amount, rounded to two decimal places.
@@ -56,11 +48,6 @@ public readonly record struct Money
     /// </summary>
     public CurrencyCode Currency { get; }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Money"/> struct.
-    /// </summary>
-    /// <param name="amount">The amount, which will be rounded to two decimal places.</param>
-    /// <param name="currency">An already-validated currency code.</param>
     private Money(decimal amount, CurrencyCode currency)
     {
         Amount = Math.Round(amount, 2, MidpointRounding.AwayFromZero);
@@ -75,7 +62,7 @@ public readonly record struct Money
     /// are rounded using <see cref="MidpointRounding.AwayFromZero"/>.
     /// </param>
     /// <param name="currency">
-    /// A 3-letter ISO 4217 currency code (e.g. <c>IRR</c>, <c>USD</c>).
+    /// A 3-letter ISO 4217 currency code (for example <c>IRR</c>, <c>USD</c>).
     /// Case-insensitive; validated through <see cref="CurrencyCode.Create(string)"/>.
     /// </param>
     /// <returns>
@@ -89,6 +76,101 @@ public readonly record struct Money
         return codeResult.IsFailure
             ? Result<Money>.Failure(codeResult.Error)
             : Result<Money>.Success(new Money(amount, codeResult.Value));
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="Money"/> from a string in the form
+    /// <c>"&lt;amount&gt; &lt;currency&gt;"</c>.
+    /// </summary>
+    /// <param name="value">
+    /// The string representation, for example <c>"100 IRR"</c>, <c>"-50.25 USD"</c>.
+    /// The amount uses invariant culture; the currency is validated through
+    /// <see cref="CurrencyCode.Create(string)"/>.
+    /// </param>
+    /// <returns>
+    /// A successful result carrying the new <see cref="Money"/>, or a failure with one of:
+    /// <list type="bullet">
+    ///   <item><description><c>KernelR.ValueObjects.Money.EMPTY</c> when the input is null or whitespace.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.Money.INVALID_FORMAT</c> when the input does not contain exactly two parts.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.Money.INVALID_VALUE</c> when the numeric part is not a valid number.</description></item>
+    ///   <item><description>Any error from <see cref="CurrencyCode.Create(string)"/> when the currency code is invalid.</description></item>
+    /// </list>
+    /// </returns>
+    /// <example>
+    /// <code>
+    /// Money.Create("100 IRR");    // → Money(100, IRR)
+    /// Money.Create("-50.25 USD"); // → Money(-50.25, USD)
+    /// </code>
+    /// </example>
+    public static Result<Money> Create(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return Result<Money>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.Money.EMPTY",
+                    "Money cannot be empty.",
+                    ErrorType.ValidationError));
+        }
+
+        string[] parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2)
+        {
+            return Result<Money>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.Money.INVALID_FORMAT",
+                    "Money must be formatted as '<amount> <currency>', for example '100 IRR'.",
+                    ErrorType.ValidationError));
+        }
+
+        if (!decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount))
+        {
+            return Result<Money>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.Money.INVALID_VALUE",
+                    "Money amount is not a valid number.",
+                    ErrorType.ValidationError));
+        }
+
+        return Create(amount, parts[1]);
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="FormatException">
+    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, not in the
+    /// form <c>"&lt;amount&gt; &lt;currency&gt;"</c>, or contains an invalid amount or
+    /// currency. The exception message contains the JSON-serialized domain
+    /// <see cref="Error"/>.
+    /// </exception>
+    public static Money Parse(string s, IFormatProvider? provider)
+    {
+        Result<Money> result = Create(s);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        string errorJson = JsonSerializer.Serialize(result.Error, ErrorSerialization.Options);
+        throw new FormatException(errorJson);
+    }
+
+    /// <inheritdoc />
+    public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Money result)
+    {
+        result = default;
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return false;
+        }
+
+        Result<Money> createResult = Create(s);
+        if (createResult.IsFailure)
+        {
+            return false;
+        }
+
+        result = createResult.Value;
+        return true;
     }
 
     /// <summary>
@@ -106,9 +188,6 @@ public readonly record struct Money
     /// <summary>
     /// Adds two monetary amounts of the same currency.
     /// </summary>
-    /// <param name="left">The left operand.</param>
-    /// <param name="right">The right operand.</param>
-    /// <returns>A new <see cref="Money"/> carrying the sum, in the currency of <paramref name="left"/>.</returns>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <paramref name="left"/> and <paramref name="right"/> have different currencies.
     /// </exception>
@@ -121,11 +200,6 @@ public readonly record struct Money
     /// <summary>
     /// Subtracts one monetary amount from another of the same currency.
     /// </summary>
-    /// <param name="left">The left operand.</param>
-    /// <param name="right">The right operand.</param>
-    /// <returns>
-    /// A new <see cref="Money"/> carrying the difference, which may be negative.
-    /// </returns>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <paramref name="left"/> and <paramref name="right"/> have different currencies.
     /// </exception>
@@ -138,18 +212,12 @@ public readonly record struct Money
     /// <summary>
     /// Multiplies a monetary amount by a scalar factor.
     /// </summary>
-    /// <param name="money">The amount to multiply.</param>
-    /// <param name="multiplier">The scalar factor. May be negative.</param>
-    /// <returns>A new <see cref="Money"/> carrying the product, rounded to two decimal places.</returns>
     public static Money operator *(Money money, decimal multiplier)
         => new(money.Amount * multiplier, money.Currency);
 
     /// <summary>
     /// Divides a monetary amount by a scalar divisor.
     /// </summary>
-    /// <param name="money">The amount to divide.</param>
-    /// <param name="divisor">The scalar divisor. Must not be zero.</param>
-    /// <returns>A new <see cref="Money"/> carrying the quotient, rounded to two decimal places.</returns>
     /// <exception cref="DivideByZeroException">
     /// Thrown when <paramref name="divisor"/> is zero.
     /// </exception>
@@ -166,8 +234,6 @@ public readonly record struct Money
     /// <summary>
     /// Negates a monetary amount.
     /// </summary>
-    /// <param name="money">The amount to negate.</param>
-    /// <returns>A new <see cref="Money"/> with the sign of <see cref="Amount"/> inverted.</returns>
     public static Money operator -(Money money)
         => new(-money.Amount, money.Currency);
 
@@ -175,9 +241,7 @@ public readonly record struct Money
 
     #region Comparison Operators (Money vs Money)
 
-    /// <summary>
-    /// Determines whether the left amount is greater than the right amount.
-    /// </summary>
+    /// <summary>Determines whether the left amount is greater than the right amount.</summary>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the operands have different currencies.
     /// </exception>
@@ -187,9 +251,7 @@ public readonly record struct Money
         return left.Amount > right.Amount;
     }
 
-    /// <summary>
-    /// Determines whether the left amount is less than the right amount.
-    /// </summary>
+    /// <summary>Determines whether the left amount is less than the right amount.</summary>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the operands have different currencies.
     /// </exception>
@@ -199,9 +261,7 @@ public readonly record struct Money
         return left.Amount < right.Amount;
     }
 
-    /// <summary>
-    /// Determines whether the left amount is greater than or equal to the right amount.
-    /// </summary>
+    /// <summary>Determines whether the left amount is greater than or equal to the right amount.</summary>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the operands have different currencies.
     /// </exception>
@@ -211,9 +271,7 @@ public readonly record struct Money
         return left.Amount >= right.Amount;
     }
 
-    /// <summary>
-    /// Determines whether the left amount is less than or equal to the right amount.
-    /// </summary>
+    /// <summary>Determines whether the left amount is less than or equal to the right amount.</summary>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the operands have different currencies.
     /// </exception>
@@ -227,40 +285,20 @@ public readonly record struct Money
 
     #region Comparison Operators (Money vs decimal)
 
-    /// <summary>
-    /// Determines whether the amount is greater than the given scalar.
-    /// </summary>
-    /// <remarks>Currency is ignored on the scalar side; the comparison is purely numeric.</remarks>
+    /// <summary>Determines whether the amount is greater than the given scalar.</summary>
     public static bool operator >(Money left, decimal right) => left.Amount > right;
 
-    /// <summary>
-    /// Determines whether the amount is less than the given scalar.
-    /// </summary>
-    /// <remarks>Currency is ignored on the scalar side; the comparison is purely numeric.</remarks>
+    /// <summary>Determines whether the amount is less than the given scalar.</summary>
     public static bool operator <(Money left, decimal right) => left.Amount < right;
 
-    /// <summary>
-    /// Determines whether the amount is greater than or equal to the given scalar.
-    /// </summary>
-    /// <remarks>Currency is ignored on the scalar side; the comparison is purely numeric.</remarks>
+    /// <summary>Determines whether the amount is greater than or equal to the given scalar.</summary>
     public static bool operator >=(Money left, decimal right) => left.Amount >= right;
 
-    /// <summary>
-    /// Determines whether the amount is less than or equal to the given scalar.
-    /// </summary>
-    /// <remarks>Currency is ignored on the scalar side; the comparison is purely numeric.</remarks>
+    /// <summary>Determines whether the amount is less than or equal to the given scalar.</summary>
     public static bool operator <=(Money left, decimal right) => left.Amount <= right;
 
     #endregion
 
-    /// <summary>
-    /// Throws when the two operands have different currencies.
-    /// </summary>
-    /// <param name="left">The left operand.</param>
-    /// <param name="right">The right operand.</param>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when the currencies do not match.
-    /// </exception>
     private static void EnsureSameCurrency(Money left, Money right)
     {
         if (left.Currency != right.Currency)
@@ -274,6 +312,5 @@ public readonly record struct Money
     /// <summary>
     /// Returns a human-readable representation such as <c>1,234.56 IRR</c>.
     /// </summary>
-    /// <returns>A string with two decimal places and the currency code.</returns>
     public override string ToString() => $"{Amount:N2} {Currency}";
 }

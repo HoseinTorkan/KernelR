@@ -1,16 +1,21 @@
-using KernelR.Patterns.Results;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace KernelR.AspNetCore.Conversions.JsonConverters;
+namespace KernelR.Patterns.Results;
 
 /// <summary>
 /// A <see cref="JsonConverter{T}"/> for domain <see cref="Error"/> payloads.
 /// </summary>
 /// <remarks>
-/// This converter is an implementation detail registered automatically by
-/// <c>AddKernelAbstractions()</c>. It is intentionally <c>internal</c> so that
-/// consumers cannot accidentally override the package's error-handling contract.
+/// <para>
+/// This converter is an implementation detail used internally by
+/// <see cref="ErrorSerialization"/>. It is intentionally <c>internal</c> so that
+/// consumers cannot see or override the package's error-handling contract.
+/// </para>
+/// <para>
+/// Other KernelR packages access it via <see cref="InternalsVisibleToAttribute"/>.
+/// </para>
 /// </remarks>
 internal sealed class ErrorJsonConverter : JsonConverter<Error>
 {
@@ -61,8 +66,15 @@ internal sealed class ErrorJsonConverter : JsonConverter<Error>
 /// domain <see cref="Error"/> payloads.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This class is intentionally non-generic so that a <b>single</b> options instance is
 /// shared across all value-object converters, avoiding redundant allocations and cache misses.
+/// </para>
+/// <para>
+/// It is <c>internal</c> so that consumers cannot see or change the package's
+/// error-handling contract. Other KernelR packages access it via
+/// <see cref="InternalsVisibleToAttribute"/>.
+/// </para>
 /// </remarks>
 internal static class ErrorSerialization
 {
@@ -73,7 +85,11 @@ internal static class ErrorSerialization
 
     private static JsonSerializerOptions CreateOptions()
     {
-        JsonSerializerOptions options = new();
+        JsonSerializerOptions options = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false
+        };
         options.Converters.Add(new ErrorJsonConverter());
         return options;
     }

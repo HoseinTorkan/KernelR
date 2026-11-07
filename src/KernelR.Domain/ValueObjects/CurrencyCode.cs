@@ -1,6 +1,6 @@
 using KernelR.Patterns.Results;
-using System.ComponentModel;
-using System.Text.Json.Serialization;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 
 namespace KernelR.Domain.ValueObjects;
 
@@ -11,7 +11,7 @@ namespace KernelR.Domain.ValueObjects;
 /// <para>
 /// The value is always a 3-letter uppercase code. Validation checks the input against
 /// the ISO 4217 currency list, so structurally valid but unassigned codes
-/// (e.g. <c>XYZ</c>) are rejected.
+/// (for example <c>XYZ</c>) are rejected.
 /// </para>
 /// <para>
 /// <b>Iranian Toman:</b> In addition to the official ISO 4217 codes, this type also
@@ -24,25 +24,10 @@ namespace KernelR.Domain.ValueObjects;
 /// ensuring that an invalid code can never enter the domain model.
 /// </para>
 /// </remarks>
-[JsonConverter(typeof(CurrencyCodeJsonConverter))]
-[TypeConverter(typeof(CurrencyCodeTypeConverter))]
-public readonly record struct CurrencyCode
+public readonly record struct CurrencyCode : IParsable<CurrencyCode>
 {
-    /// <summary>
-    /// The set of accepted currency codes.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Source: ISO 4217 (active codes) plus <c>IRT</c> for Iranian Toman.
-    /// </para>
-    /// <para>
-    /// Fund codes, precious metals, and other non-currency ISO codes (e.g. <c>XAU</c>,
-    /// <c>XDR</c>) are intentionally excluded; this type models spendable currencies.
-    /// </para>
-    /// </remarks>
     private static readonly HashSet<string> ValidCodes = new(StringComparer.Ordinal)
     {
-        // ─── ISO 4217 active currencies ───
         "AED", "AFN", "ALL", "AMD", "ANG", "AOA", "ARS", "AUD", "AWG", "AZN",
         "BAM", "BBD", "BDT", "BGN", "BHD", "BIF", "BMD", "BND", "BOB", "BOV",
         "BRL", "BSD", "BTN", "BWP", "BYN", "BZD", "CAD", "CDF", "CHE", "CHF",
@@ -60,8 +45,6 @@ public readonly record struct CurrencyCode
         "TND", "TOP", "TRY", "TTD", "TWD", "TZS", "UAH", "UGX", "USD", "USN",
         "UYI", "UYU", "UYW", "UZS", "VED", "VES", "VND", "VUV", "WST", "XAF",
         "XCD", "XOF", "XPF", "YER", "ZAR", "ZMW", "ZWL",
-
-        // ─── Non-ISO extension: Iranian Toman ───
         "IRT"
     };
 
@@ -81,8 +64,8 @@ public readonly record struct CurrencyCode
     /// <returns>
     /// A successful result carrying the normalized code, or a failure with one of:
     /// <list type="bullet">
-    ///   <item><description><c>Kernel.ValueObjects.CurrencyCode.EMPTY</c> when the input is null or whitespace.</description></item>
-    ///   <item><description><c>Kernel.ValueObjects.CurrencyCode.INVALID</c> when the input is not a recognized ISO 4217 code.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.CurrencyCode.EMPTY</c> when the input is null or whitespace.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.CurrencyCode.INVALID</c> when the input is not a recognized ISO 4217 code.</description></item>
     /// </list>
     /// </returns>
     public static Result<CurrencyCode> Create(string value)
@@ -90,9 +73,10 @@ public readonly record struct CurrencyCode
         if (string.IsNullOrWhiteSpace(value))
         {
             return Result<CurrencyCode>.Failure(
-                new Error("Kernel.ValueObjects.CurrencyCode.EMPTY",
-                          "Currency code cannot be empty.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.CurrencyCode.EMPTY",
+                    "Currency code cannot be empty.",
+                    ErrorType.ValidationError));
         }
 
         string normalized = value.Trim().ToUpperInvariant();
@@ -100,12 +84,50 @@ public readonly record struct CurrencyCode
         if (!ValidCodes.Contains(normalized))
         {
             return Result<CurrencyCode>.Failure(
-                new Error("Kernel.ValueObjects.CurrencyCode.INVALID",
-                          "Currency code is not a valid ISO 4217 code.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.CurrencyCode.INVALID",
+                    "Currency code is not a valid ISO 4217 code.",
+                    ErrorType.ValidationError));
         }
 
         return Result<CurrencyCode>.Success(new CurrencyCode(normalized));
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="FormatException">
+    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, or not a
+    /// recognized ISO 4217 code. The exception message contains the JSON-serialized
+    /// domain <see cref="Error"/>.
+    /// </exception>
+    public static CurrencyCode Parse(string s, IFormatProvider? provider)
+    {
+        Result<CurrencyCode> result = Create(s);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        string errorJson = JsonSerializer.Serialize(result.Error, ErrorSerialization.Options);
+        throw new FormatException(errorJson);
+    }
+
+    /// <inheritdoc />
+    public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CurrencyCode result)
+    {
+        result = default;
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return false;
+        }
+
+        Result<CurrencyCode> createResult = Create(s);
+        if (createResult.IsFailure)
+        {
+            return false;
+        }
+
+        result = createResult.Value;
+        return true;
     }
 
     /// <summary>

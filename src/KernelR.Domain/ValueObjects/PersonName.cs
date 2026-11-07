@@ -1,9 +1,9 @@
 using KernelR.Patterns.Results;
-using System.ComponentModel;
-using System.Text.Json.Serialization;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace KernelAbstractions.Domain.ValueObjects;
+namespace KernelR.Domain.ValueObjects;
 
 /// <summary>
 /// Represents a valid human name (first name, last name, or full name).
@@ -20,15 +20,8 @@ namespace KernelAbstractions.Domain.ValueObjects;
 /// explicitly when the need arises.
 /// </para>
 /// </remarks>
-[JsonConverter(typeof(PersonNameJsonConverter))]
-[TypeConverter(typeof(PersonNameTypeConverter))]
-public readonly partial record struct PersonName
+public readonly partial record struct PersonName : IParsable<PersonName>
 {
-    /// <summary>
-    /// Matches a sequence of Unicode letters (with optional apostrophes, hyphens, and
-    /// zero-width non-joiners), separated by single whitespace or zero-width non-joiner
-    /// characters.
-    /// </summary>
     [GeneratedRegex(@"^[\p{L}\u200C'\-]+([\s\u200C][\p{L}\u200C'\-]+)*$")]
     private static partial Regex AllowedPattern();
 
@@ -44,17 +37,32 @@ public readonly partial record struct PersonName
     /// </summary>
     /// <param name="value">The raw name string.</param>
     /// <returns>
-    /// A successful result carrying the trimmed name, or a failure when the input is
-    /// empty, too short, too long, or contains disallowed characters.
+    /// A successful result carrying the trimmed name, or a failure with one of:
+    /// <list type="bullet">
+    ///   <item><description><c>KernelR.ValueObjects.PersonName.EMPTY</c> when the input is null or whitespace.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.PersonName.TOO_SHORT</c> when the trimmed name has fewer than 2 characters.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.PersonName.TOO_LONG</c> when the trimmed name has more than 100 characters.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.PersonName.INVALID_CHARACTERS</c> when the trimmed name contains disallowed characters.</description></item>
+    /// </list>
     /// </returns>
+    /// <example>
+    /// <code>
+    /// PersonName.Create("علی");           // → Success
+    /// PersonName.Create("فاطمه‌زهرا");    // → Success (ZWNJ allowed)
+    /// PersonName.Create("John Doe");      // → Success
+    /// PersonName.Create("A");             // → Failure (too short)
+    /// PersonName.Create("User123");       // → Failure (digits not allowed)
+    /// </code>
+    /// </example>
     public static Result<PersonName> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             return Result<PersonName>.Failure(
-                new Error("Kernel.ValueObjects.PersonName.EMPTY",
-                          "Person name cannot be empty.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.PersonName.EMPTY",
+                    "Person name cannot be empty.",
+                    ErrorType.ValidationError));
         }
 
         string trimmed = value.Trim();
@@ -62,28 +70,71 @@ public readonly partial record struct PersonName
         if (trimmed.Length < 2)
         {
             return Result<PersonName>.Failure(
-                new Error("Kernel.ValueObjects.PersonName.TOO_SHORT",
-                          "Person name is too short.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.PersonName.TOO_SHORT",
+                    "Person name is too short.",
+                    ErrorType.ValidationError));
         }
 
         if (trimmed.Length > 100)
         {
             return Result<PersonName>.Failure(
-                new Error("Kernel.ValueObjects.PersonName.TOO_LONG",
-                          "Person name is too long.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.PersonName.TOO_LONG",
+                    "Person name is too long.",
+                    ErrorType.ValidationError));
         }
 
         if (!AllowedPattern().IsMatch(trimmed))
         {
             return Result<PersonName>.Failure(
-                new Error("Kernel.ValueObjects.PersonName.INVALID_CHARACTERS",
-                          "Person name contains invalid characters.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.PersonName.INVALID_CHARACTERS",
+                    "Person name contains invalid characters.",
+                    ErrorType.ValidationError));
         }
 
         return Result<PersonName>.Success(new PersonName(trimmed));
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="FormatException">
+    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, too short,
+    /// too long, or contains invalid characters. The exception message contains the
+    /// JSON-serialized domain <see cref="Error"/>.
+    /// </exception>
+    public static PersonName Parse(string s, IFormatProvider? provider)
+    {
+        Result<PersonName> result = Create(s);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        string errorJson = JsonSerializer.Serialize(result.Error, ErrorSerialization.Options);
+        throw new FormatException(errorJson);
+    }
+
+    /// <inheritdoc />
+    public static bool TryParse(
+        string? s,
+        IFormatProvider? provider,
+        [MaybeNullWhen(false)] out PersonName result)
+    {
+        result = default;
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return false;
+        }
+
+        Result<PersonName> createResult = Create(s);
+        if (createResult.IsFailure)
+        {
+            return false;
+        }
+
+        result = createResult.Value;
+        return true;
     }
 
     /// <summary>

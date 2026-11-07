@@ -1,7 +1,8 @@
 using KernelR.Domain.Enums;
 using KernelR.Patterns.Results;
-using System.ComponentModel;
-using System.Text.Json.Serialization;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text.Json;
 
 namespace KernelR.Domain.ValueObjects;
 
@@ -17,34 +18,23 @@ namespace KernelR.Domain.ValueObjects;
 ///   <item><description>The <see cref="Value"/> is always strictly positive.</description></item>
 ///   <item><description>
 ///     The <see cref="Value"/> never exceeds <c>10,000</c> in the unit supplied to
-///     <see cref="Create"/>. Conversions may produce values above this bound, because
-///     the bound applies to the input, not to derived values.
+///     <see cref="Create(decimal, SizeUnit)"/>.
 ///   </description></item>
 ///   <item><description>
 ///     The <see cref="Value"/> is always rounded to two decimal places using
 ///     <see cref="MidpointRounding.AwayFromZero"/>.
 ///   </description></item>
 /// </list>
-/// <para>
-/// <b>Not for apparel:</b> This type models a <b>measurable quantity</b>. It is not
-/// suitable for clothing or shoe sizes, which are labels rather than measurements.
-/// </para>
 /// </remarks>
-[JsonConverter(typeof(SizeJsonConverter))]
-[TypeConverter(typeof(SizeTypeConverter))]
-public readonly record struct Size
+public readonly record struct Size : IParsable<Size>
 {
     private const decimal MaxValue = 10_000m;
     private const int Precision = 2;
 
-    /// <summary>
-    /// Gets the numeric value, rounded to two decimal places.
-    /// </summary>
+    /// <summary>Gets the numeric value, rounded to two decimal places.</summary>
     public decimal Value { get; }
 
-    /// <summary>
-    /// Gets the unit of measurement.
-    /// </summary>
+    /// <summary>Gets the unit of measurement.</summary>
     public SizeUnit Unit { get; }
 
     private Size(decimal value, SizeUnit unit)
@@ -56,81 +46,138 @@ public readonly record struct Size
     /// <summary>
     /// Creates a new <see cref="Size"/> from a numeric value and a unit.
     /// </summary>
-    /// <param name="value">The numeric value. Must be strictly positive and no greater than <c>10,000</c>.</param>
-    /// <param name="unit">The unit of measurement. Must be a defined <see cref="SizeUnit"/>.</param>
-    /// <returns>
-    /// A successful result carrying the new <see cref="Size"/>, or a failure with one of:
-    /// <list type="bullet">
-    ///   <item><description><c>Kernel.ValueObjects.Size.INVALID_VALUE</c> when <paramref name="value"/> is not positive.</description></item>
-    ///   <item><description><c>Kernel.ValueObjects.Size.TOO_LARGE</c> when <paramref name="value"/> exceeds <c>10,000</c>.</description></item>
-    ///   <item><description><c>Kernel.ValueObjects.Size.INVALID_UNIT</c> when <paramref name="unit"/> is not a defined value.</description></item>
-    /// </list>
-    /// </returns>
     public static Result<Size> Create(decimal value, SizeUnit unit)
     {
         if (value <= 0)
         {
             return Result<Size>.Failure(
-                new Error("Kernel.ValueObjects.Size.INVALID_VALUE",
-                          "Size value must be greater than zero.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.Size.INVALID_VALUE",
+                    "Size value must be greater than zero.",
+                    ErrorType.ValidationError));
         }
 
         if (value > MaxValue)
         {
             return Result<Size>.Failure(
-                new Error("Kernel.ValueObjects.Size.TOO_LARGE",
-                          $"Size value must not exceed {MaxValue}.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.Size.TOO_LARGE",
+                    $"Size value must not exceed {MaxValue}.",
+                    ErrorType.ValidationError));
         }
 
         if (!Enum.IsDefined(unit))
         {
+            string validUnits = string.Join(", ", Enum.GetNames<SizeUnit>());
             return Result<Size>.Failure(
-                new Error("Kernel.ValueObjects.Size.INVALID_UNIT",
-                          "Size unit is not defined.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.Size.INVALID_UNIT",
+                    $"Size unit '{(int)unit}' is not defined. Valid units are: {validUnits}.",
+                    ErrorType.ValidationError));
         }
 
         return Result<Size>.Success(new Size(value, unit));
     }
 
     /// <summary>
-    /// Converts this size to millimeters.
+    /// Creates a new <see cref="Size"/> from a string in the form
+    /// <c>"&lt;value&gt; &lt;unit&gt;"</c>.
     /// </summary>
+    public static Result<Size> Create(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return Result<Size>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.Size.EMPTY",
+                    "Size cannot be empty.",
+                    ErrorType.ValidationError));
+        }
+
+        string[] parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2)
+        {
+            return Result<Size>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.Size.INVALID_FORMAT",
+                    "Size must be formatted as '<value> <unit>', for example '5 cm'.",
+                    ErrorType.ValidationError));
+        }
+
+        if (!decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount))
+        {
+            return Result<Size>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.Size.INVALID_VALUE",
+                    "Size value is not a valid number.",
+                    ErrorType.ValidationError));
+        }
+
+        if (!TryParseUnit(parts[1], out SizeUnit unit))
+        {
+            string validUnits = string.Join(", ", Enum.GetNames<SizeUnit>());
+            return Result<Size>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.Size.INVALID_UNIT",
+                    $"Size unit '{parts[1]}' is not recognized. Valid units are: {validUnits}.",
+                    ErrorType.ValidationError));
+        }
+
+        return Create(amount, unit);
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="FormatException">
+    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, not in the
+    /// form <c>"&lt;value&gt; &lt;unit&gt;"</c>, or contains an invalid value or unit.
+    /// The exception message contains the JSON-serialized domain <see cref="Error"/>.
+    /// </exception>
+    public static Size Parse(string s, IFormatProvider? provider)
+    {
+        Result<Size> result = Create(s);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        string errorJson = JsonSerializer.Serialize(result.Error, ErrorSerialization.Options);
+        throw new FormatException(errorJson);
+    }
+
+    /// <inheritdoc />
+    public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Size result)
+    {
+        result = default;
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return false;
+        }
+
+        Result<Size> createResult = Create(s);
+        if (createResult.IsFailure)
+        {
+            return false;
+        }
+
+        result = createResult.Value;
+        return true;
+    }
+
+    /// <summary>Converts this size to millimeters.</summary>
     public Size ToMillimeter() => Convert(SizeUnit.Millimeter);
 
-    /// <summary>
-    /// Converts this size to centimeters.
-    /// </summary>
+    /// <summary>Converts this size to centimeters.</summary>
     public Size ToCentimeter() => Convert(SizeUnit.Centimeter);
 
-    /// <summary>
-    /// Converts this size to meters.
-    /// </summary>
+    /// <summary>Converts this size to meters.</summary>
     public Size ToMeter() => Convert(SizeUnit.Meter);
 
-    /// <summary>
-    /// Converts this size to inches.
-    /// </summary>
+    /// <summary>Converts this size to inches.</summary>
     public Size ToInch() => Convert(SizeUnit.Inch);
 
-    /// <summary>
-    /// Converts this size to feet.
-    /// </summary>
+    /// <summary>Converts this size to feet.</summary>
     public Size ToFoot() => Convert(SizeUnit.Foot);
 
-    /// <summary>
-    /// Converts this size to the given target unit.
-    /// </summary>
-    /// <param name="target">The target unit.</param>
-    /// <returns>
-    /// A new <see cref="Size"/> expressed in <paramref name="target"/>, or <c>this</c>
-    /// if already in that unit.
-    /// </returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="target"/> is not a supported unit.
-    /// </exception>
     private Size Convert(SizeUnit target)
     {
         if (Unit == target)
@@ -144,13 +191,6 @@ public readonly record struct Size
         return new Size(result, target);
     }
 
-    /// <summary>
-    /// Returns the multiplicative factor that converts one unit into millimeters.
-    /// </summary>
-    /// <param name="unit">The source unit.</param>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="unit"/> is not a supported unit.
-    /// </exception>
     private static decimal ToMillimeterFactor(SizeUnit unit) => unit switch
     {
         SizeUnit.Millimeter => 1m,
@@ -160,6 +200,26 @@ public readonly record struct Size
         SizeUnit.Foot => 304.8m,
         _ => throw new InvalidOperationException($"Unsupported size unit: {unit}"),
     };
+
+    private static bool TryParseUnit(string text, out SizeUnit unit)
+    {
+        switch (text.ToLowerInvariant())
+        {
+            case "mm": unit = SizeUnit.Millimeter; return true;
+            case "cm": unit = SizeUnit.Centimeter; return true;
+            case "m": unit = SizeUnit.Meter; return true;
+            case "in": unit = SizeUnit.Inch; return true;
+            case "ft": unit = SizeUnit.Foot; return true;
+        }
+
+        if (Enum.TryParse(text, ignoreCase: true, out unit) && Enum.IsDefined(unit))
+        {
+            return true;
+        }
+
+        unit = default;
+        return false;
+    }
 
     /// <summary>
     /// Returns a human-readable representation such as <c>5.5 Centimeter</c>.

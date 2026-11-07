@@ -1,9 +1,9 @@
 using KernelR.Patterns.Results;
-using System.ComponentModel;
-using System.Text.Json.Serialization;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace KernelAbstractions.Domain.ValueObjects;
+namespace KernelR.Domain.ValueObjects;
 
 /// <summary>
 /// Represents a valid email address.
@@ -21,30 +21,10 @@ namespace KernelAbstractions.Domain.ValueObjects;
 /// validation for an email is delivery.
 /// </para>
 /// </remarks>
-[JsonConverter(typeof(EmailJsonConverter))]
-[TypeConverter(typeof(EmailTypeConverter))]
-public readonly partial record struct Email
+public readonly partial record struct Email : IParsable<Email>
 {
-    /// <summary>
-    /// Maximum length of an email address per RFC 5321 (SMTP path limit).
-    /// </summary>
     private const int MaxLength = 254;
 
-    /// <summary>
-    /// Matches a practical subset of RFC 5322 email addresses.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Local part: letters, digits, and a small set of common symbols
-    /// (<c>. _ % + -</c>). Must not start or end with a dot, and must not contain
-    /// consecutive dots.
-    /// </para>
-    /// <para>
-    /// Domain part: one or more dot-separated labels of letters, digits, and hyphens.
-    /// Labels must not start or end with a hyphen. The final label (TLD) must be at
-    /// least two letters.
-    /// </para>
-    /// </remarks>
     [GeneratedRegex(
         @"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*" +
         @"@" +
@@ -63,17 +43,28 @@ public readonly partial record struct Email
     /// </summary>
     /// <param name="value">The raw email address.</param>
     /// <returns>
-    /// A successful result carrying the normalized email, or a failure when the input
-    /// is empty or does not match the expected format.
+    /// A successful result carrying the normalized email, or a failure with one of:
+    /// <list type="bullet">
+    ///   <item><description><c>KernelR.ValueObjects.Email.EMPTY</c> when the input is null or whitespace.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.Email.TOO_LONG</c> when the input exceeds 254 characters.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.Email.INVALID_FORMAT</c> when the input does not match the expected pattern.</description></item>
+    /// </list>
     /// </returns>
+    /// <example>
+    /// <code>
+    /// Email.Create("User@Example.com");  // → Success, Value = "user@example.com"
+    /// Email.Create("invalid");           // → Failure, Code = "KernelR.ValueObjects.Email.INVALID_FORMAT"
+    /// </code>
+    /// </example>
     public static Result<Email> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             return Result<Email>.Failure(
-                new Error("Kernel.ValueObjects.Email.EMPTY",
-                          "Email cannot be empty.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.Email.EMPTY",
+                    "Email cannot be empty.",
+                    ErrorType.ValidationError));
         }
 
         string normalized = value.Trim().ToLowerInvariant();
@@ -81,20 +72,59 @@ public readonly partial record struct Email
         if (normalized.Length > MaxLength)
         {
             return Result<Email>.Failure(
-                new Error("Kernel.ValueObjects.Email.TOO_LONG",
-                          "Email is too long.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.Email.TOO_LONG",
+                    "Email is too long.",
+                    ErrorType.ValidationError));
         }
 
         if (!AllowedPattern().IsMatch(normalized))
         {
             return Result<Email>.Failure(
-                new Error("Kernel.ValueObjects.Email.INVALID_FORMAT",
-                          "Email format is invalid.",
-                          ErrorType.ValidationError));
+                new Error(
+                    "KernelR.ValueObjects.Email.INVALID_FORMAT",
+                    "Email format is invalid.",
+                    ErrorType.ValidationError));
         }
 
         return Result<Email>.Success(new Email(normalized));
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="FormatException">
+    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, too long, or
+    /// does not match the expected email pattern. The exception message contains the
+    /// JSON-serialized domain <see cref="Error"/>.
+    /// </exception>
+    public static Email Parse(string s, IFormatProvider? provider)
+    {
+        Result<Email> result = Create(s);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        string errorJson = JsonSerializer.Serialize(result.Error, ErrorSerialization.Options);
+        throw new FormatException(errorJson);
+    }
+
+    /// <inheritdoc />
+    public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Email result)
+    {
+        result = default;
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return false;
+        }
+
+        Result<Email> createResult = Create(s);
+        if (createResult.IsFailure)
+        {
+            return false;
+        }
+
+        result = createResult.Value;
+        return true;
     }
 
     /// <summary>
