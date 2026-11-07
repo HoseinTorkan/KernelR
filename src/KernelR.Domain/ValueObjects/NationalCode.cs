@@ -1,4 +1,5 @@
 using KernelR.Patterns.Results;
+using KernelR.Patterns.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -122,7 +123,7 @@ public readonly partial record struct NationalCode : IParsable<NationalCode>
             return result.Value;
         }
 
-        string errorJson = JsonSerializer.Serialize(result.Error, ErrorSerialization.Options);
+        string errorJson = JsonSerializer.Serialize(result.Error, KernelRJsonOptions.Options);
         throw new FormatException(errorJson);
     }
 

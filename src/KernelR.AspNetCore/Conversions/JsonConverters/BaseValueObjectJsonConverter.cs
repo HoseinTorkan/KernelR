@@ -1,4 +1,5 @@
 using KernelR.Patterns.Results;
+using KernelR.Patterns.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -46,7 +47,7 @@ public abstract class BaseValueObjectJsonConverter<T> : JsonConverter<T>
 
         if (result.IsFailure)
         {
-            string errorJson = JsonSerializer.Serialize(result.Error, ErrorSerialization.Options);
+            string errorJson = JsonSerializer.Serialize(result.Error, KernelRJsonOptions.Options);
             throw new JsonException(errorJson);
         }
 

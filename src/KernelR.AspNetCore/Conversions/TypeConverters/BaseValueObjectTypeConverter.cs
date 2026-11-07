@@ -1,5 +1,6 @@
 using KernelR.AspNetCore.Conversions.JsonConverters;
 using KernelR.Patterns.Results;
+using KernelR.Patterns.Serialization;
 using System.ComponentModel;
 using System.Globalization;
 using System.Text.Json;

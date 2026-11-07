@@ -1,5 +1,6 @@
 using KernelR.AspNetCore.Conversions.JsonConverters;
 using KernelR.Patterns.Results;
+using KernelR.Patterns.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
