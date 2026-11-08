@@ -1,6 +1,3 @@
-using KernelR.Patterns.Results;
-using System.Net;
-
 namespace KernelR.AspNetCore.ErrorHandling;
 
 /// <summary>

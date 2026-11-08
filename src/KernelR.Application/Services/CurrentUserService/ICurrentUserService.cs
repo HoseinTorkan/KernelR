@@ -1,7 +1,4 @@
 using KernelR.Application.Services.CurrentUserService.Models;
-using KernelR.Domain.Entities;
-using KernelR.Patterns.Results;
-using System.Linq.Expressions;
 
 namespace KernelR.Application.Services.CurrentUserService;
 

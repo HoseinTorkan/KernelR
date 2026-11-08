@@ -1,6 +1,3 @@
-using FluentValidation;
-using KernelR.Patterns.Results;
-
 namespace KernelR.Application.Extensions;
 
 /// <summary>

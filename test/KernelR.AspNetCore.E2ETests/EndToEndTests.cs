@@ -1,8 +1,3 @@
-using KernelR.AspNetCore.ApiResponses.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Testing;
-using System.Net;
-
 namespace KernelR.AspNetCore.E2ETests;
 
 public class EndToEndTests : IClassFixture<WebApplicationFactory<Program>>

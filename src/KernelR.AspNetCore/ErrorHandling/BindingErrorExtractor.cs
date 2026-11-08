@@ -1,9 +1,3 @@
-using KernelR.Patterns.Results;
-using Microsoft.AspNetCore.Http;
-using System.Collections.Concurrent;
-using System.Reflection;
-using System.Text.RegularExpressions;
-
 namespace KernelR.AspNetCore.ErrorHandling;
 
 /// <summary>

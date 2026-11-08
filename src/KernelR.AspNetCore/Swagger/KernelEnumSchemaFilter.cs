@@ -1,8 +1,3 @@
-using KernelR.Domain.Enums;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
-
 namespace KernelR.AspNetCore.Swagger;
 
 /// <summary>

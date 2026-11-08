@@ -1,5 +1,4 @@
 using KernelR.Application.Services.SmsService.Models;
-using KernelR.Patterns.Results;
 
 namespace KernelR.Application.Services.SmsService;
 

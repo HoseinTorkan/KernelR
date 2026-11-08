@@ -1,8 +1,3 @@
-using KernelAbstractions.Domain.ValueObjects;
-using KernelR.Domain.ValueObjects;
-using KernelR.Patterns.Results;
-using Microsoft.AspNetCore.Mvc;
-
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddExceptionHandler<KernelJsonExceptionHandler>();

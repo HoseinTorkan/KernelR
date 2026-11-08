@@ -1,7 +1,5 @@
 using KernelR.AspNetCore.ApiResponses.Models;
 using KernelR.AspNetCore.ErrorHandling;
-using KernelR.Patterns.Results;
-using Microsoft.AspNetCore.Http;
 
 namespace KernelR.AspNetCore.ApiResponses;
 

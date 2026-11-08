@@ -1,9 +1,3 @@
-using KernelR.Patterns.Results;
-using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
-
 namespace KernelR.AspNetCore.ErrorHandling;
 
 /// <summary>

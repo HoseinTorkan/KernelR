@@ -1,8 +1,3 @@
-using KernelR.Patterns.Results;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-
 namespace KernelR.AspNetCore.ErrorHandling;
 
 /// <summary>

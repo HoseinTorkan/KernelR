@@ -1,6 +1,3 @@
-using Microsoft.AspNetCore.Http;
-using System.Text.Json;
-
 namespace KernelAbstractions.AspNetCore.Tests.Http.ErrorHandling;
 
 public class KernelJsonExceptionHandlerTests

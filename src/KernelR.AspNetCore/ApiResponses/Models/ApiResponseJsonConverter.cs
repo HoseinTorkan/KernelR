@@ -1,7 +1,3 @@
-using KernelR.Patterns.Results;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
 namespace KernelR.AspNetCore.ApiResponses.Models;
 
 /// <summary>

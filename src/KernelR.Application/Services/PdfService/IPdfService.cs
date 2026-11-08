@@ -1,5 +1,3 @@
-using KernelR.Patterns.Results;
-
 namespace KernelR.Application.Services.PdfService;
 
 /// <summary>

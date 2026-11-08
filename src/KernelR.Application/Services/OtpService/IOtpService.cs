@@ -1,5 +1,4 @@
 using KernelR.Application.Services.OtpService.Models;
-using KernelR.Patterns.Results;
 
 namespace KernelR.Application.Services.OtpService;
 

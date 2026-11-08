@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-
 namespace KernelAbstractions.AspNetCore.Tests.Http.ApiResponses;
 
 public class MinimalApiEnvelopeExtensionsTests

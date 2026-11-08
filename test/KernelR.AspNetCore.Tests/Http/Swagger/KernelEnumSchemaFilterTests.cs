@@ -1,9 +1,3 @@
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-
 namespace KernelAbstractions.AspNetCore.Tests.Http.Swagger;
 
 public class KernelEnumSchemaFilterTests

@@ -1,5 +1,3 @@
-using System.Security.Claims;
-
 namespace KernelR.Application.Services.CurrentUserService.Models;
 
 /// <summary>

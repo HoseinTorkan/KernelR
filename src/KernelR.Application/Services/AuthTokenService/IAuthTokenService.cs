@@ -1,6 +1,4 @@
 using KernelR.Application.Services.AuthTokenService.Models;
-using KernelR.Patterns.Results;
-using System.Security.Claims;
 
 namespace KernelR.Application.Services.AuthTokenService;
 

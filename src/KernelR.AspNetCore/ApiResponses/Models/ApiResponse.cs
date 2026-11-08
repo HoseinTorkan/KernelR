@@ -1,7 +1,3 @@
-using KernelR.Patterns.Results;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
-
 namespace KernelR.AspNetCore.ApiResponses.Models;
 
 /// <summary>

@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace KernelAbstractions.AspNetCore.Tests.Http.ApiResponses;
 
 public class ResultConversionExtensionsTests

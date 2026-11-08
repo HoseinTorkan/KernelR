@@ -1,7 +1,3 @@
-using KernelR.Domain.Enums;
-using KernelR.Domain.ValueObjects;
-using KernelR.Patterns.Results;
-
 namespace KernelR.Domain.Tests.ValueObjects;
 
 public class SizeTests

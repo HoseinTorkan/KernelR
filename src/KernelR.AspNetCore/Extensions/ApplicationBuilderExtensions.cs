@@ -1,5 +1,4 @@
 using KernelR.AspNetCore.ErrorHandling;
-using Microsoft.AspNetCore.Builder;
 
 namespace KernelR.AspNetCore.Extensions;
 
