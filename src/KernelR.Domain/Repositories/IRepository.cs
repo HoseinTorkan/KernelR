@@ -8,8 +8,9 @@ namespace KernelR.Domain.Repositories;
 /// of aggregate roots with a unique identifier.
 /// </summary>
 /// <typeparam name="TId">
-/// The type of the aggregate root's identifier. Must be a value type (struct)
-/// and must match <c>TAggregateRoot.Id</c>.
+/// The type of the aggregate root's identifier. Typically a strongly-typed
+/// identifier (for example <c>ProductId</c>) or a primitive value type
+/// (for example <see cref="Guid"/> or <see cref="long"/>).
 /// </typeparam>
 /// <typeparam name="TAggregateRoot">
 /// The type of the aggregate root managed by this repository.
@@ -24,7 +25,7 @@ namespace KernelR.Domain.Repositories;
 /// <para>
 /// This interface is intentionally generic and only covers the most common
 /// operations. More specific queries should be defined in dedicated repository
-/// interfaces (e.g., <c>IOrderRepository</c>) in the domain layer.
+/// interfaces (for example <c>IOrderRepository</c>) in the domain layer.
 /// </para>
 /// <para>
 /// <typeparamref name="TId"/> is expected to match
@@ -37,16 +38,9 @@ public interface IRepository<TId, TAggregateRoot>
     where TId : struct
     where TAggregateRoot : IAggregateRoot<TId>
 {
-    /// <summary>
-    /// Checks whether any aggregate root matches the specified predicate.
-    /// </summary>
-    /// <param name="predicate">The condition to test aggregate roots against.</param>
-    /// <param name="cancellation">A token to cancel the operation.</param>
-    /// <returns>
-    /// <see langword="true"/> if at least one aggregate root matches the predicate;
-    /// otherwise, <see langword="false"/>.
-    /// </returns>
-    Task<bool> AnyAsync(Expression<Func<TAggregateRoot, bool>> predicate, CancellationToken cancellation = default);
+    // ═══════════════════════════════════════════
+    // Query — single
+    // ═══════════════════════════════════════════
 
     /// <summary>
     /// Gets the aggregate root with the specified identifier, or
@@ -58,7 +52,9 @@ public interface IRepository<TId, TAggregateRoot>
     /// The aggregate root with the specified identifier, or
     /// <see langword="null"/> if no such aggregate root exists.
     /// </returns>
-    Task<TAggregateRoot?> GetByIdAsync(TId id, CancellationToken cancellation = default);
+    Task<TAggregateRoot?> GetByIdAsync(
+        TId id,
+        CancellationToken cancellation = default);
 
     /// <summary>
     /// Gets the first aggregate root matching the specified predicate, or
@@ -74,37 +70,138 @@ public interface IRepository<TId, TAggregateRoot>
     /// The order in which rows are returned is not defined; implementations
     /// should apply an explicit ordering if the caller relies on it.
     /// </remarks>
-    Task<TAggregateRoot?> FirstOrDefaultAsync(Expression<Func<TAggregateRoot, bool>> predicate, CancellationToken cancellation = default);
+    Task<TAggregateRoot?> FirstOrDefaultAsync(
+        Expression<Func<TAggregateRoot, bool>> predicate,
+        CancellationToken cancellation = default);
+
+    // ═══════════════════════════════════════════
+    // Query — collection
+    // ═══════════════════════════════════════════
+
+    /// <summary>
+    /// Gets all aggregate roots matching the specified predicate.
+    /// </summary>
+    /// <param name="predicate">The condition to filter aggregate roots.</param>
+    /// <param name="cancellation">A token to cancel the operation.</param>
+    /// <returns>
+    /// A read-only list of aggregate roots matching the predicate.
+    /// Returns an empty list if no match exists.
+    /// </returns>
+    /// <remarks>
+    /// The order in which rows are returned is not defined; implementations
+    /// should apply an explicit ordering if the caller relies on it.
+    /// </remarks>
+    Task<IReadOnlyList<TAggregateRoot>> ListAsync(
+        Expression<Func<TAggregateRoot, bool>> predicate,
+        CancellationToken cancellation = default);
+
+    /// <summary>
+    /// Gets all aggregate roots in the repository.
+    /// </summary>
+    /// <param name="cancellation">A token to cancel the operation.</param>
+    /// <returns>
+    /// A read-only list of all aggregate roots. Returns an empty list if the
+    /// repository is empty.
+    /// </returns>
+    /// <remarks>
+    /// This method is typically used for small datasets only. For large
+    /// datasets, prefer <see cref="ListAsync"/> with a predicate or implement
+    /// pagination in a dedicated repository.
+    /// </remarks>
+    Task<IReadOnlyList<TAggregateRoot>> GetAllAsync(
+        CancellationToken cancellation = default);
+
+    // ═══════════════════════════════════════════
+    // Query — existence / count
+    // ═══════════════════════════════════════════
+
+    /// <summary>
+    /// Checks whether any aggregate root matches the specified predicate.
+    /// </summary>
+    /// <param name="predicate">The condition to test aggregate roots against.</param>
+    /// <param name="cancellation">A token to cancel the operation.</param>
+    /// <returns>
+    /// <see langword="true"/> if at least one aggregate root matches the predicate;
+    /// otherwise, <see langword="false"/>.
+    /// </returns>
+    Task<bool> AnyAsync(
+        Expression<Func<TAggregateRoot, bool>> predicate,
+        CancellationToken cancellation = default);
+
+    /// <summary>
+    /// Checks whether an aggregate root with the specified identifier exists.
+    /// </summary>
+    /// <param name="id">The identifier to check.</param>
+    /// <param name="cancellation">A token to cancel the operation.</param>
+    /// <returns>
+    /// <see langword="true"/> if an aggregate root with the specified identifier
+    /// exists; otherwise, <see langword="false"/>.
+    /// </returns>
+    Task<bool> ExistsAsync(
+        TId id,
+        CancellationToken cancellation = default);
+
+    /// <summary>
+    /// Counts the aggregate roots matching the specified predicate.
+    /// </summary>
+    /// <param name="predicate">The condition to count aggregate roots against.</param>
+    /// <param name="cancellation">A token to cancel the operation.</param>
+    /// <returns>
+    /// The number of aggregate roots matching the predicate.
+    /// </returns>
+    Task<int> CountAsync(
+        Expression<Func<TAggregateRoot, bool>> predicate,
+        CancellationToken cancellation = default);
+
+    // ═══════════════════════════════════════════
+    // Commands
+    // ═══════════════════════════════════════════
 
     /// <summary>
     /// Adds a new aggregate root to the repository.
     /// </summary>
     /// <param name="aggregateRoot">The aggregate root to add.</param>
     /// <param name="cancellation">A token to cancel the operation.</param>
-    Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellation = default);
+    Task AddAsync(
+        TAggregateRoot aggregateRoot,
+        CancellationToken cancellation = default);
 
     /// <summary>
     /// Adds a collection of new aggregate roots to the repository.
     /// </summary>
     /// <param name="aggregateRoots">The aggregate roots to add.</param>
     /// <param name="cancellation">A token to cancel the operation.</param>
-    Task AddRangeAsync(IEnumerable<TAggregateRoot> aggregateRoots, CancellationToken cancellation = default);
+    Task AddRangeAsync(
+        IEnumerable<TAggregateRoot> aggregateRoots,
+        CancellationToken cancellation = default);
 
     /// <summary>
     /// Marks an existing aggregate root as modified.
     /// </summary>
     /// <param name="aggregateRoot">The aggregate root to update.</param>
+    /// <remarks>
+    /// This method is synchronous because it only changes the tracking state;
+    /// the actual persistence happens in <c>IUnitOfWork.SaveChangesAsync</c>.
+    /// </remarks>
     void Update(TAggregateRoot aggregateRoot);
 
     /// <summary>
     /// Marks an existing aggregate root for deletion.
     /// </summary>
     /// <param name="aggregateRoot">The aggregate root to delete.</param>
+    /// <remarks>
+    /// This method is synchronous because it only changes the tracking state;
+    /// the actual persistence happens in <c>IUnitOfWork.SaveChangesAsync</c>.
+    /// </remarks>
     void Delete(TAggregateRoot aggregateRoot);
 
     /// <summary>
     /// Marks a collection of existing aggregate roots for deletion.
     /// </summary>
     /// <param name="aggregateRoots">The aggregate roots to delete.</param>
+    /// <remarks>
+    /// This method is synchronous because it only changes the tracking state;
+    /// the actual persistence happens in <c>IUnitOfWork.SaveChangesAsync</c>.
+    /// </remarks>
     void DeleteRange(IEnumerable<TAggregateRoot> aggregateRoots);
 }
