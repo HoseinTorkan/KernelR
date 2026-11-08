@@ -88,7 +88,7 @@ public readonly partial record struct Email : IParsable<Email>
                     ErrorType.ValidationError));
         }
 
-        return Result<Email>.Success(new Email(normalized));
+        return Result<Email>.Success(new(normalized));
     }
 
     /// <inheritdoc />

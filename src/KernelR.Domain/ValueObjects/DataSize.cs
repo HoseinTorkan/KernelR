@@ -61,30 +61,30 @@ public readonly record struct DataSize : IParsable<DataSize>
     /// <summary>
     /// Creates a new <see cref="DataSize"/> from a numeric value and a unit.
     /// </summary>
-    /// <param name="value">
+    /// <param name="amount">
     /// The numeric value. Must be non-negative and no greater than <c>1,000,000</c>.
     /// </param>
     /// <param name="unit">The unit of measurement. Must be a defined <see cref="DataSizeUnit"/>.</param>
     /// <returns>
     /// A successful result carrying the new <see cref="DataSize"/>, or a failure with one of:
     /// <list type="bullet">
-    ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_VALUE</c> when <paramref name="value"/> is negative.</description></item>
-    ///   <item><description><c>KernelR.ValueObjects.DataSize.TOO_LARGE</c> when <paramref name="value"/> exceeds <c>1,000,000</c>.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_VALUE</c> when <paramref name="amount"/> is negative.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.DataSize.TOO_LARGE</c> when <paramref name="amount"/> exceeds <c>1,000,000</c>.</description></item>
     ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_UNIT</c> when <paramref name="unit"/> is not a defined value.</description></item>
     /// </list>
     /// </returns>
-    public static Result<DataSize> Create(decimal value, DataSizeUnit unit)
+    public static Result<DataSize> Create(decimal amount, DataSizeUnit unit)
     {
-        if (value < 0)
+        if (amount < 0)
         {
             return Result<DataSize>.Failure(
                 new Error(
-                    "KernelR.ValueObjects.DataSize.INVALID_VALUE",
+                    "KernelR.ValueObjects.DataSize.INVALID_AMOUNT",
                     "Data size cannot be negative.",
                     ErrorType.ValidationError));
         }
 
-        if (value > MaxValue)
+        if (amount > MaxValue)
         {
             return Result<DataSize>.Failure(
                 new Error(
@@ -103,7 +103,7 @@ public readonly record struct DataSize : IParsable<DataSize>
                     ErrorType.ValidationError));
         }
 
-        return Result<DataSize>.Success(new DataSize(value, unit));
+        return Result<DataSize>.Success(new DataSize(amount, unit));
     }
 
     /// <summary>
@@ -156,7 +156,7 @@ public readonly record struct DataSize : IParsable<DataSize>
         {
             return Result<DataSize>.Failure(
                 new Error(
-                    "KernelR.ValueObjects.DataSize.INVALID_VALUE",
+                    "KernelR.ValueObjects.DataSize.INVALID_AMOUNT",
                     "Data size value is not a valid number.",
                     ErrorType.ValidationError));
         }

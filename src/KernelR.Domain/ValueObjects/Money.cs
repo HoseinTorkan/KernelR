@@ -76,7 +76,7 @@ public readonly record struct Money : IParsable<Money>
 
         return codeResult.IsFailure
             ? Result<Money>.Failure(codeResult.Error)
-            : Result<Money>.Success(new Money(amount, codeResult.Value));
+            : Result<Money>.Success(new(amount, codeResult.Value));
     }
 
     /// <summary>
