@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json;
 
-namespace KernelR.Domain.ValueObjects;
+namespace KernelR.Domain.ValueObjects.Implementations;
 
 /// <summary>
 /// Represents a quantity of digital information (storage capacity, file size,
