@@ -1,7 +1,9 @@
+using KernelR.Domain.ValueObjects;
+
 namespace KernelR.Domain.Enums;
 
 /// <summary>
-/// Units of digital information supported by <see cref="ValueObjects.DataSize"/>.
+/// Specifies the units of digital information supported by <see cref="DataSize"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,23 +21,33 @@ namespace KernelR.Domain.Enums;
 /// </para>
 /// <para>
 /// Additional units (for example <c>TB</c>, <c>PB</c>) can be added later, but each
-/// addition requires extending the conversion factor in <see cref="ValueObjects.DataSize"/>.
+/// addition requires extending the conversion factor in <see cref="DataSize"/>.
 /// </para>
 /// </remarks>
 public enum DataSizeUnit
 {
-    /// <summary>Bytes (B).</summary>
+    /// <summary>
+    /// Bytes (B).
+    /// </summary>
     Byte = 0,
 
-    /// <summary>Kilobytes (KB). 1 KB = 1024 bytes.</summary>
+    /// <summary>
+    /// Kilobytes (KB). 1 KB = 1024 bytes.
+    /// </summary>
     Kilobyte = 1,
 
-    /// <summary>Megabytes (MB). 1 MB = 1024 KB.</summary>
+    /// <summary>
+    /// Megabytes (MB). 1 MB = 1024 KB.
+    /// </summary>
     Megabyte = 2,
 
-    /// <summary>Gigabytes (GB). 1 GB = 1024 MB.</summary>
+    /// <summary>
+    /// Gigabytes (GB). 1 GB = 1024 MB.
+    /// </summary>
     Gigabyte = 3,
 
-    /// <summary>Terabytes (TB). 1 TB = 1024 GB.</summary>
+    /// <summary>
+    /// Terabytes (TB). 1 TB = 1024 GB.
+    /// </summary>
     Terabyte = 4
 }
