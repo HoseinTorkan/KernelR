@@ -1,7 +1,8 @@
+using KernelR.Patterns;
 using KernelR.Patterns.Results;
 using System.Diagnostics.CodeAnalysis;
 
-namespace KernelR.Domain.ValueObjects;
+namespace KernelR.Domain.ValueObjects.Contact;
 
 /// <summary>
 /// Represents a valid absolute HTTP or HTTPS URL.

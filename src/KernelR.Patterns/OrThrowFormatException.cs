@@ -1,7 +1,8 @@
+using KernelR.Patterns.Results;
 using KernelR.Patterns.Serialization;
 using System.Text.Json;
 
-namespace KernelR.Patterns.Results;
+namespace KernelR.Patterns;
 
 public static class ResultExtensions
 {

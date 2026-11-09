@@ -1,3 +1,4 @@
+using KernelR.Patterns;
 using KernelR.Patterns.Results;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;

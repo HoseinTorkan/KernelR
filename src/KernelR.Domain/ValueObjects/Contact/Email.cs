@@ -1,8 +1,9 @@
+using KernelR.Patterns;
 using KernelR.Patterns.Results;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
-namespace KernelR.Domain.ValueObjects;
+namespace KernelR.Domain.ValueObjects.Contact;
 
 /// <summary>
 /// Represents a valid email address as an immutable value object.

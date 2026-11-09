@@ -1,7 +1,8 @@
+using KernelR.Patterns;
 using KernelR.Patterns.Results;
 using System.Diagnostics.CodeAnalysis;
 
-namespace KernelR.Domain.ValueObjects;
+namespace KernelR.Domain.ValueObjects.Financial;
 
 /// <summary>
 /// Represents a valid ISO 4217 currency code.

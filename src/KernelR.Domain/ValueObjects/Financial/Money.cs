@@ -1,8 +1,9 @@
+using KernelR.Patterns;
 using KernelR.Patterns.Results;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
-namespace KernelR.Domain.ValueObjects;
+namespace KernelR.Domain.ValueObjects.Financial;
 
 /// <summary>
 /// Represents a monetary amount with its associated currency.

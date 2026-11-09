@@ -1,9 +1,10 @@
 using KernelR.Domain.Enums;
+using KernelR.Patterns;
 using KernelR.Patterns.Results;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
-namespace KernelR.Domain.ValueObjects;
+namespace KernelR.Domain.ValueObjects.Measurement;
 
 /// <summary>
 /// Represents a quantity of digital information (storage capacity, file size,

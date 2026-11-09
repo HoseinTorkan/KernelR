@@ -1,4 +1,4 @@
-using KernelR.Domain.ValueObjects;
+using KernelR.Domain.ValueObjects.Measurement;
 
 namespace KernelR.Domain.Enums;
 
