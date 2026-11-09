@@ -23,4 +23,16 @@ public static class ResultExtensions
         string errorJson = JsonSerializer.Serialize(result.Error, KernelRJsonOptions.Options);
         throw new FormatException(errorJson);
     }
+
+    // در فایل ResultExtensions.cs در پکیج KernelR.Patterns
+    public static T OrThrowInvalidOperationException<T>(this Result<T> result)
+    {
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        string errorJson = JsonSerializer.Serialize(result.Error, KernelRJsonOptions.Options);
+        throw new InvalidOperationException(errorJson);
+    }
 }
