@@ -1,3 +1,4 @@
+using KernelR.Patterns.Results;
 using System.Text.Json;
 
 namespace KernelR.Patterns.Serialization;

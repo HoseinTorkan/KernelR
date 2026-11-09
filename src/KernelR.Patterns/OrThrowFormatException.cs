@@ -25,7 +25,6 @@ public static class ResultExtensions
         throw new FormatException(errorJson);
     }
 
-    // در فایل ResultExtensions.cs در پکیج KernelR.Patterns
     public static T OrThrowInvalidOperationException<T>(this Result<T> result)
     {
         if (result.IsSuccess)
