@@ -1,4 +1,4 @@
-using KernelR.Domain.Entities;
+using KernelR.Domain.Abstractions;
 
 namespace KernelR.Domain.Events;
 

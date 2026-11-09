@@ -1,6 +1,4 @@
-using KernelR.Domain.Repositories;
-
-namespace KernelR.Domain.UnitOfWorks;
+namespace KernelR.Domain.UnitOfWork;
 
 /// <summary>
 /// Defines a contract for the Unit of Work pattern, which coordinates the
@@ -24,7 +22,7 @@ namespace KernelR.Domain.UnitOfWorks;
 /// share the same unit of work.
 /// </para>
 /// </remarks>
-/// <seealso cref="IRepository{TId, TAggregateRoot}"/>
+/// <seealso cref="Repository{TId, TAggregateRoot}"/>
 /// <seealso cref="IUnitOfWorkTransaction"/>
 public interface IUnitOfWork
 {

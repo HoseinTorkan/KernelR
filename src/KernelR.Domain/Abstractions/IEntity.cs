@@ -1,6 +1,6 @@
 using KernelR.Domain.StronglyTypedIds;
 
-namespace KernelR.Domain.Entities;
+namespace KernelR.Domain.Abstractions;
 
 /// <summary>
 /// Defines a contract for entities that have a unique identifier.
@@ -36,19 +36,14 @@ namespace KernelR.Domain.Entities;
 ///     public ProductId Id { get; private set; }
 /// }
 /// </code>
-/// Using a raw primitive (acceptable in legacy scenarios):
-/// <code>
-/// public class LegacyEntity : IEntity&lt;int&gt;
-/// {
-///     public int Id { get; private set; }
-/// }
-/// </code>
 /// </example>
 /// <seealso cref="IAggregateRoot{TId}"/>
 /// <seealso cref="IStronglyTypedId{TSelf, TValue}"/>
 public interface IEntity<TId>
     where TId : struct
 {
+    #region ═══ Properties                                                 ═══
+
     /// <summary>
     /// Gets the unique identifier of this entity.
     /// </summary>
@@ -60,4 +55,6 @@ public interface IEntity<TId>
     /// Implementations should set this property only during construction.
     /// </remarks>
     TId Id { get; }
+
+    #endregion ═══ Properties                                                 ═══
 }

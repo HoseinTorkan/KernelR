@@ -1,7 +1,7 @@
 using KernelR.Domain.Events;
 using KernelR.Domain.StronglyTypedIds;
 
-namespace KernelR.Domain.Entities;
+namespace KernelR.Domain.Abstractions;
 
 /// <summary>
 /// Defines a contract for aggregate roots in Domain-Driven Design.
@@ -30,6 +30,8 @@ namespace KernelR.Domain.Entities;
 public interface IAggregateRoot<TId> : IEntity<TId>
     where TId : struct
 {
+    #region ═══ Properties                                                 ═══
+
     /// <summary>
     /// Gets the collection of domain events raised by this aggregate root.
     /// </summary>
@@ -38,6 +40,10 @@ public interface IAggregateRoot<TId> : IEntity<TId>
     /// events and <see cref="ClearDomainEvents"/> to clear them.
     /// </remarks>
     IReadOnlyCollection<IDomainEvent> DomainEvents { get; }
+
+    #endregion ═══ Properties                                                 ═══
+
+    #region ═══ Methods                                                    ═══
 
     /// <summary>
     /// Adds a domain event to be dispatched after the aggregate is persisted.
@@ -57,4 +63,6 @@ public interface IAggregateRoot<TId> : IEntity<TId>
     /// dispatched, so they are not dispatched again on the next save.
     /// </remarks>
     void ClearDomainEvents();
+
+    #endregion ═══ Methods                                                    ═══
 }

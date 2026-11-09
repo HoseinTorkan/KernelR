@@ -1,8 +1,7 @@
-using KernelR.Patterns;
 using KernelR.Patterns.Results;
 using System.Diagnostics.CodeAnalysis;
 
-namespace KernelR.Domain.ValueObjects.Contact;
+namespace KernelR.Domain.ValueObjects.Network;
 
 /// <summary>
 /// Represents a valid absolute HTTP or HTTPS URL.
@@ -35,6 +34,7 @@ namespace KernelR.Domain.ValueObjects.Contact;
 /// if (result.IsSuccess)
 /// {
 ///     Console.WriteLine(result.Value); // Outputs: https://example.com/path
+///     Console.WriteLine(result.Value.Host); // Outputs: example.com
 /// }
 /// </code>
 /// </example>
@@ -49,6 +49,22 @@ public readonly record struct Url :
     /// </summary>
     /// <value>A string containing the normalized URL.</value>
     public string Value { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the URL uses the secure HTTPS scheme.
+    /// </summary>
+    /// <value><see langword="true"/> if the URL starts with "https://"; otherwise, <see langword="false"/>.</value>
+    public bool IsSecure => Value.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Gets the host (domain) component of the URL.
+    /// </summary>
+    /// <value>The domain name (e.g., "google.com") extracted from the URL.</value>
+    /// <remarks>
+    /// Since the <see cref="Value"/> is guaranteed to be a valid absolute URI (validated in <see cref="Create"/>), 
+    /// this property will never throw an exception.
+    /// </remarks>
+    public string Host => new Uri(Value).Host;
 
     #endregion ═══ Properties                                                 ═══
 

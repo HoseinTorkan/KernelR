@@ -1,4 +1,4 @@
-namespace KernelR.Domain.UnitOfWorks;
+namespace KernelR.Domain.UnitOfWork;
 
 /// <summary>
 /// Represents an active transaction started by
