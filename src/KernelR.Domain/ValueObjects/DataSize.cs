@@ -1,9 +1,7 @@
 using KernelR.Domain.Enums;
 using KernelR.Patterns.Results;
-using KernelR.Patterns.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Text.Json;
 
 namespace KernelR.Domain.ValueObjects;
 
@@ -37,21 +35,46 @@ namespace KernelR.Domain.ValueObjects;
 /// Use <see cref="Create(decimal, DataSizeUnit)"/> with any non-negative amount.
 /// </para>
 /// </remarks>
-public readonly record struct DataSize : IParsable<DataSize>
+/// <example>
+/// <code>
+/// Result&lt;DataSize&gt; result = DataSize.Create("1.5 GB");
+/// if (result.IsSuccess)
+/// {
+///     Console.WriteLine(result.Value.ToMegabyte()); // Outputs: 1536 Megabyte
+/// }
+/// </code>
+/// </example>
+public readonly record struct DataSize :
+    IValueObject,
+    IParsable<DataSize>
 {
+    /// <summary>
+    /// The maximum allowed value before conversion.
+    /// </summary>
     private const decimal MaxValue = 1_000_000m;
+
+    /// <summary>
+    /// The number of decimal places to round the value to.
+    /// </summary>
     private const int Precision = 2;
 
     /// <summary>
     /// Gets the numeric value, rounded to two decimal places.
     /// </summary>
+    /// <value>The numeric value of the data size.</value>
     public decimal Value { get; }
 
     /// <summary>
     /// Gets the unit of measurement.
     /// </summary>
+    /// <value>The <see cref="DataSizeUnit"/> representing the measurement unit.</value>
     public DataSizeUnit Unit { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataSize"/> struct.
+    /// </summary>
+    /// <param name="value">The numeric value.</param>
+    /// <param name="unit">The unit of measurement.</param>
     private DataSize(decimal value, DataSizeUnit unit)
     {
         Value = Math.Round(value, Precision, MidpointRounding.AwayFromZero);
@@ -61,16 +84,14 @@ public readonly record struct DataSize : IParsable<DataSize>
     /// <summary>
     /// Creates a new <see cref="DataSize"/> from a numeric value and a unit.
     /// </summary>
-    /// <param name="amount">
-    /// The numeric value. Must be non-negative and no greater than <c>1,000,000</c>.
-    /// </param>
+    /// <param name="amount">The numeric value. Must be non-negative and no greater than <c>1,000,000</c>.</param>
     /// <param name="unit">The unit of measurement. Must be a defined <see cref="DataSizeUnit"/>.</param>
     /// <returns>
-    /// A successful result carrying the new <see cref="DataSize"/>, or a failure with one of:
+    /// A successful result carrying the new <see cref="DataSize"/>, or a failure with one of the following error codes:
     /// <list type="bullet">
-    ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_VALUE</c> when <paramref name="amount"/> is negative.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_AMOUNT</c> when <paramref name="amount"/> is negative.</description></item>
     ///   <item><description><c>KernelR.ValueObjects.DataSize.TOO_LARGE</c> when <paramref name="amount"/> exceeds <c>1,000,000</c>.</description></item>
-    ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_UNIT</c> when <paramref name="unit"/> is not a defined value.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_UNIT</c> when <paramref name="unit"/> is not defined.</description></item>
     /// </list>
     /// </returns>
     public static Result<DataSize> Create(decimal amount, DataSizeUnit unit)
@@ -93,7 +114,7 @@ public readonly record struct DataSize : IParsable<DataSize>
                     ErrorType.ValidationError));
         }
 
-        if (!Enum.IsDefined(unit))
+        if (!Enum.IsDefined<DataSizeUnit>(unit))
         {
             string validUnits = string.Join(", ", Enum.GetNames<DataSizeUnit>());
             return Result<DataSize>.Failure(
@@ -107,8 +128,7 @@ public readonly record struct DataSize : IParsable<DataSize>
     }
 
     /// <summary>
-    /// Creates a new <see cref="DataSize"/> from a string in the form
-    /// <c>"&lt;value&gt; &lt;unit&gt;"</c>.
+    /// Creates a new <see cref="DataSize"/> from a string in the form <c>"&lt;value&gt; &lt;unit&gt;"</c>.
     /// </summary>
     /// <param name="value">
     /// The string representation, for example <c>"1.5 GB"</c>, <c>"500 MB"</c>.
@@ -116,11 +136,11 @@ public readonly record struct DataSize : IParsable<DataSize>
     /// short forms (case-insensitive).
     /// </param>
     /// <returns>
-    /// A successful result carrying the new <see cref="DataSize"/>, or a failure with one of:
+    /// A successful result carrying the new <see cref="DataSize"/>, or a failure with one of the following error codes:
     /// <list type="bullet">
     ///   <item><description><c>KernelR.ValueObjects.DataSize.EMPTY</c> when the input is null or whitespace.</description></item>
     ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_FORMAT</c> when the input does not contain exactly two parts.</description></item>
-    ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_VALUE</c> when the numeric part is not a valid number.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_AMOUNT</c> when the numeric part is not a valid number.</description></item>
     ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_UNIT</c> when the unit part is not recognized.</description></item>
     /// </list>
     /// </returns>
@@ -142,7 +162,9 @@ public readonly record struct DataSize : IParsable<DataSize>
                     ErrorType.ValidationError));
         }
 
-        string[] parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        // Split by any whitespace character, not just a space (' ')
+        string[] parts = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+
         if (parts.Length != 2)
         {
             return Result<DataSize>.Failure(
@@ -174,25 +196,28 @@ public readonly record struct DataSize : IParsable<DataSize>
         return Create(amount, unit);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Parses the specified string into a <see cref="DataSize"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <returns>A <see cref="DataSize"/> instance representing the parsed value.</returns>
     /// <exception cref="FormatException">
-    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, not in the
-    /// form <c>"&lt;value&gt; &lt;unit&gt;"</c>, or contains an invalid value or unit.
-    /// The exception message contains the JSON-serialized domain <see cref="Error"/>.
+    /// Thrown when <paramref name="s"/> is null, empty, whitespace, not in the form <c>"&lt;value&gt; &lt;unit&gt;"</c>, 
+    /// or contains an invalid value or unit. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
     public static DataSize Parse(string s, IFormatProvider? provider)
     {
-        Result<DataSize> result = Create(s);
-        if (result.IsSuccess)
-        {
-            return result.Value;
-        }
-
-        string errorJson = JsonSerializer.Serialize(result.Error, KernelRJsonOptions.Options);
-        throw new FormatException(errorJson);
+        return Create(s).OrThrowFormatException();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Attempts to parse the specified string into a <see cref="DataSize"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <param name="result">When this method returns, contains the parsed <see cref="DataSize"/> instance, if the parsing succeeded, or the default value if it failed.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out DataSize result)
     {
         result = default;
@@ -215,44 +240,45 @@ public readonly record struct DataSize : IParsable<DataSize>
     /// Creates a zero amount in the given unit.
     /// </summary>
     /// <param name="unit">The unit of measurement.</param>
+    /// <returns>A <see cref="Result{T}"/> containing a new <see cref="DataSize"/> with a value of zero.</returns>
     public static Result<DataSize> Zero(DataSizeUnit unit) => Create(0m, unit);
 
     /// <summary>
     /// Converts this data size to bytes.
     /// </summary>
+    /// <returns>A new <see cref="DataSize"/> expressed in bytes.</returns>
     public DataSize ToByte() => Convert(DataSizeUnit.Byte);
 
     /// <summary>
     /// Converts this data size to kilobytes.
     /// </summary>
+    /// <returns>A new <see cref="DataSize"/> expressed in kilobytes.</returns>
     public DataSize ToKilobyte() => Convert(DataSizeUnit.Kilobyte);
 
     /// <summary>
     /// Converts this data size to megabytes.
     /// </summary>
+    /// <returns>A new <see cref="DataSize"/> expressed in megabytes.</returns>
     public DataSize ToMegabyte() => Convert(DataSizeUnit.Megabyte);
 
     /// <summary>
     /// Converts this data size to gigabytes.
     /// </summary>
+    /// <returns>A new <see cref="DataSize"/> expressed in gigabytes.</returns>
     public DataSize ToGigabyte() => Convert(DataSizeUnit.Gigabyte);
 
     /// <summary>
     /// Converts this data size to terabytes.
     /// </summary>
+    /// <returns>A new <see cref="DataSize"/> expressed in terabytes.</returns>
     public DataSize ToTerabyte() => Convert(DataSizeUnit.Terabyte);
 
     /// <summary>
     /// Converts this data size to the given target unit.
     /// </summary>
     /// <param name="target">The target unit.</param>
-    /// <returns>
-    /// A new <see cref="DataSize"/> expressed in <paramref name="target"/>, or <c>this</c>
-    /// if already in that unit.
-    /// </returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="target"/> is not a supported unit.
-    /// </exception>
+    /// <returns>A new <see cref="DataSize"/> expressed in <paramref name="target"/>, or <c>this</c> if already in that unit.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when <paramref name="target"/> is not a supported unit.</exception>
     private DataSize Convert(DataSizeUnit target)
     {
         if (Unit == target)
@@ -270,9 +296,8 @@ public readonly record struct DataSize : IParsable<DataSize>
     /// Returns the multiplicative factor that converts one unit into bytes.
     /// </summary>
     /// <param name="unit">The source unit.</param>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="unit"/> is not a supported unit.
-    /// </exception>
+    /// <returns>The conversion factor as a decimal.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when <paramref name="unit"/> is not a supported unit.</exception>
     private static decimal ToByteFactor(DataSizeUnit unit) => unit switch
     {
         DataSizeUnit.Byte => 1m,
@@ -286,6 +311,9 @@ public readonly record struct DataSize : IParsable<DataSize>
     /// <summary>
     /// Parses a unit name, accepting both full names and short forms.
     /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <param name="unit">When this method returns, contains the parsed unit.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     private static bool TryParseUnit(string text, out DataSizeUnit unit)
     {
         switch (text.ToUpperInvariant())
@@ -297,7 +325,7 @@ public readonly record struct DataSize : IParsable<DataSize>
             case "TB": unit = DataSizeUnit.Terabyte; return true;
         }
 
-        if (Enum.TryParse(text, ignoreCase: true, out unit) && Enum.IsDefined(unit))
+        if (Enum.TryParse(text, ignoreCase: true, out unit) && Enum.IsDefined<DataSizeUnit>(unit))
         {
             return true;
         }
@@ -307,12 +335,15 @@ public readonly record struct DataSize : IParsable<DataSize>
     }
 
     /// <summary>
-    /// Returns a human-readable representation such as <c>1.5 Gigabyte</c>.
+    /// Returns a human-readable representation of the data size.
     /// </summary>
+    /// <returns>A string formatted as <c>"&lt;value&gt; &lt;unit&gt;"</c>, for example <c>"1.5 Gigabyte"</c>.</returns>
     public override string ToString() => $"{Value} {Unit}";
 
     /// <summary>
-    /// Implicitly converts a <see cref="DataSize"/> to its string representation.
+    /// Explicitly converts a <see cref="DataSize"/> to its string representation.
     /// </summary>
-    public static implicit operator string(DataSize size) => size.ToString();
+    /// <param name="size">The data size instance to convert.</param>
+    /// <returns>The string representation of the data size.</returns>
+    public static explicit operator string(DataSize size) => size.ToString();
 }
