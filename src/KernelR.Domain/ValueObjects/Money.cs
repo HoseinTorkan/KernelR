@@ -160,7 +160,7 @@ public readonly record struct Money :
         return new(Math.Abs(Amount), Currency);
     }
 
-    #region Safe Functional Operations
+    #region ═══ Safe Functional Operations (Math & Comparison) ═══
 
     // ─── Math Operations (Returns Result) ───
 
@@ -317,9 +317,9 @@ public readonly record struct Money :
         return Result<bool>.Success(Amount <= other.Amount);
     }
 
-    #endregion
+    #endregion ═══ Safe Functional Operations (Math & Comparison) ═══
 
-    #region Arithmetic Operators
+    #region ═══ Arithmetic Operators                           ═══
 
     /// <summary>
     /// Adds two monetary amounts of the same currency.
@@ -369,9 +369,9 @@ public readonly record struct Money :
         return new(-money.Amount, money.Currency);
     }
 
-    #endregion
+    #endregion ═══ Arithmetic Operators                           ═══
 
-    #region Comparison Operators (Money vs Money)
+    #region ═══ Comparison Operators (Money vs Money)          ═══
 
     /// <summary>Determines whether the left amount is greater than the right amount.</summary>
     public static bool operator >(Money left, Money right)
@@ -397,9 +397,9 @@ public readonly record struct Money :
         return left.LessThanOrEqual(right).OrThrowInvalidOperationException();
     }
 
-    #endregion
+    #endregion ═══ Comparison Operators (Money vs Money)          ═══
 
-    #region Comparison Operators (Money vs decimal)
+    #region ═══ Comparison Operators (Money vs decimal)        ═══
 
     /// <summary>Determines whether the amount is greater than the given scalar.</summary>
     public static bool operator >(Money left, decimal right) => left.Amount > right;
@@ -413,9 +413,9 @@ public readonly record struct Money :
     /// <summary>Determines whether the amount is less than or equal to the given scalar.</summary>
     public static bool operator <=(Money left, decimal right) => left.Amount <= right;
 
-    #endregion
+    #endregion ═══ Comparison Operators (Money vs decimal)        ═══
 
-    #region IComparable Implementation
+    #region ═══ IComparable Implementation                     ═══
 
     /// <inheritdoc />
     public int CompareTo(Money other)
@@ -449,7 +449,7 @@ public readonly record struct Money :
         return CompareTo(other);
     }
 
-    #endregion
+    #endregion ═══ IComparable Implementation                     ═══
 
     /// <summary>
     /// Returns a human-readable representation of the monetary amount.
