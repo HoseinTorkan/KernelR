@@ -1,7 +1,5 @@
 using KernelR.Patterns.Results;
-using KernelR.Patterns.Serialization;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace KernelR.Domain.ValueObjects;
@@ -19,19 +17,51 @@ namespace KernelR.Domain.ValueObjects;
 /// Input is normalized by removing spaces and dashes before validation.
 /// </para>
 /// </remarks>
-public readonly partial record struct NationalCode : IParsable<NationalCode>
+/// <example>
+/// <code>
+/// Result&lt;NationalCode&gt; result = NationalCode.Create("0012345678");
+/// if (result.IsSuccess)
+/// {
+///     Console.WriteLine(result.Value); // Outputs: 0012345678
+/// }
+/// </code>
+/// </example>
+public readonly partial record struct NationalCode :
+    IValueObject,
+    IParsable<NationalCode>
 {
+    #region ═══ Constants & Fields                                       ═══
+
+    /// <summary>
+    /// The generated regex pattern used to validate the exact 10-digit format.
+    /// </summary>
     [GeneratedRegex(@"^\d{10}$")]
     private static partial Regex AllowedPattern();
 
+    /// <summary>
+    /// The generated regex pattern used to identify and remove separators (spaces and dashes).
+    /// </summary>
     [GeneratedRegex(@"[\s\-]")]
     private static partial Regex Separators();
+
+    #endregion ═══ Constants & Fields                                       ═══
+
+    #region ═══ Properties                                                 ═══
 
     /// <summary>
     /// Gets the normalized national code (10 digits).
     /// </summary>
+    /// <value>A string containing the 10-digit national code without separators.</value>
     public string Value { get; }
 
+    #endregion ═══ Properties                                                 ═══
+
+    #region ═══ Constructors & Factories                                   ═══
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NationalCode"/> struct.
+    /// </summary>
+    /// <param name="value">The normalized national code.</param>
     private NationalCode(string value) => Value = value;
 
     /// <summary>
@@ -41,7 +71,7 @@ public readonly partial record struct NationalCode : IParsable<NationalCode>
     /// The raw national code (for example <c>"0012345678"</c>, <c>"001-2345678"</c>).
     /// </param>
     /// <returns>
-    /// A successful result carrying the normalized code, or a failure with one of:
+    /// A successful result carrying the normalized code, or a failure with one of the following error codes:
     /// <list type="bullet">
     ///   <item><description><c>KernelR.ValueObjects.NationalCode.EMPTY</c> when the input is null or whitespace.</description></item>
     ///   <item><description><c>KernelR.ValueObjects.NationalCode.INVALID_FORMAT</c> when the input is not exactly 10 digits.</description></item>
@@ -109,29 +139,34 @@ public readonly partial record struct NationalCode : IParsable<NationalCode>
             : Result<NationalCode>.Success(new NationalCode(normalized));
     }
 
-    /// <inheritdoc />
+    #endregion ═══ Constructors & Factories                                   ═══
+
+    #region ═══ IParsable Implementation                                   ═══
+
+    /// <summary>
+    /// Parses the specified string into a <see cref="NationalCode"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <returns>A <see cref="NationalCode"/> instance representing the parsed value.</returns>
     /// <exception cref="FormatException">
-    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, not exactly
-    /// 10 digits, all-identical digits, or has an invalid checksum. The exception message
-    /// contains the JSON-serialized domain <see cref="Error"/>.
+    /// Thrown when <paramref name="s"/> is null, empty, whitespace, not exactly 10 digits, 
+    /// has all-identical digits, or has an invalid checksum. The exception message contains 
+    /// the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
     public static NationalCode Parse(string s, IFormatProvider? provider)
     {
-        Result<NationalCode> result = Create(s);
-        if (result.IsSuccess)
-        {
-            return result.Value;
-        }
-
-        string errorJson = JsonSerializer.Serialize(result.Error, KernelRJsonOptions.Options);
-        throw new FormatException(errorJson);
+        return Create(s).OrThrowFormatException();
     }
 
-    /// <inheritdoc />
-    public static bool TryParse(
-        string? s,
-        IFormatProvider? provider,
-        [MaybeNullWhen(false)] out NationalCode result)
+    /// <summary>
+    /// Attempts to parse the specified string into a <see cref="NationalCode"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <param name="result">When this method returns, contains the parsed <see cref="NationalCode"/> instance, if the parsing succeeded, or the default value if it failed.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out NationalCode result)
     {
         result = default;
         if (string.IsNullOrWhiteSpace(s))
@@ -149,13 +184,22 @@ public readonly partial record struct NationalCode : IParsable<NationalCode>
         return true;
     }
 
+    #endregion ═══ IParsable Implementation                                   ═══
+
+    #region ═══ Helpers & Overrides                                        ═══
+
     /// <summary>
     /// Returns the normalized national code as a string.
     /// </summary>
+    /// <returns>The 10-digit national code.</returns>
     public override string ToString() => Value;
 
     /// <summary>
-    /// Implicitly converts a <see cref="NationalCode"/> to its normalized string value.
+    /// Explicitly converts a <see cref="NationalCode"/> to its normalized string value.
     /// </summary>
-    public static implicit operator string(NationalCode code) => code.Value;
+    /// <param name="code">The national code to convert.</param>
+    /// <returns>The normalized 10-digit string representation.</returns>
+    public static explicit operator string(NationalCode code) => code.Value;
+
+    #endregion ═══ Helpers & Overrides                                        ═══
 }

@@ -1,7 +1,5 @@
 using KernelR.Patterns.Results;
-using KernelR.Patterns.Serialization;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 
 namespace KernelR.Domain.ValueObjects;
 
@@ -30,13 +28,35 @@ namespace KernelR.Domain.ValueObjects;
 /// express intent.
 /// </para>
 /// </remarks>
-public readonly record struct Url : IParsable<Url>
+/// <example>
+/// <code>
+/// Result&lt;Url&gt; result = Url.Create("https://example.com/path");
+/// if (result.IsSuccess)
+/// {
+///     Console.WriteLine(result.Value); // Outputs: https://example.com/path
+/// }
+/// </code>
+/// </example>
+public readonly record struct Url :
+    IValueObject,
+    IParsable<Url>
 {
+    #region ═══ Properties                                                 ═══
+
     /// <summary>
     /// Gets the normalized absolute URL.
     /// </summary>
+    /// <value>A string containing the normalized URL.</value>
     public string Value { get; }
 
+    #endregion ═══ Properties                                                 ═══
+
+    #region ═══ Constructors & Factories                                   ═══
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Url"/> struct.
+    /// </summary>
+    /// <param name="value">The normalized URL.</param>
     private Url(string value) => Value = value;
 
     /// <summary>
@@ -44,7 +64,7 @@ public readonly record struct Url : IParsable<Url>
     /// </summary>
     /// <param name="value">The raw URL. Leading and trailing whitespace is trimmed.</param>
     /// <returns>
-    /// A successful result carrying the normalized URL, or a failure with one of:
+    /// A successful result carrying the normalized URL, or a failure with one of the following error codes:
     /// <list type="bullet">
     ///   <item><description><c>KernelR.ValueObjects.Url.EMPTY</c> when the input is null or whitespace.</description></item>
     ///   <item><description><c>KernelR.ValueObjects.Url.INVALID_FORMAT</c> when the input is not a valid absolute URI.</description></item>
@@ -85,25 +105,32 @@ public readonly record struct Url : IParsable<Url>
         return Result<Url>.Success(new Url(uri.AbsoluteUri));
     }
 
-    /// <inheritdoc />
+    #endregion ═══ Constructors & Factories                                   ═══
+
+    #region ═══ IParsable Implementation                                   ═══
+
+    /// <summary>
+    /// Parses the specified string into a <see cref="Url"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <returns>A <see cref="Url"/> instance representing the parsed value.</returns>
     /// <exception cref="FormatException">
-    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, not a valid
-    /// absolute URI, or uses a scheme other than http/https. The exception message
-    /// contains the JSON-serialized domain <see cref="Error"/>.
+    /// Thrown when <paramref name="s"/> is null, empty, whitespace, not a valid absolute URI, 
+    /// or uses a scheme other than http/https. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
     public static Url Parse(string s, IFormatProvider? provider)
     {
-        Result<Url> result = Create(s);
-        if (result.IsSuccess)
-        {
-            return result.Value;
-        }
-
-        string errorJson = JsonSerializer.Serialize(result.Error, KernelRJsonOptions.Options);
-        throw new FormatException(errorJson);
+        return Create(s).OrThrowFormatException();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Attempts to parse the specified string into a <see cref="Url"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <param name="result">When this method returns, contains the parsed <see cref="Url"/> instance, if the parsing succeeded, or the default value if it failed.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Url result)
     {
         result = default;
@@ -122,13 +149,22 @@ public readonly record struct Url : IParsable<Url>
         return true;
     }
 
+    #endregion ═══ IParsable Implementation                                   ═══
+
+    #region ═══ Helpers & Overrides                                        ═══
+
     /// <summary>
     /// Returns the normalized URL as a string.
     /// </summary>
+    /// <returns>The normalized absolute URL.</returns>
     public override string ToString() => Value;
 
     /// <summary>
-    /// Implicitly converts a <see cref="Url"/> to its normalized string value.
+    /// Explicitly converts a <see cref="Url"/> to its normalized string value.
     /// </summary>
-    public static implicit operator string(Url url) => url.Value;
+    /// <param name="url">The URL instance to convert.</param>
+    /// <returns>The normalized string representation of the URL.</returns>
+    public static explicit operator string(Url url) => url.Value;
+
+    #endregion ═══ Helpers & Overrides                                        ═══
 }

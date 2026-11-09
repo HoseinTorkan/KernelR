@@ -1,7 +1,5 @@
 using KernelR.Patterns.Results;
-using KernelR.Patterns.Serialization;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace KernelR.Domain.ValueObjects;
@@ -24,8 +22,21 @@ namespace KernelR.Domain.ValueObjects;
 ///   <item><description>Country-code prefixes <c>+98</c>, <c>0098</c>, and <c>98</c> are replaced with a leading <c>0</c>.</description></item>
 /// </list>
 /// </remarks>
-public readonly partial record struct PhoneNumber : IParsable<PhoneNumber>
+/// <example>
+/// <code>
+/// Result&lt;PhoneNumber&gt; result = PhoneNumber.Create("+989121234567");
+/// if (result.IsSuccess)
+/// {
+///     Console.WriteLine(result.Value); // Outputs: 09121234567
+/// }
+/// </code>
+/// </example>
+public readonly partial record struct PhoneNumber :
+    IValueObject,
+    IParsable<PhoneNumber>
 {
+    #region ═══ Constants & Fields                                       ═══
+
     /// <summary>
     /// Matches a normalized Iranian mobile number: a leading <c>0</c>, a <c>9</c>, and nine digits.
     /// </summary>
@@ -44,11 +55,24 @@ public readonly partial record struct PhoneNumber : IParsable<PhoneNumber>
     [GeneratedRegex(@"^(\+98|0098|98)")]
     private static partial Regex CountryCodePrefix();
 
+    #endregion ═══ Constants & Fields                                       ═══
+
+    #region ═══ Properties                                                 ═══
+
     /// <summary>
     /// Gets the normalized phone number in the format <c>09XXXXXXXXX</c>.
     /// </summary>
+    /// <value>A string containing the normalized 11-digit phone number.</value>
     public string Value { get; }
 
+    #endregion ═══ Properties                                                 ═══
+
+    #region ═══ Constructors & Factories                                   ═══
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PhoneNumber"/> struct.
+    /// </summary>
+    /// <param name="value">The normalized phone number.</param>
     private PhoneNumber(string value) => Value = value;
 
     /// <summary>
@@ -59,7 +83,7 @@ public readonly partial record struct PhoneNumber : IParsable<PhoneNumber>
     /// <c>"0912-123-4567"</c>, <c>"00989121234567"</c>).
     /// </param>
     /// <returns>
-    /// A successful result carrying the normalized number, or a failure with one of:
+    /// A successful result carrying the normalized number, or a failure with one of the following error codes:
     /// <list type="bullet">
     ///   <item><description><c>KernelR.ValueObjects.PhoneNumber.EMPTY</c> when the input is null or whitespace.</description></item>
     ///   <item><description><c>KernelR.ValueObjects.PhoneNumber.INVALID_FORMAT</c> when the normalized input does not match the expected pattern.</description></item>
@@ -95,31 +119,32 @@ public readonly partial record struct PhoneNumber : IParsable<PhoneNumber>
             : Result<PhoneNumber>.Success(new PhoneNumber(normalized));
     }
 
-    private static string Normalize(string value)
-    {
-        string withoutSeparators = Separators().Replace(value, string.Empty);
-        return CountryCodePrefix().Replace(withoutSeparators, "0");
-    }
+    #endregion ═══ Constructors & Factories                                   ═══
 
-    /// <inheritdoc />
+    #region ═══ IParsable Implementation                                   ═══
+
+    /// <summary>
+    /// Parses the specified string into a <see cref="PhoneNumber"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <returns>A <see cref="PhoneNumber"/> instance representing the parsed value.</returns>
     /// <exception cref="FormatException">
-    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, or does not
-    /// match the expected format. The exception message contains the JSON-serialized
-    /// domain <see cref="Error"/>.
+    /// Thrown when <paramref name="s"/> is null, empty, whitespace, or does not match the expected format. 
+    /// The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
     public static PhoneNumber Parse(string s, IFormatProvider? provider)
     {
-        Result<PhoneNumber> result = Create(s);
-        if (result.IsSuccess)
-        {
-            return result.Value;
-        }
-
-        string errorJson = JsonSerializer.Serialize(result.Error, KernelRJsonOptions.Options);
-        throw new FormatException(errorJson);
+        return Create(s).OrThrowFormatException();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Attempts to parse the specified string into a <see cref="PhoneNumber"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <param name="result">When this method returns, contains the parsed <see cref="PhoneNumber"/> instance, if the parsing succeeded, or the default value if it failed.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out PhoneNumber result)
     {
         result = default;
@@ -138,13 +163,33 @@ public readonly partial record struct PhoneNumber : IParsable<PhoneNumber>
         return true;
     }
 
+    #endregion ═══ IParsable Implementation                                   ═══
+
+    #region ═══ Helpers & Overrides                                        ═══
+
+    /// <summary>
+    /// Normalizes the raw phone number by removing separators and standardizing the country code.
+    /// </summary>
+    /// <param name="value">The raw phone number string.</param>
+    /// <returns>The normalized phone number string.</returns>
+    private static string Normalize(string value)
+    {
+        string withoutSeparators = Separators().Replace(value, string.Empty);
+        return CountryCodePrefix().Replace(withoutSeparators, "0");
+    }
+
     /// <summary>
     /// Returns the normalized phone number as a string.
     /// </summary>
+    /// <returns>The normalized 11-digit phone number.</returns>
     public override string ToString() => Value;
 
     /// <summary>
-    /// Implicitly converts a <see cref="PhoneNumber"/> to its normalized string value.
+    /// Explicitly converts a <see cref="PhoneNumber"/> to its normalized string value.
     /// </summary>
-    public static implicit operator string(PhoneNumber phoneNumber) => phoneNumber.Value;
+    /// <param name="phoneNumber">The phone number instance to convert.</param>
+    /// <returns>The normalized string representation of the phone number.</returns>
+    public static explicit operator string(PhoneNumber phoneNumber) => phoneNumber.Value;
+
+    #endregion ═══ Helpers & Overrides                                        ═══
 }

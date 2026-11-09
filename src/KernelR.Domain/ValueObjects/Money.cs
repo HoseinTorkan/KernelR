@@ -30,10 +30,16 @@ public readonly record struct Money :
     IComparable<Money>,
     IComparable
 {
+    #region ═══ Constants                                                  ═══
+
     /// <summary>
     /// The number of decimal places used for rounding monetary amounts.
     /// </summary>
     private const int Precision = 2;
+
+    #endregion ═══ Constants                                                  ═══
+
+    #region ═══ Properties                                                 ═══
 
     /// <summary>
     /// Gets the monetary amount, rounded to two decimal places.
@@ -59,6 +65,10 @@ public readonly record struct Money :
     /// Gets a value indicating whether the amount is strictly negative (less than zero).
     /// </summary>
     public bool IsNegative => Amount < 0m;
+
+    #endregion ═══ Properties                                                 ═══
+
+    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Money"/> struct.
@@ -119,6 +129,15 @@ public readonly record struct Money :
     }
 
     /// <summary>
+    /// Creates a zero amount in the given currency.
+    /// </summary>
+    public static Result<Money> Zero(string currency) => Create(0.00m, currency);
+
+    #endregion ═══ Constructors & Factories                                   ═══
+
+    #region ═══ IParsable Implementation                                   ═══
+
+    /// <summary>
     /// Parses the specified string into a <see cref="Money"/> instance.
     /// </summary>
     public static Money Parse(string s, IFormatProvider? provider)
@@ -147,20 +166,9 @@ public readonly record struct Money :
         return true;
     }
 
-    /// <summary>
-    /// Creates a zero amount in the given currency.
-    /// </summary>
-    public static Result<Money> Zero(string currency) => Create(0.00m, currency);
+    #endregion ═══ IParsable Implementation                                   ═══
 
-    /// <summary>
-    /// Returns the absolute value of the current monetary amount.
-    /// </summary>
-    public Money Abs()
-    {
-        return new(Math.Abs(Amount), Currency);
-    }
-
-    #region ═══ Safe Functional Operations (Math & Comparison) ═══
+    #region ═══ Safe Functional Operations (Math & Comparison)            ═══
 
     // ─── Math Operations (Returns Result) ───
 
@@ -317,9 +325,9 @@ public readonly record struct Money :
         return Result<bool>.Success(Amount <= other.Amount);
     }
 
-    #endregion ═══ Safe Functional Operations (Math & Comparison) ═══
+    #endregion ═══ Safe Functional Operations (Math & Comparison)              ═══
 
-    #region ═══ Arithmetic Operators                           ═══
+    #region ═══ Arithmetic Operators                                       ═══
 
     /// <summary>
     /// Adds two monetary amounts of the same currency.
@@ -369,9 +377,9 @@ public readonly record struct Money :
         return new(-money.Amount, money.Currency);
     }
 
-    #endregion ═══ Arithmetic Operators                           ═══
+    #endregion ═══ Arithmetic Operators                                       ═══
 
-    #region ═══ Comparison Operators (Money vs Money)          ═══
+    #region ═══ Comparison Operators (Money vs Money)                      ═══
 
     /// <summary>Determines whether the left amount is greater than the right amount.</summary>
     public static bool operator >(Money left, Money right)
@@ -397,9 +405,9 @@ public readonly record struct Money :
         return left.LessThanOrEqual(right).OrThrowInvalidOperationException();
     }
 
-    #endregion ═══ Comparison Operators (Money vs Money)          ═══
+    #endregion ═══ Comparison Operators (Money vs Money)                      ═══
 
-    #region ═══ Comparison Operators (Money vs decimal)        ═══
+    #region ═══ Comparison Operators (Money vs decimal)                    ═══
 
     /// <summary>Determines whether the amount is greater than the given scalar.</summary>
     public static bool operator >(Money left, decimal right) => left.Amount > right;
@@ -413,9 +421,9 @@ public readonly record struct Money :
     /// <summary>Determines whether the amount is less than or equal to the given scalar.</summary>
     public static bool operator <=(Money left, decimal right) => left.Amount <= right;
 
-    #endregion ═══ Comparison Operators (Money vs decimal)        ═══
+    #endregion ═══ Comparison Operators (Money vs decimal)                    ═══
 
-    #region ═══ IComparable Implementation                     ═══
+    #region ═══ IComparable Implementation                                 ═══
 
     /// <inheritdoc />
     public int CompareTo(Money other)
@@ -449,7 +457,17 @@ public readonly record struct Money :
         return CompareTo(other);
     }
 
-    #endregion ═══ IComparable Implementation                     ═══
+    #endregion ═══ IComparable Implementation                                 ═══
+
+    #region ═══ Helpers & Overrides                                        ═══
+
+    /// <summary>
+    /// Returns the absolute value of the current monetary amount.
+    /// </summary>
+    public Money Abs()
+    {
+        return new(Math.Abs(Amount), Currency);
+    }
 
     /// <summary>
     /// Returns a human-readable representation of the monetary amount.
@@ -460,4 +478,6 @@ public readonly record struct Money :
     /// Explicitly converts a <see cref="Money"/> to its string representation.
     /// </summary>
     public static explicit operator string(Money money) => money.ToString();
+
+    #endregion ═══ Helpers & Overrides                                        ═══
 }

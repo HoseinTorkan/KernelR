@@ -1,7 +1,5 @@
 using KernelR.Patterns.Results;
-using KernelR.Patterns.Serialization;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace KernelR.Domain.ValueObjects;
@@ -21,16 +19,56 @@ namespace KernelR.Domain.ValueObjects;
 /// explicitly when the need arises.
 /// </para>
 /// </remarks>
-public readonly partial record struct PersonName : IParsable<PersonName>
+/// <example>
+/// <code>
+/// Result&lt;PersonName&gt; result = PersonName.Create("فاطمه‌زهرا");
+/// if (result.IsSuccess)
+/// {
+///     Console.WriteLine(result.Value); // Outputs: فاطمه‌زهرا
+/// }
+/// </code>
+/// </example>
+public readonly partial record struct PersonName :
+    IValueObject,
+    IParsable<PersonName>
 {
+    #region ═══ Constants & Fields                                           ═══
+
+    /// <summary>
+    /// The minimum allowed length for a person's name.
+    /// </summary>
+    private const int MinLength = 2;
+
+    /// <summary>
+    /// The maximum allowed length for a person's name.
+    /// </summary>
+    private const int MaxLength = 100;
+
+    /// <summary>
+    /// The generated regex pattern used to validate human names, allowing Unicode letters,
+    /// ZWNJ (for Persian), apostrophes, and hyphens.
+    /// </summary>
     [GeneratedRegex(@"^[\p{L}\u200C'\-]+([\s\u200C][\p{L}\u200C'\-]+)*$")]
     private static partial Regex AllowedPattern();
+
+    #endregion ═══ Constants & Fields                                       ═══
+
+    #region ═══ Properties                                                 ═══
 
     /// <summary>
     /// Gets the trimmed name value.
     /// </summary>
+    /// <value>A string containing the validated name.</value>
     public string Value { get; }
 
+    #endregion ═══ Properties                                                 ═══
+
+    #region ═══ Constructors & Factories                                   ═══
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PersonName"/> struct.
+    /// </summary>
+    /// <param name="value">The validated name.</param>
     private PersonName(string value) => Value = value;
 
     /// <summary>
@@ -38,7 +76,7 @@ public readonly partial record struct PersonName : IParsable<PersonName>
     /// </summary>
     /// <param name="value">The raw name string.</param>
     /// <returns>
-    /// A successful result carrying the trimmed name, or a failure with one of:
+    /// A successful result carrying the trimmed name, or a failure with one of the following error codes:
     /// <list type="bullet">
     ///   <item><description><c>KernelR.ValueObjects.PersonName.EMPTY</c> when the input is null or whitespace.</description></item>
     ///   <item><description><c>KernelR.ValueObjects.PersonName.TOO_SHORT</c> when the trimmed name has fewer than 2 characters.</description></item>
@@ -68,7 +106,7 @@ public readonly partial record struct PersonName : IParsable<PersonName>
 
         string trimmed = value.Trim();
 
-        if (trimmed.Length < 2)
+        if (trimmed.Length < MinLength)
         {
             return Result<PersonName>.Failure(
                 new Error(
@@ -77,7 +115,7 @@ public readonly partial record struct PersonName : IParsable<PersonName>
                     ErrorType.ValidationError));
         }
 
-        if (trimmed.Length > 100)
+        if (trimmed.Length > MaxLength)
         {
             return Result<PersonName>.Failure(
                 new Error(
@@ -98,29 +136,33 @@ public readonly partial record struct PersonName : IParsable<PersonName>
         return Result<PersonName>.Success(new PersonName(trimmed));
     }
 
-    /// <inheritdoc />
+    #endregion ═══ Constructors & Factories                                   ═══
+
+    #region ═══ IParsable Implementation                                   ═══
+
+    /// <summary>
+    /// Parses the specified string into a <see cref="PersonName"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <returns>A <see cref="PersonName"/> instance representing the parsed value.</returns>
     /// <exception cref="FormatException">
-    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, too short,
-    /// too long, or contains invalid characters. The exception message contains the
-    /// JSON-serialized domain <see cref="Error"/>.
+    /// Thrown when <paramref name="s"/> is null, empty, whitespace, too short, too long, 
+    /// or contains invalid characters. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
     public static PersonName Parse(string s, IFormatProvider? provider)
     {
-        Result<PersonName> result = Create(s);
-        if (result.IsSuccess)
-        {
-            return result.Value;
-        }
-
-        string errorJson = JsonSerializer.Serialize(result.Error, KernelRJsonOptions.Options);
-        throw new FormatException(errorJson);
+        return Create(s).OrThrowFormatException();
     }
 
-    /// <inheritdoc />
-    public static bool TryParse(
-        string? s,
-        IFormatProvider? provider,
-        [MaybeNullWhen(false)] out PersonName result)
+    /// <summary>
+    /// Attempts to parse the specified string into a <see cref="PersonName"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <param name="result">When this method returns, contains the parsed <see cref="PersonName"/> instance, if the parsing succeeded, or the default value if it failed.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out PersonName result)
     {
         result = default;
         if (string.IsNullOrWhiteSpace(s))
@@ -138,13 +180,22 @@ public readonly partial record struct PersonName : IParsable<PersonName>
         return true;
     }
 
+    #endregion ═══ IParsable Implementation                                   ═══
+
+    #region ═══ Helpers & Overrides                                        ═══
+
     /// <summary>
     /// Returns the name as a string.
     /// </summary>
+    /// <returns>The validated, trimmed name.</returns>
     public override string ToString() => Value;
 
     /// <summary>
-    /// Implicitly converts a <see cref="PersonName"/> to its string value.
+    /// Explicitly converts a <see cref="PersonName"/> to its string value.
     /// </summary>
-    public static implicit operator string(PersonName name) => name.Value;
+    /// <param name="name">The person name instance to convert.</param>
+    /// <returns>The string representation of the name.</returns>
+    public static explicit operator string(PersonName name) => name.Value;
+
+    #endregion ═══ Helpers & Overrides                                        ═══
 }

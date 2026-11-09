@@ -1,7 +1,5 @@
 using KernelR.Patterns.Results;
-using KernelR.Patterns.Serialization;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 
 namespace KernelR.Domain.ValueObjects;
 
@@ -25,8 +23,25 @@ namespace KernelR.Domain.ValueObjects;
 /// ensuring that an invalid code can never enter the domain model.
 /// </para>
 /// </remarks>
-public readonly record struct CurrencyCode : IParsable<CurrencyCode>
+/// <example>
+/// <code>
+/// Result&lt;CurrencyCode&gt; result = CurrencyCode.Create("USD");
+/// if (result.IsSuccess)
+/// {
+///     Console.WriteLine(result.Value); // Outputs: USD
+/// }
+/// </code>
+/// </example>
+public readonly record struct CurrencyCode :
+    IValueObject,
+    IParsable<CurrencyCode>
 {
+    #region ═══ Constants & Fields                                       ═══
+
+    /// <summary>
+    /// A set of all valid ISO 4217 currency codes (plus IRT).
+    /// Using a HashSet ensures O(1) lookup performance.
+    /// </summary>
     private static readonly HashSet<string> ValidCodes = new(StringComparer.Ordinal)
     {
         "AED", "AFN", "ALL", "AMD", "ANG", "AOA", "ARS", "AUD", "AWG", "AZN",
@@ -49,11 +64,24 @@ public readonly record struct CurrencyCode : IParsable<CurrencyCode>
         "IRT"
     };
 
+    #endregion ═══ Constants & Fields                                       ═══
+
+    #region ═══ Properties                                                 ═══
+
     /// <summary>
     /// Gets the uppercase 3-letter currency code.
     /// </summary>
+    /// <value>A string containing the valid currency code (e.g., "USD", "IRR").</value>
     public string Value { get; }
 
+    #endregion ═══ Properties                                                 ═══
+
+    #region ═══ Constructors & Factories                                   ═══
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CurrencyCode"/> struct.
+    /// </summary>
+    /// <param name="value">The validated currency code.</param>
     private CurrencyCode(string value) => Value = value;
 
     /// <summary>
@@ -94,25 +122,32 @@ public readonly record struct CurrencyCode : IParsable<CurrencyCode>
         return Result<CurrencyCode>.Success(new CurrencyCode(normalized));
     }
 
-    /// <inheritdoc />
+    #endregion ═══ Constructors & Factories                                   ═══
+
+    #region ═══ IParsable Implementation                                   ═══
+
+    /// <summary>
+    /// Parses the specified string into a <see cref="CurrencyCode"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <returns>A <see cref="CurrencyCode"/> instance representing the parsed value.</returns>
     /// <exception cref="FormatException">
-    /// <paramref name="s"/> is <see langword="null"/>, empty, whitespace, or not a
-    /// recognized ISO 4217 code. The exception message contains the JSON-serialized
-    /// domain <see cref="Error"/>.
+    /// Thrown when <paramref name="s"/> is null, empty, whitespace, or not a recognized ISO 4217 code. 
+    /// The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
     public static CurrencyCode Parse(string s, IFormatProvider? provider)
     {
-        Result<CurrencyCode> result = Create(s);
-        if (result.IsSuccess)
-        {
-            return result.Value;
-        }
-
-        string errorJson = JsonSerializer.Serialize(result.Error, KernelRJsonOptions.Options);
-        throw new FormatException(errorJson);
+        return Create(s).OrThrowFormatException();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Attempts to parse the specified string into a <see cref="CurrencyCode"/> instance.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <param name="result">When this method returns, contains the parsed <see cref="CurrencyCode"/> instance, if the parsing succeeded, or the default value if it failed.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CurrencyCode result)
     {
         result = default;
@@ -131,13 +166,22 @@ public readonly record struct CurrencyCode : IParsable<CurrencyCode>
         return true;
     }
 
+    #endregion ═══ IParsable Implementation                                   ═══
+
+    #region ═══ Helpers & Overrides                                        ═══
+
     /// <summary>
     /// Returns the currency code as a string.
     /// </summary>
+    /// <returns>The 3-letter currency code.</returns>
     public override string ToString() => Value;
 
     /// <summary>
-    /// Implicitly converts a <see cref="CurrencyCode"/> to its string value.
+    /// Explicitly converts a <see cref="CurrencyCode"/> to its string value.
     /// </summary>
-    public static implicit operator string(CurrencyCode code) => code.Value;
+    /// <param name="code">The currency code to convert.</param>
+    /// <returns>The 3-letter currency code string.</returns>
+    public static explicit operator string(CurrencyCode code) => code.Value;
+
+    #endregion ═══ Helpers & Overrides                                        ═══
 }

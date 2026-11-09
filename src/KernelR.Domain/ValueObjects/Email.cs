@@ -33,6 +33,8 @@ public readonly partial record struct Email :
     IValueObject,
     IParsable<Email>
 {
+    #region ═══ Constants & Fields                                       ═══
+
     /// <summary>
     /// The maximum allowed length for an email address according to RFC 5321.
     /// </summary>
@@ -47,11 +49,19 @@ public readonly partial record struct Email :
         @"([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$")]
     private static partial Regex AllowedPattern();
 
+    #endregion ═══ Constants & Fields                                       ═══
+
+    #region ═══ Properties                                                 ═══
+
     /// <summary>
     /// Gets the normalized (lowercase) string representation of the email address.
     /// </summary>
     /// <value>A string containing the normalized email address.</value>
     public string Value { get; }
+
+    #endregion ═══ Properties                                                 ═══
+
+    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Email"/> struct.
@@ -106,6 +116,10 @@ public readonly partial record struct Email :
         return Result<Email>.Success(new(normalized));
     }
 
+    #endregion ═══ Constructors & Factories                                   ═══
+
+    #region ═══ IParsable Implementation                                   ═══
+
     /// <summary>
     /// Parses the specified string into an <see cref="Email"/> instance.
     /// </summary>
@@ -146,6 +160,10 @@ public readonly partial record struct Email :
         return true;
     }
 
+    #endregion ═══ IParsable Implementation                                   ═══
+
+    #region ═══ Helpers & Overrides                                        ═══
+
     /// <summary>
     /// Returns the normalized email address as a string.
     /// </summary>
@@ -158,4 +176,6 @@ public readonly partial record struct Email :
     /// <param name="email">The email instance to convert.</param>
     /// <returns>The normalized string representation of the email.</returns>
     public static explicit operator string(Email email) => email.Value;
+
+    #endregion ═══ Helpers & Overrides                                        ═══
 }
