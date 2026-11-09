@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json;
 
-namespace KernelR.Domain.ValueObjects.Implementations;
+namespace KernelR.Domain.ValueObjects;
 
 /// <summary>
 /// Represents a monetary amount with its associated currency.

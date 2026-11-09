@@ -10,14 +10,10 @@
     packages, so individual .csproj files remain small and focused.
 
     Individual .csproj files should only declare:
-      - PackageId, Version (each package has its own version), Description, PackageTags
+      - PackageId, Version, Description, PackageTags
       - ProjectReference / PackageReference items
       - FrameworkReference (for ASP.NET Core projects)
       - InternalsVisibleTo (if needed)
-
-    Everything else (target framework, quality gates, symbols, deterministic
-    build, XML docs, versioning, package metadata, partial-file nesting) is
-    managed here.
     ═══════════════════════════════════════════════════════════════════════════
     -->
 
@@ -25,8 +21,11 @@
     <!-- Language & Compiler                        -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
+        <!-- Use the latest C# language version -->
         <LangVersion>latest</LangVersion>
+        <!-- Enable nullable reference types -->
         <Nullable>enable</Nullable>
+        <!-- Enable implicit global usings -->
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
@@ -41,18 +40,27 @@
     <!-- Quality & Static Analysis                  -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
+        <!-- Treat all warnings as errors (enforced in CI) -->
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <!-- Enable .NET SDK code analyzers -->
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <!-- Use the latest available analyzer rules -->
         <AnalysisLevel>latest</AnalysisLevel>
+        <!-- Recommended analysis mode: balance between strictness and practicality -->
         <AnalysisMode>Recommended</AnalysisMode>
+        <!-- Enforce code style rules during build -->
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <!-- Optionally downgrade nullable warnings during local development -->
+        <!-- <WarningsNotAsErrors>nullable</WarningsNotAsErrors> -->
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Documentation                              -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
+        <!-- Generate XML documentation file -->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <!-- Promote CS1591 (missing XML comment) to error -->
         <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
     </PropertyGroup>
 
@@ -60,17 +68,36 @@
     <!-- Symbols & Source Link                      -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
+        <!-- Produce a symbol package (snupkg) -->
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <!-- Embed the repository URL in the NuGet package -->
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <!-- Embed untracked source files into the PDB -->
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <!-- Portable PDBs: the standard for .NET Core -->
+        <DebugType>portable</DebugType>
+    </PropertyGroup>
+
+    <!--
+    Note (SDK 10+):
+    Starting with the .NET 10 SDK, SourceLink is bundled into the SDK.
+    An explicit PackageReference to Microsoft.SourceLink.GitHub is therefore
+    no longer required and may interfere with the built-in mechanism.
+    -->
+    <PropertyGroup>
+        <!-- Enable the SDK's built-in SourceLink for GitHub-hosted repositories -->
+        <EnableSourceLink>true</EnableSourceLink>
+        <SourceLinkGitHubHost>github.com</SourceLinkGitHubHost>
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Deterministic Build                        -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
+        <!-- Produce deterministic output (SDK default is true; kept for clarity) -->
         <Deterministic>true</Deterministic>
+        <!-- Normalize paths in CI so builds are fully reproducible -->
         <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     </PropertyGroup>
 
@@ -83,21 +110,30 @@
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/HoseinTorkan/KernelR</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/HoseinTorkan/KernelR</PackageProjectUrl>
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Versioning (Centralized Default)           -->
     <!-- ═══════════════════════════════════════════ -->
+    <!--
+    Note: This value is only a fallback for local builds.
+    Each package must define its own Version in its .csproj.
+    CI can override this via -p:Version=x.y.z
+    -->
     <PropertyGroup>
-        <Version>1.0.0</Version>
+        <Version Condition="'$(Version)' == ''">0.0.0-local</Version>
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Test Project Settings                      -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests')) Or $(MSBuildProjectName.EndsWith('.UnitTests')) Or $(MSBuildProjectName.EndsWith('.E2ETests'))">
+        <!-- Test projects are not packable -->
         <IsPackable>false</IsPackable>
+        <!-- Mark as a test project -->
         <IsTestProject>true</IsTestProject>
+        <!-- Suppress CS1591 (missing XML comment) for test projects -->
         <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 
@@ -105,11 +141,12 @@
     <!-- Automatic Nesting for Partial Files        -->
     <!-- (x.y.cs → nested under x.cs)               -->
     <!-- ═══════════════════════════════════════════ -->
-    <ItemGroup>
-        <Compile Update="**\*.cs"
-                 Condition="$([System.String]::Copy('%(Filename)').Contains('.'))">
-            <DependentUpon>$([System.String]::Copy('%(Filename)').Split('.')[0]).cs</DependentUpon>
-        </Compile>
-    </ItemGroup>
+    <!--
+    Note: This ItemGroup must live in Directory.Build.targets, not .props.
+    Reason: at .props evaluation time, the Compile items populated by the
+    SDK's implicit glob have not yet been added, so Update= would be a no-op.
+    At .targets evaluation time, the items exist and metadata is applied.
+    -->
+    <!-- This block has been moved to Directory.Build.targets -->
 
 </Project>

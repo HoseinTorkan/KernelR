@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json;
 
-namespace KernelR.Domain.ValueObjects.Implementations;
+namespace KernelR.Domain.ValueObjects;
 
 /// <summary>
 /// Represents a physical size (length, width, height, or diameter) with a unit,

@@ -1,0 +1,26 @@
+<Project>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Automatic Nesting for Partial Files        -->
+    <!-- (x.y.cs → nested under x.cs)               -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!--
+    This ItemGroup must live in .targets (not .props) so that it runs after
+    the SDK's implicit glob has populated the Compile items. If placed in
+    .props, the Compile items do not exist yet and Update would be a no-op.
+
+    Note: MSBuild does not allow item metadata such as %(RelativeDir) or
+    %(Filename) inside an ItemGroup Condition (error MSB4190). Therefore the
+    Exists() guard used in earlier drafts has been removed. This is safe in
+    practice: partial files like Foo.Part1.cs almost always have a matching
+    Foo.cs parent, and even if one is missing, it only affects Solution
+    Explorer nesting (not the build).
+    -->
+    <ItemGroup>
+        <Compile Update="**\*.cs"
+                 Condition="$([System.String]::Copy('%(Filename)').Contains('.'))">
+            <DependentUpon>$([System.String]::Copy('%(Filename)').Split('.')[0]).cs</DependentUpon>
+        </Compile>
+    </ItemGroup>
+
+</Project>

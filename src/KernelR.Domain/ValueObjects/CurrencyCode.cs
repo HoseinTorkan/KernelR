@@ -3,7 +3,7 @@ using KernelR.Patterns.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
-namespace KernelR.Domain.ValueObjects.Implementations;
+namespace KernelR.Domain.ValueObjects;
 
 /// <summary>
 /// Represents a valid ISO 4217 currency code.

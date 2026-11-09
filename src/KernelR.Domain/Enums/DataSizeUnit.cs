@@ -1,7 +1,7 @@
 namespace KernelR.Domain.Enums;
 
 /// <summary>
-/// Units of digital information supported by <see cref="ValueObjects.Implementations.DataSize"/>.
+/// Units of digital information supported by <see cref="ValueObjects.DataSize"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,7 +19,7 @@ namespace KernelR.Domain.Enums;
 /// </para>
 /// <para>
 /// Additional units (for example <c>TB</c>, <c>PB</c>) can be added later, but each
-/// addition requires extending the conversion factor in <see cref="ValueObjects.Implementations.DataSize"/>.
+/// addition requires extending the conversion factor in <see cref="ValueObjects.DataSize"/>.
 /// </para>
 /// </remarks>
 public enum DataSizeUnit

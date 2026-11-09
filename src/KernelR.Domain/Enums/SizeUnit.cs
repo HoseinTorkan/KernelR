@@ -1,7 +1,7 @@
 namespace KernelR.Domain.Enums;
 
 /// <summary>
-/// Specifies the unit of measurement for a <see cref="ValueObjects.Implementations.Size"/>.
+/// Specifies the unit of measurement for a <see cref="ValueObjects.Size"/>.
 /// </summary>
 public enum SizeUnit
 {
