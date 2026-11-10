@@ -142,12 +142,14 @@ public readonly record struct IpAddress :
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out IpAddress result)
     {
         result = default;
+
         if (string.IsNullOrWhiteSpace(s))
         {
             return false;
         }
 
         Result<IpAddress> createResult = Create(s);
+
         if (createResult.IsFailure)
         {
             return false;
@@ -252,28 +254,46 @@ public readonly record struct IpAddress :
     #region ═══ Comparison Operators                                       ═══
 
     /// <summary>Determines whether the left IP address is less than the right IP address.</summary>
-    public static bool operator <(IpAddress left, IpAddress right) => left.CompareTo(right) < 0;
+    public static bool operator <(IpAddress left, IpAddress right)
+    {
+        return left.CompareTo(right) < 0;
+    }
 
     /// <summary>Determines whether the left IP address is greater than the right IP address.</summary>
-    public static bool operator >(IpAddress left, IpAddress right) => left.CompareTo(right) > 0;
+    public static bool operator >(IpAddress left, IpAddress right)
+    {
+        return left.CompareTo(right) > 0;
+    }
 
     /// <summary>Determines whether the left IP address is less than or equal to the right IP address.</summary>
-    public static bool operator <=(IpAddress left, IpAddress right) => left.CompareTo(right) <= 0;
+    public static bool operator <=(IpAddress left, IpAddress right)
+    {
+        return left.CompareTo(right) <= 0;
+    }
 
     /// <summary>Determines whether the left IP address is greater than or equal to the right IP address.</summary>
-    public static bool operator >=(IpAddress left, IpAddress right) => left.CompareTo(right) >= 0;
+    public static bool operator >=(IpAddress left, IpAddress right)
+    {
+        return left.CompareTo(right) >= 0;
+    }
 
     #endregion ═══ Comparison Operators                                       ═══
 
     #region ═══ Helpers & Overrides                                        ═══
 
     /// <inheritdoc />
-    public override string ToString() => Value;
+    public override string ToString()
+    {
+        return Value;
+    }
 
     /// <summary>
     /// Explicitly converts an <see cref="IpAddress"/> to its normalized string value.
     /// </summary>
-    public static explicit operator string(IpAddress ip) => ip.Value;
+    public static explicit operator string(IpAddress ip)
+    {
+        return ip.Value;
+    }
 
     #endregion ═══ Helpers & Overrides                                        ═══
 }
