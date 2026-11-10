@@ -12,6 +12,40 @@ public static class ResultExtensions
 {
     #region ═══ Result Extensions                                        ═══
 
+    /// <summary>Returns the success value, or throws a default <see cref="InvalidOperationException"/>.</summary>
+    /// <typeparam name="T">The type of the success value.</typeparam>
+    /// <param name="result">The result to evaluate.</param>
+    /// <returns>The success value.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the result is a failure.</exception>
+    public static T OrThrow<T>(this Result<T> result)
+    {
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        throw new InvalidOperationException(result.Error.ToJson());
+    }
+
+    /// <summary>Returns the success value, or throws a custom exception created by the <paramref name="exceptionFactory"/>.</summary>
+    /// <typeparam name="T">The type of the success value.</typeparam>
+    /// <typeparam name="TException">The type of the custom exception.</typeparam>
+    /// <param name="result">The result to evaluate.</param>
+    /// <param name="exceptionFactory">A factory that receives the JSON-serialized error and returns the custom exception.</param>
+    /// <returns>The success value.</returns>
+    /// <exception cref="Exception">Thrown when the result is a failure.</exception>
+    [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "The generic constraint allows any exception. It is up to the consumer to provide a specific exception.")]
+    public static T OrThrow<T, TException>(this Result<T> result, Func<string, TException> exceptionFactory)
+        where TException : Exception
+    {
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        throw exceptionFactory(result.Error.ToJson());
+    }
+
     /// <summary>Returns the success value, or throws an <see cref="ArgumentException"/>.</summary>
     /// <typeparam name="T">The type of the success value.</typeparam>
     /// <param name="result">The result to evaluate.</param>
@@ -291,198 +325,17 @@ public static class ResultExtensions
         throw new IndexOutOfRangeException(result.Error.ToJson());
     }
 
-    /// <summary>Returns the success value, or throws a custom exception created by the <paramref name="exceptionFactory"/>.</summary>
-    /// <typeparam name="T">The type of the success value.</typeparam>
-    /// <typeparam name="TException">The type of the custom exception.</typeparam>
-    /// <param name="result">The result to evaluate.</param>
-    /// <param name="exceptionFactory">A factory that receives the JSON-serialized error and returns the custom exception.</param>
-    /// <returns>The success value.</returns>
-    /// <exception cref="Exception">Thrown when the result is a failure.</exception>
-    [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "The generic constraint allows any exception. It is up to the consumer to provide a specific exception.")]
-    public static T OrThrowCustomException<T, TException>(this Result<T> result, Func<string, TException> exceptionFactory)
-        where TException : Exception
-    {
-        if (result.IsSuccess)
-        {
-            return result.Value;
-        }
-
-        throw exceptionFactory(result.Error.ToJson());
-    }
-
     #endregion ═══ Result Extensions                                        ═══
 
     #region ═══ Error Extensions                                         ═══
 
-    /// <summary>Throws an <see cref="ArgumentException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <param name="paramName">The name of the parameter that caused the current exception.</param>
-    /// <exception cref="ArgumentException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowArgumentException(this Error error, string? paramName = null)
-    {
-        throw new ArgumentException(error.ToJson(), paramName);
-    }
-
-    /// <summary>Throws an <see cref="ArgumentNullException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <param name="paramName">The name of the parameter that caused the current exception.</param>
-    /// <exception cref="ArgumentNullException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowArgumentNullException(this Error error, string? paramName = null)
-    {
-        throw new ArgumentNullException(paramName, error.ToJson());
-    }
-
-    /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <param name="paramName">The name of the parameter that caused the current exception.</param>
-    /// <exception cref="ArgumentOutOfRangeException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowArgumentOutOfRangeException(this Error error, string? paramName = null)
-    {
-        throw new ArgumentOutOfRangeException(paramName, error.ToJson());
-    }
-
-    /// <summary>Throws a <see cref="FormatException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="FormatException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowFormatException(this Error error)
-    {
-        throw new FormatException(error.ToJson());
-    }
-
-    /// <summary>Throws an <see cref="InvalidOperationException"/>.</summary>
+    /// <summary>Throws a default <see cref="InvalidOperationException"/>.</summary>
     /// <param name="error">The error to serialize.</param>
     /// <exception cref="InvalidOperationException">Always thrown.</exception>
     [DoesNotReturn]
-    public static void OrThrowInvalidOperationException(this Error error)
+    public static void Throw(this Error error)
     {
         throw new InvalidOperationException(error.ToJson());
-    }
-
-    /// <summary>Throws a <see cref="NotSupportedException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="NotSupportedException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowNotSupportedException(this Error error)
-    {
-        throw new NotSupportedException(error.ToJson());
-    }
-
-    /// <summary>Throws a <see cref="NotImplementedException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="NotImplementedException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowNotImplementedException(this Error error)
-    {
-        throw new NotImplementedException(error.ToJson());
-    }
-
-    /// <summary>Throws a <see cref="TimeoutException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="TimeoutException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowTimeoutException(this Error error)
-    {
-        throw new TimeoutException(error.ToJson());
-    }
-
-    /// <summary>Throws a <see cref="KeyNotFoundException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="KeyNotFoundException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowKeyNotFoundException(this Error error)
-    {
-        throw new KeyNotFoundException(error.ToJson());
-    }
-
-    /// <summary>Throws an <see cref="UnauthorizedAccessException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="UnauthorizedAccessException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowUnauthorizedAccessException(this Error error)
-    {
-        throw new UnauthorizedAccessException(error.ToJson());
-    }
-
-    /// <summary>Throws an <see cref="OperationCanceledException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <exception cref="OperationCanceledException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowOperationCanceledException(this Error error, CancellationToken cancellationToken = default)
-    {
-        throw new OperationCanceledException(error.ToJson(), cancellationToken);
-    }
-
-    /// <summary>Throws an <see cref="ObjectDisposedException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <param name="objectName">The name of the disposed object.</param>
-    /// <exception cref="ObjectDisposedException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowObjectDisposedException(this Error error, string? objectName = null)
-    {
-        throw new ObjectDisposedException(objectName, error.ToJson());
-    }
-
-    /// <summary>Throws an <see cref="IOException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="IOException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowIOException(this Error error)
-    {
-        throw new IOException(error.ToJson());
-    }
-
-    /// <summary>Throws a <see cref="PlatformNotSupportedException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="PlatformNotSupportedException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void OrThrowPlatformNotSupportedException(this Error error)
-    {
-        throw new PlatformNotSupportedException(error.ToJson());
-    }
-
-    /// <summary>Throws an <see cref="OverflowException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="OverflowException">Always thrown.</exception>
-    [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "Explicitly requested by the consumer to map domain errors to this specific exception.")]
-    [DoesNotReturn]
-    public static void OrThrowOverflowException(this Error error)
-    {
-        throw new OverflowException(error.ToJson());
-    }
-
-    /// <summary>Throws an <see cref="InvalidCastException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="InvalidCastException">Always thrown.</exception>
-    [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "Explicitly requested by the consumer to map domain errors to this specific exception.")]
-    [DoesNotReturn]
-    public static void OrThrowInvalidCastException(this Error error)
-    {
-        throw new InvalidCastException(error.ToJson());
-    }
-
-    /// <summary>Throws a <see cref="DivideByZeroException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="DivideByZeroException">Always thrown.</exception>
-    [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "Explicitly requested by the consumer to map domain errors to this specific exception.")]
-    [DoesNotReturn]
-    public static void OrThrowDivideByZeroException(this Error error)
-    {
-        throw new DivideByZeroException(error.ToJson());
-    }
-
-    /// <summary>Throws an <see cref="IndexOutOfRangeException"/>.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="IndexOutOfRangeException">Always thrown.</exception>
-    [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "Explicitly requested by the consumer to map domain errors to this specific exception.")]
-    [DoesNotReturn]
-    public static void OrThrowIndexOutOfRangeException(this Error error)
-    {
-        throw new IndexOutOfRangeException(error.ToJson());
     }
 
     /// <summary>Throws a custom exception created by the <paramref name="exceptionFactory"/>.</summary>
@@ -492,10 +345,181 @@ public static class ResultExtensions
     /// <exception cref="Exception">Always thrown.</exception>
     [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "The generic constraint allows any exception. It is up to the consumer to provide a specific exception.")]
     [DoesNotReturn]
-    public static void OrThrowCustomException<TException>(this Error error, Func<string, TException> exceptionFactory)
+    public static void Throw<TException>(this Error error, Func<string, TException> exceptionFactory)
         where TException : Exception
     {
         throw exceptionFactory(error.ToJson());
+    }
+
+    /// <summary>Throws an <see cref="ArgumentException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <param name="paramName">The name of the parameter that caused the current exception.</param>
+    /// <exception cref="ArgumentException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowArgumentException(this Error error, string? paramName = null)
+    {
+        throw new ArgumentException(error.ToJson(), paramName);
+    }
+
+    /// <summary>Throws an <see cref="ArgumentNullException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <param name="paramName">The name of the parameter that caused the current exception.</param>
+    /// <exception cref="ArgumentNullException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowArgumentNullException(this Error error, string? paramName = null)
+    {
+        throw new ArgumentNullException(paramName, error.ToJson());
+    }
+
+    /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <param name="paramName">The name of the parameter that caused the current exception.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowArgumentOutOfRangeException(this Error error, string? paramName = null)
+    {
+        throw new ArgumentOutOfRangeException(paramName, error.ToJson());
+    }
+
+    /// <summary>Throws a <see cref="FormatException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="FormatException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowFormatException(this Error error)
+    {
+        throw new FormatException(error.ToJson());
+    }
+
+    /// <summary>Throws an <see cref="InvalidOperationException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="InvalidOperationException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowInvalidOperationException(this Error error)
+    {
+        throw new InvalidOperationException(error.ToJson());
+    }
+
+    /// <summary>Throws a <see cref="NotSupportedException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="NotSupportedException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowNotSupportedException(this Error error)
+    {
+        throw new NotSupportedException(error.ToJson());
+    }
+
+    /// <summary>Throws a <see cref="NotImplementedException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="NotImplementedException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowNotImplementedException(this Error error)
+    {
+        throw new NotImplementedException(error.ToJson());
+    }
+
+    /// <summary>Throws a <see cref="TimeoutException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="TimeoutException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowTimeoutException(this Error error)
+    {
+        throw new TimeoutException(error.ToJson());
+    }
+
+    /// <summary>Throws a <see cref="KeyNotFoundException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="KeyNotFoundException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowKeyNotFoundException(this Error error)
+    {
+        throw new KeyNotFoundException(error.ToJson());
+    }
+
+    /// <summary>Throws an <see cref="UnauthorizedAccessException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="UnauthorizedAccessException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowUnauthorizedAccessException(this Error error)
+    {
+        throw new UnauthorizedAccessException(error.ToJson());
+    }
+
+    /// <summary>Throws an <see cref="OperationCanceledException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <exception cref="OperationCanceledException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowOperationCanceledException(this Error error, CancellationToken cancellationToken = default)
+    {
+        throw new OperationCanceledException(error.ToJson(), cancellationToken);
+    }
+
+    /// <summary>Throws an <see cref="ObjectDisposedException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <param name="objectName">The name of the disposed object.</param>
+    /// <exception cref="ObjectDisposedException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowObjectDisposedException(this Error error, string? objectName = null)
+    {
+        throw new ObjectDisposedException(objectName, error.ToJson());
+    }
+
+    /// <summary>Throws an <see cref="IOException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="IOException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowIOException(this Error error)
+    {
+        throw new IOException(error.ToJson());
+    }
+
+    /// <summary>Throws a <see cref="PlatformNotSupportedException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="PlatformNotSupportedException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowPlatformNotSupportedException(this Error error)
+    {
+        throw new PlatformNotSupportedException(error.ToJson());
+    }
+
+    /// <summary>Throws an <see cref="OverflowException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="OverflowException">Always thrown.</exception>
+    [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "Explicitly requested by the consumer to map domain errors to this specific exception.")]
+    [DoesNotReturn]
+    public static void ThrowOverflowException(this Error error)
+    {
+        throw new OverflowException(error.ToJson());
+    }
+
+    /// <summary>Throws an <see cref="InvalidCastException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="InvalidCastException">Always thrown.</exception>
+    [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "Explicitly requested by the consumer to map domain errors to this specific exception.")]
+    [DoesNotReturn]
+    public static void ThrowInvalidCastException(this Error error)
+    {
+        throw new InvalidCastException(error.ToJson());
+    }
+
+    /// <summary>Throws a <see cref="DivideByZeroException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="DivideByZeroException">Always thrown.</exception>
+    [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "Explicitly requested by the consumer to map domain errors to this specific exception.")]
+    [DoesNotReturn]
+    public static void ThrowDivideByZeroException(this Error error)
+    {
+        throw new DivideByZeroException(error.ToJson());
+    }
+
+    /// <summary>Throws an <see cref="IndexOutOfRangeException"/>.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="IndexOutOfRangeException">Always thrown.</exception>
+    [SuppressMessage("Design", "CA2201:Do not raise reserved exception types", Justification = "Explicitly requested by the consumer to map domain errors to this specific exception.")]
+    [DoesNotReturn]
+    public static void ThrowIndexOutOfRangeException(this Error error)
+    {
+        throw new IndexOutOfRangeException(error.ToJson());
     }
 
     #endregion ═══ Error Extensions                                         ═══
