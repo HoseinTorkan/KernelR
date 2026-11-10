@@ -1,6 +1,7 @@
 using KernelR.Domain.Enums;
 using KernelR.Patterns;
 using KernelR.Patterns.Results;
+using KernelR.Patterns.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 

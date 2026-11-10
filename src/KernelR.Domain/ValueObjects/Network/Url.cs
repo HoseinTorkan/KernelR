@@ -1,4 +1,5 @@
 using KernelR.Patterns.Results;
+using KernelR.Patterns.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace KernelR.Domain.ValueObjects.Network;

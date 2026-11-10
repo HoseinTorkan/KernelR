@@ -21,6 +21,16 @@ namespace KernelR.Patterns.Results;
 /// <seealso cref="Error"/>
 public enum ErrorType
 {
+    /// <summary>
+    /// Unspecified or unknown error type (default value).
+    /// </summary>
+    /// <remarks>
+    /// This value is essential for scenarios where an <see cref="Error"/> is created 
+    /// without explicitly specifying a type (e.g., during deserialization). 
+    /// It prevents the default value from falling outside the defined enum range.
+    /// </remarks>
+    None = 0,
+
     // ──────────────────────────────────────────────────────────────
     // Validation errors (20–29) → 400 Bad Request
     // ──────────────────────────────────────────────────────────────

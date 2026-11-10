@@ -1,3 +1,4 @@
+using KernelR.Patterns.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace KernelR.Patterns.Results;
@@ -64,7 +65,9 @@ public sealed record Result
     /// </summary>
     /// <returns>A new successful <see cref="Result"/>.</returns>
     public static Result Success()
-        => new(true, null);
+    {
+        return new(true, null);
+    }
 
     /// <summary>
     /// Creates a failed result carrying the specified <paramref name="error"/>.
@@ -78,7 +81,15 @@ public sealed record Result
     /// </exception>
     public static Result Failure(Error error)
     {
-        ArgumentNullException.ThrowIfNull(error);
+        if (error is null)
+        {
+            new Error(
+                    "KernelR.Patterns.Result.NULL_ERROR",
+                    "A failed result must carry a real error; a null error would collapse the success/failure distinction.",
+                    ErrorType.ValidationError)
+                .OrThrowArgumentNullException(nameof(error));
+        }
+
         return new(false, error);
     }
 }
@@ -172,10 +183,11 @@ public sealed record Result<T>
         // value can never be null and default(T) is not null, so the check is a no-op.
         if (value is null && default(T) is null)
         {
-            throw new ArgumentNullException(
-                nameof(value),
-                $"Result<{typeof(T).Name}>.Success requires a non-null value. " +
-                "Use Result.Success() for void operations.");
+            new Error(
+                    "KernelR.Patterns.Result.NULL_VALUE",
+                    $"Result<{typeof(T).Name}>.Success requires a non-null value. Use Result.Success() for void operations.",
+                    ErrorType.ValidationError)
+                .OrThrowArgumentNullException(nameof(value));
         }
 
         return new(value, true, null);
@@ -193,7 +205,15 @@ public sealed record Result<T>
     /// </exception>
     public static Result<T> Failure(Error error)
     {
-        ArgumentNullException.ThrowIfNull(error);
+        if (error is null)
+        {
+            new Error(
+                    "KernelR.Patterns.Result.NULL_ERROR",
+                    "A failed result must carry a real error; a null error would collapse the success/failure distinction.",
+                    ErrorType.ValidationError)
+                .OrThrowArgumentNullException(nameof(error));
+        }
+
         return new(default, false, error);
     }
 }

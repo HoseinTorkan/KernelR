@@ -5,7 +5,7 @@ namespace KernelR.Patterns.Results;
 /// </summary>
 /// <remarks>
 /// An error always contains a code for programmatic identification,
-/// a human-readable text, and a type that indicates its nature.
+/// a human-readable message, and a type that indicates its nature.
 /// <para>
 /// Errors are used in conjunction with <see cref="Result"/> and <see cref="Result{T}"/>
 /// to describe why an operation failed. They replace the need for throwing exceptions
@@ -13,7 +13,7 @@ namespace KernelR.Patterns.Results;
 /// </para>
 /// <para>
 /// An <see cref="Error"/> instance is guaranteed to have non-empty <see cref="Code"/>
-/// and <see cref="Text"/> values; null and whitespace inputs are rejected at construction.
+/// and <see cref="Message"/> values; null and whitespace inputs are rejected at construction.
 /// </para>
 /// </remarks>
 /// <example>
@@ -37,13 +37,13 @@ public sealed record Error
     public string Code { get; }
 
     /// <summary>
-    /// Gets the human-readable text of this error.
+    /// Gets the human-readable message of this error.
     /// </summary>
     /// <remarks>
-    /// The text is intended for display to users or for logging.
+    /// The message is intended for display to users or for logging.
     /// It should be concise and informative.
     /// </remarks>
-    public string Text { get; }
+    public string Message { get; }
 
     /// <summary>
     /// Gets the type of this error, indicating its nature
@@ -58,22 +58,22 @@ public sealed record Error
     /// A stable, machine-readable identifier for the error (e.g. <c>"PRODUCT_NOT_FOUND"</c>).
     /// Must not be <see langword="null"/>, empty, or whitespace.
     /// </param>
-    /// <param name="text">
+    /// <param name="message">
     /// A human-readable description of the error.
     /// Must not be <see langword="null"/>, empty, or whitespace.
     /// </param>
     /// <param name="errorType">The category of the error.</param>
     /// <exception cref="ArgumentException">
-    /// <paramref name="code"/> or <paramref name="text"/> is <see langword="null"/>,
+    /// <paramref name="code"/> or <paramref name="message"/> is <see langword="null"/>,
     /// empty, or whitespace.
     /// </exception>
-    public Error(string code, string text, ErrorType errorType)
+    public Error(string code, string message, ErrorType errorType)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
-        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
 
         Code = code;
-        Text = text;
+        Message = message;
         ErrorType = errorType;
     }
 }

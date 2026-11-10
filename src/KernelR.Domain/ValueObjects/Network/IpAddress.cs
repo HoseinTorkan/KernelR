@@ -1,5 +1,5 @@
-using KernelR.Patterns;
 using KernelR.Patterns.Results;
+using KernelR.Patterns.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
@@ -17,7 +17,6 @@ public readonly record struct IpAddress :
 {
     #region ═══ Constants & Fields                                       ═══
 
-    // Caching the parsed IPAddress for performance in property getters
     private readonly IPAddress _ipAddress;
 
     #endregion ═══ Constants & Fields                                       ═══
@@ -82,6 +81,8 @@ public readonly record struct IpAddress :
     /// <summary>
     /// Creates a new <see cref="IpAddress"/> from the given string.
     /// </summary>
+    /// <param name="value">The raw IP address string.</param>
+    /// <returns>A successful result, or a failure if the string is empty or invalid.</returns>
     public static Result<IpAddress> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -102,7 +103,29 @@ public readonly record struct IpAddress :
                     ErrorType.ValidationError));
         }
 
-        return Result<IpAddress>.Success(new(parsedIp.ToString(), parsedIp));
+        return Result<IpAddress>.Success(new IpAddress(parsedIp.ToString(), parsedIp));
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="IpAddress"/> from a <see cref="System.Net.IPAddress"/> instance.
+    /// </summary>
+    /// <param name="ipAddress">The system IP address to wrap.</param>
+    /// <returns>
+    /// A successful result carrying the new <see cref="IpAddress"/>, or a failure with 
+    /// <c>KernelR.ValueObjects.IpAddress.NULL</c> if the input is <see langword="null"/>.
+    /// </returns>
+    public static Result<IpAddress> Create(IPAddress ipAddress)
+    {
+        if (ipAddress is null)
+        {
+            return Result<IpAddress>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.IpAddress.NULL",
+                    "IP address cannot be null.",
+                    ErrorType.ValidationError));
+        }
+
+        return Result<IpAddress>.Success(new IpAddress(ipAddress.ToString(), ipAddress));
     }
 
     #endregion ═══ Constructors & Factories                                   ═══
@@ -139,21 +162,39 @@ public readonly record struct IpAddress :
     #region ═══ Functional Operations                                      ═══
 
     /// <summary>
+    /// Converts this value object back to a <see cref="System.Net.IPAddress"/> instance.
+    /// </summary>
+    /// <returns>The underlying <see cref="System.Net.IPAddress"/>.</returns>
+    public IPAddress ToSystem()
+    {
+        return _ipAddress;
+    }
+
+    /// <summary>
     /// Converts an IPv4 address to its 32-bit unsigned integer representation.
     /// </summary>
-    /// <returns>The integer representation of the IPv4 address.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the address is IPv6, as it exceeds the size of a 32-bit integer.</exception>
-    public uint ToInteger()
+    /// <returns>
+    /// A successful result carrying the integer representation of the IPv4 address, 
+    /// or a failure with <c>KernelR.ValueObjects.IpAddress.IPV6_TO_INTEGER</c> 
+    /// if the address is IPv6.
+    /// </returns>
+    public Result<uint> ToInteger()
     {
         if (!IsIPv4)
         {
-            throw new InvalidOperationException("Only IPv4 addresses can be converted to a 32-bit integer.");
+            return Result<uint>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.IpAddress.IPV6_TO_INTEGER",
+                    "Only IPv4 addresses can be converted to a 32-bit integer.",
+                    ErrorType.ValidationError));
         }
 
         byte[] bytes = _ipAddress.GetAddressBytes();
 
         // Big-endian conversion (network byte order)
-        return (uint)(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]);
+        uint result = (uint)(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]);
+
+        return Result<uint>.Success(result);
     }
 
     #endregion ═══ Functional Operations                                      ═══
@@ -183,6 +224,10 @@ public readonly record struct IpAddress :
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="obj"/> is not of type <see cref="IpAddress"/>. 
+    /// The exception message contains the JSON-serialized domain <see cref="Error"/>.
+    /// </exception>
     int IComparable.CompareTo(object? obj)
     {
         if (obj is null)
@@ -192,9 +237,11 @@ public readonly record struct IpAddress :
 
         if (obj is not IpAddress other)
         {
-            throw new ArgumentException(
+            new Error(
+                "KernelR.ValueObjects.IpAddress.INVALID_TYPE",
                 $"Object must be of type {nameof(IpAddress)}.",
-                nameof(obj));
+                ErrorType.ValidationError)
+                .ThrowArgumentException(nameof(obj));
         }
 
         return CompareTo(other);
