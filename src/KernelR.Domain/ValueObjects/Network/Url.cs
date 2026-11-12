@@ -43,6 +43,12 @@ public readonly record struct Url :
     IValueObject,
     IParsable<Url>
 {
+    #region ═══ Constants & Fields                                       ═══
+
+    private readonly Uri _uri;
+
+    #endregion ═══ Constants & Fields                                       ═══
+
     #region ═══ Properties                                                 ═══
 
     /// <summary>
@@ -61,11 +67,7 @@ public readonly record struct Url :
     /// Gets the host (domain) component of the URL.
     /// </summary>
     /// <value>The domain name (e.g., "google.com") extracted from the URL.</value>
-    /// <remarks>
-    /// Since the <see cref="Value"/> is guaranteed to be a valid absolute URI (validated in <see cref="Create"/>), 
-    /// this property will never throw an exception.
-    /// </remarks>
-    public string Host => new Uri(Value).Host;
+    public string Host => _uri.Host;
 
     #endregion ═══ Properties                                                 ═══
 
@@ -74,8 +76,13 @@ public readonly record struct Url :
     /// <summary>
     /// Initializes a new instance of the <see cref="Url"/> struct.
     /// </summary>
-    /// <param name="value">The normalized URL.</param>
-    private Url(string value) => Value = value;
+    /// <param name="value">The normalized URL string.</param>
+    /// <param name="uri">The parsed URI object.</param>
+    private Url(string value, Uri uri)
+    {
+        Value = value;
+        _uri = uri;
+    }
 
     /// <summary>
     /// Creates a new <see cref="Url"/> from the given string.
@@ -92,35 +99,59 @@ public readonly record struct Url :
     public static Result<Url> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
             return Result<Url>.Failure(
                 new Error(
                     "KernelR.ValueObjects.Url.EMPTY",
                     "URL cannot be empty.",
                     ErrorType.ValidationError));
-        }
 
         string trimmed = value.Trim();
 
         if (!Uri.TryCreate(trimmed, UriKind.Absolute, out Uri? uri))
-        {
             return Result<Url>.Failure(
                 new Error(
                     "KernelR.ValueObjects.Url.INVALID_FORMAT",
                     "URL is not a valid absolute URI.",
                     ErrorType.ValidationError));
-        }
+
+        return Create(uri);
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="Url"/> from a <see cref="System.Uri"/> instance.
+    /// </summary>
+    /// <param name="uri">The system URI to validate and wrap.</param>
+    /// <returns>
+    /// A successful result carrying the new <see cref="Url"/>, or a failure with one of the following error codes:
+    /// <list type="bullet">
+    ///   <item><description><c>KernelR.ValueObjects.Url.NULL</c> when the input is <see langword="null"/>.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.Url.INVALID_SCHEME</c> when the scheme is not <c>http</c> or <c>https</c>.</description></item>
+    /// </list>
+    /// </returns>
+    public static Result<Url> Create(Uri uri)
+    {
+        if (uri is null)
+            return Result<Url>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.Url.NULL",
+                    "URL cannot be null.",
+                    ErrorType.ValidationError));
+
+        if (!uri.IsAbsoluteUri)
+            return Result<Url>.Failure(
+                new Error(
+                    "KernelR.ValueObjects.Url.INVALID_FORMAT",
+                    "URL is not a valid absolute URI.",
+                    ErrorType.ValidationError));
 
         if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
-        {
             return Result<Url>.Failure(
                 new Error(
                     "KernelR.ValueObjects.Url.INVALID_SCHEME",
                     "URL must use http or https.",
                     ErrorType.ValidationError));
-        }
 
-        return Result<Url>.Success(new Url(uri.AbsoluteUri));
+        return Result<Url>.Success(new Url(uri.AbsoluteUri, uri));
     }
 
     #endregion ═══ Constructors & Factories                                   ═══
@@ -137,10 +168,7 @@ public readonly record struct Url :
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, not a valid absolute URI, 
     /// or uses a scheme other than http/https. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
-    public static Url Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
+    public static Url Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="Url"/> instance.
@@ -152,22 +180,26 @@ public readonly record struct Url :
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Url result)
     {
         result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(s)) return false;
 
         Result<Url> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
+        if (createResult.IsFailure) return false;
 
         result = createResult.Value;
         return true;
     }
 
     #endregion ═══ IParsable Implementation                                   ═══
+
+    #region ═══ Functional Operations                                      ═══
+
+    /// <summary>
+    /// Converts this value object back to a <see cref="System.Uri"/> instance.
+    /// </summary>
+    /// <returns>The underlying <see cref="System.Uri"/>.</returns>
+    public Uri ToSystem() => _uri;
+
+    #endregion ═══ Functional Operations                                      ═══
 
     #region ═══ Helpers & Overrides                                        ═══
 
