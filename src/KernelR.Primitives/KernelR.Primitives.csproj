@@ -1,26 +1,50 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Package Identity                           -->
+    <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <!-- NuGet Metadata -->
         <PackageId>KernelR.Primitives</PackageId>
+        <Title>KernelR Primitives</Title>
         <Version>1.0.0</Version>
-        <Description>
-            Foundational primitives for KernelR. Provides the Result pattern, 
-            Error modeling with strongly-typed categories, and shared JSON 
-            serialization contracts for DDD and clean-architecture applications.
-        </Description>
-        <PackageTags>result;result-pattern;patterns;primitives;ddd;clean-architecture;error-handling;functional</PackageTags>
 
-        <!-- AOT & Trimming Support -->
+        <Description>
+            Foundational primitives for KernelR. Provides the Result pattern,
+            Error modeling with strongly-typed categories, and shared JSON
+            serialization contracts for DDD and clean-architecture applications.
+
+            This package has zero dependencies and is fully compatible with
+            Native AOT and Trimming.
+        </Description>
+
+        <PackageTags>result;result-pattern;patterns;primitives;ddd;clean-architecture;error-handling;functional;aot;trimming</PackageTags>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- AOT & Trimming Support                     -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
         <IsAotCompatible>true</IsAotCompatible>
         <IsTrimmable>true</IsTrimmable>
+    </PropertyGroup>
 
-        <!-- README -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Packing                                    -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
+        <IsPackable>true</IsPackable>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Files Packed into NuGet Package            -->
+    <!-- ═══════════════════════════════════════════ -->
     <ItemGroup>
-        <None Include="..\..\docs\KernelR.Primitives\README.md" Pack="true" PackagePath="README.md" Condition="Exists('..\..\docs\KernelR.Primitives\README.md')" />
+        <!-- README from /docs folder at the repository root -->
+        <None Include="..\..\docs\KernelR.Primitives\README.md"
+              Pack="true"
+              PackagePath="README.md"
+              Condition="Exists('..\..\docs\KernelR.Primitives\README.md')" />
     </ItemGroup>
 
 </Project>

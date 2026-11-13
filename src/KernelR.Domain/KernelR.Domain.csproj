@@ -4,17 +4,9 @@
     <!-- Package Metadata                           -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-        <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
-
-        
-        <!-- Unique identifier for the NuGet package -->
         <PackageId>KernelR.Domain</PackageId>
-
-        <!-- Manually managed semantic version -->
         <Version>1.0.0</Version>
 
-        <!-- Detailed description displayed on NuGet.org -->
         <Description>
             Foundational building blocks for Domain-Driven Design (DDD) and
             Clean Architecture in .NET. Provides a rich set of value objects
@@ -28,47 +20,88 @@
             making it usable in any .NET application (Console, WPF, MAUI, Web API, etc.).
         </Description>
 
-        <!-- Tags to improve discoverability in NuGet search -->
         <PackageTags>ddd;clean-architecture;domain;abstractions;value-objects;strongly-typed-id;auditing;repository;unit-of-work;entities;aggregate-root;marker-interfaces;phone-number;email;money;currency</PackageTags>
 
         <!-- AOT & Trimming Support -->
         <IsAotCompatible>true</IsAotCompatible>
         <IsTrimmable>true</IsTrimmable>
 
-        <!-- Instructs NuGet to use the specified file as the package README -->
+        <!-- README for NuGet -->
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- Files Included in the NuGet Package        -->
+    <!-- Debug Only: Emit Generated Source Files    -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!--
+        In Debug builds, source-generated files are written to disk so they
+        can be inspected and debugged. In Release builds, this is disabled
+        for faster builds and smaller output size.
+    -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Files Packed into NuGet Package            -->
     <!-- ═══════════════════════════════════════════ -->
     <ItemGroup>
-        <!-- 
-            Locates the README file either in the 'docs' folder at the repository root
-            or alongside the .csproj file, and packs it into the root of the NuGet package.
-        -->
-        <None Include="..\..\docs\KernelR.Domain\README.md" Pack="true" PackagePath="README.md" Condition="Exists('..\..\docs\KernelR.Domain\README.md')" />
+        <!-- README from /docs folder at the repository root -->
+        <None Include="..\..\docs\KernelR.Domain\README.md"
+              Pack="true"
+              PackagePath="README.md"
+              Condition="Exists('..\..\docs\KernelR.Domain\README.md')" />
     </ItemGroup>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- Project References                         -->
+    <!-- Runtime Project References                 -->
     <!-- ═══════════════════════════════════════════ -->
     <ItemGroup>
         <ProjectReference Include="..\KernelR.Primitives\KernelR.Primitives.csproj" />
     </ItemGroup>
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Source Generator (Analyzer)                -->
+    <!-- ═══════════════════════════════════════════ -->
     <ItemGroup>
+        <!-- 
+            This reference loads the Source Generator as a Roslyn analyzer.
+            OutputItemType="Analyzer" ensures it runs at compile-time.
+            ReferenceOutputAssembly="false" prevents its DLL from being copied
+            to the consuming project's output folder.
+        -->
         <ProjectReference Include="..\KernelR.Domain.SourceGenerators\KernelR.Domain.SourceGenerators.csproj"
                           OutputItemType="Analyzer"
                           ReferenceOutputAssembly="false" />
     </ItemGroup>
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Include Source Generator in NuGet Package  -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!--
+        Packs the Generator's DLL into the "analyzers/dotnet/cs" folder inside
+        the NuGet package. This is the convention Roslyn uses to locate analyzers.
+    -->
     <ItemGroup>
-        <!-- Include the Source Generator in the NuGet package -->
         <None Include="..\KernelR.Domain.SourceGenerators\bin\$(Configuration)\netstandard2.0\KernelR.Domain.SourceGenerators.dll"
               Pack="true"
               PackagePath="analyzers/dotnet/cs"
               Visible="false" />
     </ItemGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Ensure Generator is Built Before Packing   -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!--
+        Guarantees that the Source Generator is compiled before NuGet packaging.
+        Without this, "dotnet pack" may fail with "File not found" if the
+        Generator hasn't been built manually yet.
+    -->
+    <Target Name="BuildSourceGenerators" BeforeTargets="Pack">
+        <MSBuild Projects="..\KernelR.Domain.SourceGenerators\KernelR.Domain.SourceGenerators.csproj"
+                 Targets="Build"
+                 Properties="Configuration=$(Configuration)" />
+    </Target>
 
 </Project>

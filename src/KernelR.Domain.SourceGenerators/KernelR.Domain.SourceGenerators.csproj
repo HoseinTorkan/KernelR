@@ -1,26 +1,71 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Target Framework & Language                -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!--
+        CRITICAL: Source Generators MUST target netstandard2.0.
+        They run inside the Roslyn compiler process (which is a .NET Framework
+        or .NET Core host, depending on the IDE), and Roslyn only loads analyzers
+        compiled against netstandard2.0. Targeting net8.0 or net10.0 will cause
+        the generator to silently fail to load with error CS8032.
+    -->
     <PropertyGroup>
-        <!-- CRITICAL: Must be netstandard2.0 for Roslyn compatibility -->
         <TargetFramework>netstandard2.0</TargetFramework>
-
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-
-        <IsPackable>false</IsPackable>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
-
-        <!-- Required by Microsoft.CodeAnalysis.Analyzers -->
-        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-        <!-- Suppress release tracking warnings for internal generators -->
-        <NoWarn>$(NoWarn);RS2008</NoWarn>
-
-        <!-- پیش‌فرض ما برای مستندات -->
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Roslyn Analyzer Configuration              -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
+        <!--
+            Tells the SDK this project is a Roslyn analyzer/generator.
+            Enables analyzer-specific SDK behavior (e.g., packing conventions).
+        -->
+        <IsRoslynComponent>true</IsRoslynComponent>
+
+        <!--
+            Extended analyzer rules (CAxxxx) enforce best practices for generators,
+            such as requiring <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+            on consumers of the analyzer API.
+        -->
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
+        <!--
+            This project should not be packaged independently.
+            Its DLL is packed into KernelR.Domain under "analyzers/dotnet/cs".
+        -->
+        <IsPackable>false</IsPackable>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Documentation & Warnings                   -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
+        <!-- Generate XML documentation for the generator's public API -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+        <!-- 
+            RS2008 is a Release Tracking warning from Microsoft.CodeAnalysis.Analyzers
+            that requires AnalyzerReleases.Shipped.md / AnalyzerReleases.Unshipped.md files.
+            It is not applicable for internal generators shipped inside another package.
+        -->
+        <NoWarn>$(NoWarn);RS2008</NoWarn>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Roslyn SDK References                      -->
+    <!-- ═══════════════════════════════════════════ -->
     <ItemGroup>
+        <!--
+            PrivateAssets="all" ensures these dependencies are NOT propagated
+            to the consuming project. The generator uses Roslyn only at
+            compile-time; it must not add Roslyn as a runtime dependency.
+        -->
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
     </ItemGroup>
