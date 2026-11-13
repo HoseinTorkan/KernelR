@@ -1,4 +1,4 @@
-namespace KernelR.Patterns.Results;
+namespace KernelR.Primitives.Results;
 
 /// <summary>
 /// Represents an error that describes the failure of an operation.

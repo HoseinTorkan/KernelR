@@ -5,8 +5,6 @@ namespace KernelR.Domain.Auditing;
 /// </summary>
 public interface IHasDeletionTime
 {
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets the moment when this entity was soft-deleted.
     /// Returns <see langword="null"/> if the entity has not been deleted.
@@ -15,6 +13,4 @@ public interface IHasDeletionTime
     /// Implementations should persist this value in UTC.
     /// </remarks>
     DateTimeOffset? DeletedAt { get; }
-
-    #endregion ═══ Properties                                                 ═══
 }

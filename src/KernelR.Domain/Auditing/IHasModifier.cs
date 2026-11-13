@@ -7,13 +7,9 @@ namespace KernelR.Domain.Auditing;
 public interface IHasModifier<TUserId>
     where TUserId : struct
 {
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets the identifier of the user who last updated this entity.
     /// Returns <see langword="null"/> if the entity has never been modified.
     /// </summary>
     TUserId? UpdatedBy { get; }
-
-    #endregion ═══ Properties                                                 ═══
 }

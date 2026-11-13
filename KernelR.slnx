@@ -1,13 +1,17 @@
 <Solution>
-  <Folder Name="/src/">
+  <Folder Name="/Application/">
     <Project Path="src/KernelR.Application/KernelR.Application.csproj" />
-    <Project Path="src/KernelR.AspNetCore/KernelR.AspNetCore.csproj" />
-    <Project Path="src/KernelR.Domain/KernelR.Domain.csproj" />
-    <Project Path="src/KernelR.Patterns/KernelR.Patterns.csproj" />
   </Folder>
-  <Folder Name="/test/">
+  <Folder Name="/AspNetCore/">
+    <Project Path="src/KernelR.AspNetCore/KernelR.AspNetCore.csproj" />
     <Project Path="test/KernelR.AspNetCore.E2ETests/KernelR.AspNetCore.E2ETests.csproj" />
     <Project Path="test/KernelR.AspNetCore.Tests/KernelR.AspNetCore.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Core/">
+    <Project Path="src/KernelR.Domain/KernelR.Domain.csproj" />
     <Project Path="test/KernelR.Domain.Tests/KernelR.Domain.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Patterns/">
+    <Project Path="src/KernelR.Primitives/KernelR.Primitives.csproj" />
   </Folder>
 </Solution>

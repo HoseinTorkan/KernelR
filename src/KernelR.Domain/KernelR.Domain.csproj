@@ -50,7 +50,7 @@
     <!-- Project References                         -->
     <!-- ═══════════════════════════════════════════ -->
     <ItemGroup>
-        <ProjectReference Include="..\KernelR.Patterns\KernelR.Patterns.csproj" />
+        <ProjectReference Include="..\KernelR.Primitives\KernelR.Primitives.csproj" />
     </ItemGroup>
     
     <ItemGroup>

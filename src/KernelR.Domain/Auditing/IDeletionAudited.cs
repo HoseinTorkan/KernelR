@@ -11,8 +11,6 @@ namespace KernelR.Domain.Auditing;
 public interface IDeletionAudited<TUserId> : IHasDeletionTime, IHasDeleter<TUserId>
     where TUserId : struct
 {
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets a value indicating whether this entity has been soft-deleted.
     /// </summary>
@@ -20,7 +18,5 @@ public interface IDeletionAudited<TUserId> : IHasDeletionTime, IHasDeleter<TUser
     /// Derived from <see cref="IHasDeletionTime.DeletedAt"/>; an entity is considered deleted
     /// if and only if <c>DeletedAt</c> is non-null.
     /// </remarks>
-    bool IsDeleted => DeletedAt is not null;
-
-    #endregion ═══ Properties                                                 ═══
+    bool IsDeleted { get; }
 }

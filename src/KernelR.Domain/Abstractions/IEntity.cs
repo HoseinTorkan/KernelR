@@ -42,8 +42,6 @@ namespace KernelR.Domain.Abstractions;
 public interface IEntity<TId>
     where TId : struct
 {
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets the unique identifier of this entity.
     /// </summary>
@@ -55,6 +53,4 @@ public interface IEntity<TId>
     /// Implementations should set this property only during construction.
     /// </remarks>
     TId Id { get; }
-
-    #endregion ═══ Properties                                                 ═══
 }

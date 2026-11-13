@@ -1,3 +1,5 @@
+using KernelR.Domain.Repositories;
+
 namespace KernelR.Domain.UnitOfWork;
 
 /// <summary>
@@ -22,7 +24,7 @@ namespace KernelR.Domain.UnitOfWork;
 /// share the same unit of work.
 /// </para>
 /// </remarks>
-/// <seealso cref="Repository{TId, TAggregateRoot}"/>
+/// <seealso cref="IRepository{TId, TAggregateRoot}"/>
 /// <seealso cref="IUnitOfWorkTransaction"/>
 public interface IUnitOfWork
 {

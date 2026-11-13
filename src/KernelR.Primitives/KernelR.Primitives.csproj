@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- NuGet Metadata -->
+        <PackageId>KernelR.Primitives</PackageId>
+        <Version>1.0.0</Version>
+        <Description>
+            Foundational primitives for KernelR. Provides the Result pattern, 
+            Error modeling with strongly-typed categories, and shared JSON 
+            serialization contracts for DDD and clean-architecture applications.
+        </Description>
+        <PackageTags>result;result-pattern;patterns;primitives;ddd;clean-architecture;error-handling;functional</PackageTags>
+
+        <!-- AOT & Trimming Support -->
+        <IsAotCompatible>true</IsAotCompatible>
+        <IsTrimmable>true</IsTrimmable>
+
+        <!-- README -->
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\..\docs\KernelR.Primitives\README.md" Pack="true" PackagePath="README.md" Condition="Exists('..\..\docs\KernelR.Primitives\README.md')" />
+    </ItemGroup>
+
+</Project>

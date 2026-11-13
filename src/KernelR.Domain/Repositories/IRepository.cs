@@ -38,8 +38,6 @@ public interface IRepository<TId, TAggregateRoot>
     where TId : struct
     where TAggregateRoot : IAggregateRoot<TId>
 {
-    #region ═══ Query - Single                                           ═══
-
     /// <summary>
     /// Gets the aggregate root with the specified identifier, or
     /// <see langword="null"/> if not found.
@@ -71,10 +69,6 @@ public interface IRepository<TId, TAggregateRoot>
     Task<TAggregateRoot?> FirstOrDefaultAsync(
         Expression<Func<TAggregateRoot, bool>> predicate,
         CancellationToken cancellationToken = default);
-
-    #endregion ═══ Query - Single                                           ═══
-
-    #region ═══ Query - Collection                                       ═══
 
     /// <summary>
     /// Gets all aggregate roots matching the specified predicate.
@@ -108,10 +102,6 @@ public interface IRepository<TId, TAggregateRoot>
     /// </remarks>
     Task<IReadOnlyList<TAggregateRoot>> GetAllAsync(
         CancellationToken cancellationToken = default);
-
-    #endregion ═══ Query - Collection                                       ═══
-
-    #region ═══ Query - Existence & Count                                ═══
 
     /// <summary>
     /// Checks whether any aggregate root matches the specified predicate.
@@ -150,10 +140,6 @@ public interface IRepository<TId, TAggregateRoot>
     Task<int> CountAsync(
         Expression<Func<TAggregateRoot, bool>> predicate,
         CancellationToken cancellationToken = default);
-
-    #endregion ═══ Query - Existence & Count                                ═══
-
-    #region ═══ Commands                                                 ═══
 
     /// <summary>
     /// Adds a new aggregate root to the repository.
@@ -212,6 +198,4 @@ public interface IRepository<TId, TAggregateRoot>
     /// the actual persistence happens in <c>IUnitOfWork.SaveChangesAsync</c>.
     /// </remarks>
     void DeleteRange(IEnumerable<TAggregateRoot> aggregateRoots);
-
-    #endregion ═══ Commands                                                 ═══
 }

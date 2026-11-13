@@ -5,8 +5,6 @@ namespace KernelR.Domain.Auditing;
 /// </summary>
 public interface IHasModificationTime
 {
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets the moment when this entity was last updated.
     /// Returns <see langword="null"/> if the entity has never been modified.
@@ -15,6 +13,4 @@ public interface IHasModificationTime
     /// Implementations should persist this value in UTC.
     /// </remarks>
     DateTimeOffset? UpdatedAt { get; }
-
-    #endregion ═══ Properties                                                 ═══
 }

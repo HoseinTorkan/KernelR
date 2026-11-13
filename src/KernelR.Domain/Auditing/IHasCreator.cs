@@ -7,12 +7,8 @@ namespace KernelR.Domain.Auditing;
 public interface IHasCreator<TUserId>
     where TUserId : struct
 {
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets the identifier of the user who created this entity.
     /// </summary>
     TUserId CreatedBy { get; }
-
-    #endregion ═══ Properties                                                 ═══
 }

@@ -5,8 +5,6 @@ namespace KernelR.Domain.Auditing;
 /// </summary>
 public interface IHasCreationTime
 {
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets the moment when this entity was created.
     /// </summary>
@@ -14,6 +12,4 @@ public interface IHasCreationTime
     /// Implementations should persist this value in UTC.
     /// </remarks>
     DateTimeOffset CreatedAt { get; }
-
-    #endregion ═══ Properties                                                 ═══
 }

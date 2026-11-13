@@ -1,22 +1,11 @@
-namespace KernelR.Patterns.Results;
+namespace KernelR.Primitives.Results;
 
 /// <summary>
 /// Defines the category of an error, indicating its nature.
 /// </summary>
 /// <remarks>
 /// Values are grouped by category and spaced numerically to allow future
-/// additions without renumbering existing members. The grouping is designed
-/// to map directly to HTTP status codes in web layers:
-/// <list type="bullet">
-/// <item><description>10–19: Warnings (reserved; not used by <see cref="Result"/>)</description></item>
-/// <item><description>20–29: Validation errors (400 Bad Request)</description></item>
-/// <item><description>30–39: Resource errors (404 Not Found, 409 Conflict)</description></item>
-/// <item><description>40–49: Authentication and authorization errors</description></item>
-/// <item><description>50–59: Business rule violations (422 Unprocessable Entity)</description></item>
-/// <item><description>60–69: Infrastructure errors (500, 502)</description></item>
-/// <item><description>70–79: Transient errors (408, 409)</description></item>
-/// <item><description>80–99: General errors (500)</description></item>
-/// </list>
+/// additions without renumbering existing members. 
 /// </remarks>
 /// <seealso cref="Error"/>
 public enum ErrorType
@@ -32,7 +21,7 @@ public enum ErrorType
     None = 0,
 
     // ──────────────────────────────────────────────────────────────
-    // Validation errors (20–29) → 400 Bad Request
+    // Validation errors (20–29)
     // ──────────────────────────────────────────────────────────────
 
     /// <summary>The input is not valid.</summary>
@@ -48,7 +37,7 @@ public enum ErrorType
     InvalidFormat = 23,
 
     // ──────────────────────────────────────────────────────────────
-    // Resource errors (30–39) → 404 Not Found, 409 Conflict
+    // Resource errors (30–39)
     // ──────────────────────────────────────────────────────────────
 
     /// <summary>The requested resource was not found.</summary>
@@ -77,7 +66,7 @@ public enum ErrorType
     TooManyAttempts = 43,
 
     // ──────────────────────────────────────────────────────────────
-    // Business rule violations (50–59) → 422 Unprocessable Entity
+    // Business rule violations (50–59)
     // ──────────────────────────────────────────────────────────────
 
     /// <summary>A business rule was violated.</summary>
@@ -96,7 +85,7 @@ public enum ErrorType
     MaximumAmount = 54,
 
     // ──────────────────────────────────────────────────────────────
-    // Infrastructure errors (60–69) → 500, 502
+    // Infrastructure errors (60–69)
     // ──────────────────────────────────────────────────────────────
 
     /// <summary>An infrastructure error occurred.</summary>
@@ -115,7 +104,7 @@ public enum ErrorType
     FileError = 64,
 
     // ──────────────────────────────────────────────────────────────
-    // Transient errors (70–79) → 408 Request Timeout, 409 Conflict
+    // Transient errors (70–79)
     // ──────────────────────────────────────────────────────────────
 
     /// <summary>The operation timed out (caller-side).</summary>
@@ -125,7 +114,7 @@ public enum ErrorType
     Concurrency = 71,
 
     // ──────────────────────────────────────────────────────────────
-    // General errors (80–99) → 500 Internal Server Error
+    // General errors (80–99)
     // ──────────────────────────────────────────────────────────────
 
     /// <summary>An unexpected or uncategorized error occurred.</summary>

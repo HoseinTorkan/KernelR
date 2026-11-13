@@ -28,10 +28,6 @@ namespace KernelR.Domain.Events;
 /// <seealso cref="IDomainEvent"/>
 public abstract record DomainEvent : IDomainEvent
 {
-    #region ═══ Properties                                                 ═══
-
     /// <inheritdoc />
     public DateTimeOffset OccurredOn { get; init; } = DateTimeOffset.UtcNow;
-
-    #endregion ═══ Properties                                                 ═══
 }
