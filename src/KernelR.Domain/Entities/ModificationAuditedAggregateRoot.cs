@@ -1,0 +1,36 @@
+using KernelR.Domain.Auditing;
+
+namespace KernelR.Domain.Entities;
+
+/// <summary>
+/// A base class for aggregate roots that track creation and modification.
+/// </summary>
+/// <typeparam name="TId">The type of the aggregate root's identifier.</typeparam>
+/// <typeparam name="TUserId">The type of the user identifier.</typeparam>
+/// <remarks>
+/// This class extends <see cref="CreationAuditedAggregateRoot{TId, TUserId}"/> with modification
+/// tracking. Use it for mutable aggregate roots that do not need soft-deletion.
+/// For soft-deletion support, use <see cref="FullAuditedAggregateRoot{TId, TUserId}"/>.
+/// </remarks>
+public abstract class ModificationAuditedAggregateRoot<TId, TUserId> : CreationAuditedAggregateRoot<TId, TUserId>, IModificationAudited<TUserId>
+    where TId : struct
+    where TUserId : struct
+{
+    /// <inheritdoc />
+    public DateTimeOffset? UpdatedAt { get; protected set; }
+
+    /// <inheritdoc />
+    public TUserId? UpdatedBy { get; protected set; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ModificationAuditedAggregateRoot{TId, TUserId}"/> class.
+    /// </summary>
+    /// <param name="id">The unique identifier of the aggregate root.</param>
+    protected ModificationAuditedAggregateRoot(TId id) : base(id) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ModificationAuditedAggregateRoot{TId, TUserId}"/> class.
+    /// Required for ORM (e.g., EF Core) to materialize objects from the database.
+    /// </summary>
+    protected ModificationAuditedAggregateRoot() { }
+}

@@ -1,7 +1,6 @@
 using KernelR.Domain.Enums;
-using KernelR.Patterns;
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -42,14 +41,8 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// }
 /// </code>
 /// </example>
-public readonly record struct PhysicalSize :
-    IValueObject,
-    IParsable<PhysicalSize>,
-    IComparable<PhysicalSize>,
-    IComparable
+public readonly record struct PhysicalSize : IValueObject, IParsable<PhysicalSize>, IComparable<PhysicalSize>, IComparable
 {
-    #region ═══ Constants & Fields                                       ═══
-
     /// <summary>
     /// The maximum allowed value before conversion.
     /// </summary>
@@ -59,10 +52,6 @@ public readonly record struct PhysicalSize :
     /// The number of decimal places to round the value to.
     /// </summary>
     private const int Precision = 2;
-
-    #endregion ═══ Constants & Fields                                       ═══
-
-    #region ═══ Properties                                                 ═══
 
     /// <summary>
     /// Gets the numeric value, rounded to two decimal places.
@@ -75,10 +64,6 @@ public readonly record struct PhysicalSize :
     /// </summary>
     /// <value>The <see cref="PhysicalSizeUnit"/> representing the measurement unit.</value>
     public PhysicalSizeUnit Unit { get; }
-
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PhysicalSize"/> struct.
@@ -107,34 +92,27 @@ public readonly record struct PhysicalSize :
     public static Result<PhysicalSize> Create(decimal value, PhysicalSizeUnit unit)
     {
         if (value <= 0)
-        {
-            return Result<PhysicalSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalSize.INVALID_VALUE",
-                    "Physical size value must be greater than zero.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.INVALID_VALUE",
+                "Physical size value must be greater than zero.",
+                ErrorType.ValidationError);
 
         if (value > MaxValue)
-        {
-            return Result<PhysicalSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalSize.TOO_LARGE",
-                    $"Physical size value must not exceed {MaxValue}.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.TOO_LARGE",
+                $"Physical size value must not exceed {MaxValue}.",
+                ErrorType.ValidationError);
 
-        if (!Enum.IsDefined<PhysicalSizeUnit>(unit))
+        if (!Enum.IsDefined(unit))
         {
             string validUnits = string.Join(", ", Enum.GetNames<PhysicalSizeUnit>());
-            return Result<PhysicalSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
-                    $"Physical size unit '{(int)unit}' is not defined. Valid units are: {validUnits}.",
-                    ErrorType.ValidationError));
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
+                $"Physical size unit '{(int)unit}' is not defined. Valid units are: {validUnits}.",
+                ErrorType.ValidationError);
         }
 
-        return Result<PhysicalSize>.Success(new PhysicalSize(value, unit));
+        return new PhysicalSize(value, unit);
     }
 
     /// <summary>
@@ -156,50 +134,36 @@ public readonly record struct PhysicalSize :
     public static Result<PhysicalSize> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
-            return Result<PhysicalSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalSize.EMPTY",
-                    "Physical size cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.EMPTY",
+                "Physical size cannot be empty.",
+                ErrorType.ValidationError);
 
         string[] parts = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 
         if (parts.Length != 2)
-        {
-            return Result<PhysicalSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalSize.INVALID_FORMAT",
-                    "Physical size must be formatted as '<value> <unit>', for example '5 cm'.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.INVALID_FORMAT",
+                "Physical size must be formatted as '<value> <unit>', for example '5 cm'.",
+                ErrorType.ValidationError);
 
         if (!decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount))
-        {
-            return Result<PhysicalSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalSize.INVALID_VALUE",
-                    "Physical size value is not a valid number.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.INVALID_VALUE",
+                "Physical size value is not a valid number.",
+                ErrorType.ValidationError);
 
         if (!TryParseUnit(parts[1], out PhysicalSizeUnit unit))
         {
             string validUnits = string.Join(", ", Enum.GetNames<PhysicalSizeUnit>());
-            return Result<PhysicalSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
-                    $"Physical size unit '{parts[1]}' is not recognized. Valid units are: {validUnits}.",
-                    ErrorType.ValidationError));
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
+                $"Physical size unit '{parts[1]}' is not recognized. Valid units are: {validUnits}.",
+                ErrorType.ValidationError);
         }
 
         return Create(amount, unit);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
 
     /// <summary>
     /// Parses the specified string into a <see cref="PhysicalSize"/> instance.
@@ -211,10 +175,7 @@ public readonly record struct PhysicalSize :
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, not in the form <c>"&lt;value&gt; &lt;unit&gt;"</c>, 
     /// or contains an invalid value or unit. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
-    public static PhysicalSize Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
+    public static PhysicalSize Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="PhysicalSize"/> instance.
@@ -224,52 +185,19 @@ public readonly record struct PhysicalSize :
     /// <param name="result">When this method returns, contains the parsed <see cref="PhysicalSize"/> instance, if the parsing succeeded, or the default value if it failed.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out PhysicalSize result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<PhysicalSize> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Safe Functional Operations (Math & Comparison)              ═══
-
-    // ─── Math Operations (Returns Result) ───
+        => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
     /// Adds the specified physical size to the current size, returning a <see cref="Result{T}"/>.
     /// </summary>
     /// <param name="other">The physical size to add. It will be automatically converted to the current unit.</param>
     /// <returns>
-    /// A successful result carrying the sum, or a failure with <c>KernelR.ValueObjects.PhysicalSize.OVERFLOW</c> 
-    /// if the result exceeds the maximum capacity.
+    /// A successful result carrying the sum.
     /// </returns>
     public Result<PhysicalSize> Add(PhysicalSize other)
     {
-        try
-        {
-            PhysicalSize convertedOther = other.Convert(Unit);
-            return Result<PhysicalSize>.Success(new(Value + convertedOther.Value, Unit));
-        }
-        catch (OverflowException)
-        {
-            return Result<PhysicalSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalSize.OVERFLOW",
-                    "The addition resulted in a value that is too large.",
-                    ErrorType.ValidationError));
-        }
+        PhysicalSize convertedOther = other.Convert(Unit);
+        return new PhysicalSize(Value + convertedOther.Value, Unit);
     }
 
     /// <summary>
@@ -280,163 +208,118 @@ public readonly record struct PhysicalSize :
     /// A successful result carrying the difference, or a failure with one of:
     /// <list type="bullet">
     ///   <item><description><c>KernelR.ValueObjects.PhysicalSize.NEGATIVE_OR_ZERO_RESULT</c> when the subtraction would result in a value less than or equal to zero.</description></item>
-    ///   <item><description><c>KernelR.ValueObjects.PhysicalSize.OVERFLOW</c> when the result exceeds the bounds.</description></item>
     /// </list>
     /// </returns>
     public Result<PhysicalSize> Subtract(PhysicalSize other)
     {
-        try
-        {
-            PhysicalSize convertedOther = other.Convert(Unit);
-            decimal newValue = Value - convertedOther.Value;
+        PhysicalSize convertedOther = other.Convert(Unit);
+        decimal newValue = Value - convertedOther.Value;
 
-            if (newValue <= 0)
-            {
-                return Result<PhysicalSize>.Failure(
-                    new Error(
-                        "KernelR.ValueObjects.PhysicalSize.NEGATIVE_OR_ZERO_RESULT",
-                        "Subtraction resulted in a size that is zero or negative.",
-                        ErrorType.ValidationError));
-            }
-
-            return Result<PhysicalSize>.Success(new(newValue, Unit));
-        }
-        catch (OverflowException)
-        {
-            return Result<PhysicalSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalSize.OVERFLOW",
-                    "The subtraction resulted in a value that is out of bounds.",
-                    ErrorType.ValidationError));
-        }
+        return newValue <= 0
+            ? new Error(
+                "KernelR.ValueObjects.PhysicalSize.NEGATIVE_OR_ZERO_RESULT",
+                "Subtraction resulted in a size that is zero or negative.",
+                ErrorType.ValidationError)
+            : new PhysicalSize(newValue, Unit);
     }
-
-    // ─── Comparison Operations (Returns Result) ───
 
     /// <summary>
     /// Determines whether the current size is greater than the specified size.
     /// </summary>
-    public Result<bool> GreaterThan(PhysicalSize other)
-    {
-        PhysicalSize convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value > convertedOther.Value);
-    }
+    /// <param name="other">The physical size to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> GreaterThan(PhysicalSize other) => Result<bool>.Success(Value > other.Convert(Unit).Value);
 
     /// <summary>
     /// Determines whether the current size is less than the specified size.
     /// </summary>
-    public Result<bool> LessThan(PhysicalSize other)
-    {
-        PhysicalSize convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value < convertedOther.Value);
-    }
+    /// <param name="other">The physical size to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> LessThan(PhysicalSize other) => Result<bool>.Success(Value < other.Convert(Unit).Value);
 
     /// <summary>
     /// Determines whether the current size is greater than or equal to the specified size.
     /// </summary>
-    public Result<bool> GreaterThanOrEqual(PhysicalSize other)
-    {
-        PhysicalSize convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value >= convertedOther.Value);
-    }
+    /// <param name="other">The physical size to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> GreaterThanOrEqual(PhysicalSize other) => Result<bool>.Success(Value >= other.Convert(Unit).Value);
 
     /// <summary>
     /// Determines whether the current size is less than or equal to the specified size.
     /// </summary>
-    public Result<bool> LessThanOrEqual(PhysicalSize other)
-    {
-        PhysicalSize convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value <= convertedOther.Value);
-    }
-
-    #endregion ═══ Safe Functional Operations (Math & Comparison)              ═══
-
-    #region ═══ Arithmetic Operators                                       ═══
+    /// <param name="other">The physical size to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> LessThanOrEqual(PhysicalSize other) => Result<bool>.Success(Value <= other.Convert(Unit).Value);
 
     /// <summary>Adds two physical sizes.</summary>
-    public static PhysicalSize operator +(PhysicalSize left, PhysicalSize right)
-    {
-        return left.Add(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The first physical size.</param>
+    /// <param name="right">The second physical size.</param>
+    /// <returns>The sum of the two physical sizes.</returns>
+    public static PhysicalSize operator +(PhysicalSize left, PhysicalSize right) => left.Add(right).OrThrow();
 
     /// <summary>Subtracts one physical size from another.</summary>
-    public static PhysicalSize operator -(PhysicalSize left, PhysicalSize right)
-    {
-        return left.Subtract(right).OrThrowInvalidOperationException();
-    }
-
-    #endregion ═══ Arithmetic Operators                                       ═══
-
-    #region ═══ Comparison Operators (PhysicalSize vs PhysicalSize)         ═══
+    /// <param name="left">The first physical size.</param>
+    /// <param name="right">The physical size to subtract.</param>
+    /// <returns>The difference between the two physical sizes.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the result is zero or negative.</exception>
+    public static PhysicalSize operator -(PhysicalSize left, PhysicalSize right) => left.Subtract(right).OrThrow();
 
     /// <summary>Determines whether the left size is greater than the right size.</summary>
-    public static bool operator >(PhysicalSize left, PhysicalSize right)
-    {
-        return left.GreaterThan(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >(PhysicalSize left, PhysicalSize right) => left.GreaterThan(right).OrThrow();
 
     /// <summary>Determines whether the left size is less than the right size.</summary>
-    public static bool operator <(PhysicalSize left, PhysicalSize right)
-    {
-        return left.LessThan(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <(PhysicalSize left, PhysicalSize right) => left.LessThan(right).OrThrow();
 
     /// <summary>Determines whether the left size is greater than or equal to the right size.</summary>
-    public static bool operator >=(PhysicalSize left, PhysicalSize right)
-    {
-        return left.GreaterThanOrEqual(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >=(PhysicalSize left, PhysicalSize right) => left.GreaterThanOrEqual(right).OrThrow();
 
     /// <summary>Determines whether the left size is less than or equal to the right size.</summary>
-    public static bool operator <=(PhysicalSize left, PhysicalSize right)
-    {
-        return left.LessThanOrEqual(right).OrThrowInvalidOperationException();
-    }
-
-    #endregion ═══ Comparison Operators (PhysicalSize vs PhysicalSize)         ═══
-
-    #region ═══ IComparable Implementation                                 ═══
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <=(PhysicalSize left, PhysicalSize right) => left.LessThanOrEqual(right).OrThrow();
 
     /// <inheritdoc />
-    public int CompareTo(PhysicalSize other)
-    {
-        PhysicalSize convertedOther = other.Convert(Unit);
-        return Value.CompareTo(convertedOther.Value);
-    }
+    public int CompareTo(PhysicalSize other) => Value.CompareTo(other.Convert(Unit).Value);
 
     /// <inheritdoc />
     int IComparable.CompareTo(object? obj)
     {
-        if (obj is null)
+        return obj switch
         {
-            return 1; // Any instance is greater than null.
-        }
-
-        if (obj is not PhysicalSize other)
-        {
-            throw new ArgumentException($"Object must be of type {nameof(PhysicalSize)}.", nameof(obj));
-        }
-
-        return CompareTo(other);
+            null => 1,
+            PhysicalSize other => CompareTo(other),
+            _ => throw new ArgumentException($"Object must be of type {nameof(PhysicalSize)}.", nameof(obj))
+        };
     }
 
-    #endregion ═══ IComparable Implementation                                 ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
-
     /// <summary>Converts this physical size to millimeters.</summary>
+    /// <returns>A new <see cref="PhysicalSize"/> expressed in millimeters.</returns>
     public PhysicalSize ToMillimeter() => Convert(PhysicalSizeUnit.Millimeter);
 
     /// <summary>Converts this physical size to centimeters.</summary>
+    /// <returns>A new <see cref="PhysicalSize"/> expressed in centimeters.</returns>
     public PhysicalSize ToCentimeter() => Convert(PhysicalSizeUnit.Centimeter);
 
     /// <summary>Converts this physical size to meters.</summary>
+    /// <returns>A new <see cref="PhysicalSize"/> expressed in meters.</returns>
     public PhysicalSize ToMeter() => Convert(PhysicalSizeUnit.Meter);
 
     /// <summary>Converts this physical size to inches.</summary>
+    /// <returns>A new <see cref="PhysicalSize"/> expressed in inches.</returns>
     public PhysicalSize ToInch() => Convert(PhysicalSizeUnit.Inch);
 
     /// <summary>Converts this physical size to feet.</summary>
+    /// <returns>A new <see cref="PhysicalSize"/> expressed in feet.</returns>
     public PhysicalSize ToFoot() => Convert(PhysicalSizeUnit.Foot);
 
     /// <summary>
@@ -447,15 +330,9 @@ public readonly record struct PhysicalSize :
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="target"/> is not a supported unit.</exception>
     private PhysicalSize Convert(PhysicalSizeUnit target)
     {
-        if (Unit == target)
-        {
-            return this;
-        }
-
+        if (Unit == target) return this;
         decimal inMillimeters = Value * ToMillimeterFactor(Unit);
-        decimal result = inMillimeters / ToMillimeterFactor(target);
-
-        return new PhysicalSize(result, target);
+        return new PhysicalSize(inMillimeters / ToMillimeterFactor(target), target);
     }
 
     /// <summary>
@@ -491,10 +368,8 @@ public readonly record struct PhysicalSize :
             case "ft": unit = PhysicalSizeUnit.Foot; return true;
         }
 
-        if (Enum.TryParse(text, ignoreCase: true, out unit) && Enum.IsDefined<PhysicalSizeUnit>(unit))
-        {
+        if (Enum.TryParse(text, ignoreCase: true, out unit) && Enum.IsDefined(unit))
             return true;
-        }
 
         unit = default;
         return false;
@@ -512,6 +387,4 @@ public readonly record struct PhysicalSize :
     /// <param name="size">The physical size instance to convert.</param>
     /// <returns>The string representation of the physical size.</returns>
     public static explicit operator string(PhysicalSize size) => size.ToString();
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }

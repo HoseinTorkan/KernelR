@@ -18,9 +18,11 @@ public static class KernelRJsonOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             PropertyNameCaseInsensitive = false,
-            WriteIndented = false
+            WriteIndented = false,
+            // Link the Source-Generated context for AOT and Trimming safety.
+            TypeInfoResolver = KernelRJsonContext.Default
         };
-        options.Converters.Add(new ErrorJsonConverter());
+
         return options;
     }
 }

@@ -1,5 +1,5 @@
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
@@ -11,23 +11,13 @@ namespace KernelR.Domain.ValueObjects.Network;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This value object encapsulates the standard <see cref="System.Net.IPAddress"/> to keep the
+/// This value object encapsulates the standard <see cref="IPAddress"/> to keep the
 /// domain model free from infrastructure and framework-specific dependencies.
 /// </para>
 /// </remarks>
-public readonly record struct IpAddress :
-    IValueObject,
-    IParsable<IpAddress>,
-    IComparable<IpAddress>,
-    IComparable
+public readonly record struct IpAddress : IValueObject, IParsable<IpAddress>, IComparable<IpAddress>, IComparable
 {
-    #region ═══ Constants & Fields                                       ═══
-
     private readonly IPAddress _ipAddress;
-
-    #endregion ═══ Constants & Fields                                       ═══
-
-    #region ═══ Properties                                                 ═══
 
     /// <summary>
     /// Gets the normalized string representation of the IP address.
@@ -65,13 +55,11 @@ public readonly record struct IpAddress :
         }
     }
 
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
-
     /// <summary>
     /// Initializes a new instance of the <see cref="IpAddress"/> struct.
     /// </summary>
+    /// <param name="value">The normalized string representation.</param>
+    /// <param name="ipAddress">The parsed IP address.</param>
     private IpAddress(string value, IPAddress ipAddress)
     {
         Value = value;
@@ -86,18 +74,10 @@ public readonly record struct IpAddress :
     public static Result<IpAddress> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-            return Result<IpAddress>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.IpAddress.EMPTY",
-                    "IP address cannot be empty.",
-                    ErrorType.ValidationError));
+            return new Error("KernelR.ValueObjects.IpAddress.EMPTY", "IP address cannot be empty.", ErrorType.ValidationError);
 
         if (!IPAddress.TryParse(value.Trim(), out IPAddress? parsedIp))
-            return Result<IpAddress>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.IpAddress.INVALID_FORMAT",
-                    "IP address is not a valid IPv4 or IPv6 format.",
-                    ErrorType.ValidationError));
+            return new Error("KernelR.ValueObjects.IpAddress.INVALID_FORMAT", "IP address is not a valid IPv4 or IPv6 format.", ErrorType.ValidationError);
 
         return Create(parsedIp);
     }
@@ -109,66 +89,30 @@ public readonly record struct IpAddress :
     /// <returns>A successful result, or a failure if the input is null.</returns>
     public static Result<IpAddress> Create(IPAddress ipAddress)
     {
-        if (ipAddress is null)
-            return Result<IpAddress>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.IpAddress.NULL",
-                    "IP address cannot be null.",
-                    ErrorType.ValidationError));
-
-        return Result<IpAddress>.Success(new IpAddress(ipAddress.ToString(), ipAddress));
+        return ipAddress is null
+            ? new Error("KernelR.ValueObjects.IpAddress.NULL", "IP address cannot be null.", ErrorType.ValidationError)
+            : new IpAddress(ipAddress.ToString(), ipAddress);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
 
     /// <inheritdoc />
     public static IpAddress Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <inheritdoc />
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out IpAddress result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s)) return false;
-
-        Result<IpAddress> createResult = Create(s);
-        if (createResult.IsFailure) return false;
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Functional Operations                                      ═══
-
-    /// <summary>
-    /// Converts this value object back to a <see cref="System.Net.IPAddress"/> instance.
-    /// </summary>
-    /// <returns>The underlying <see cref="System.Net.IPAddress"/>.</returns>
-    public IPAddress ToSystem() => _ipAddress;
+        => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
     /// Converts an IPv4 address to its 32-bit unsigned integer representation.
     /// </summary>
-    /// <returns>A successful result carrying the integer representation of the IPv4 address.</returns>
+    /// <returns>A successful result carrying the integer representation of the IPv4 address, or a failure for IPv6.</returns>
     public Result<uint> ToInteger()
     {
         if (!IsIPv4)
-            return Result<uint>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.IpAddress.IPV6_TO_INTEGER",
-                    "Only IPv4 addresses can be converted to a 32-bit integer.",
-                    ErrorType.ValidationError));
+            return new Error("KernelR.ValueObjects.IpAddress.IPV6_TO_INTEGER", "Only IPv4 addresses can be converted to a 32-bit integer.", ErrorType.ValidationError);
 
         byte[] bytes = _ipAddress.GetAddressBytes();
         return Result<uint>.Success((uint)(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]));
     }
-
-    #endregion ═══ Functional Operations                                      ═══
-
-    #region ═══ IComparable Implementation                                 ═══
 
     /// <inheritdoc />
     public int CompareTo(IpAddress other)
@@ -187,54 +131,50 @@ public readonly record struct IpAddress :
     /// <inheritdoc />
     int IComparable.CompareTo(object? obj)
     {
-        if (obj is null) return 1;
-
-        if (obj is IpAddress other) return CompareTo(other);
-
-        new Error(
-            "KernelR.ValueObjects.IpAddress.INVALID_TYPE",
-            $"Object must be of type {nameof(IpAddress)}.",
-            ErrorType.ValidationError)
-            .ThrowArgumentException(nameof(obj));
-
-        return default;
+        return obj switch
+        {
+            null => 1,
+            IpAddress other => CompareTo(other),
+            _ => throw new ArgumentException($"Object must be of type {nameof(IpAddress)}.", nameof(obj))
+        };
     }
 
-    #endregion ═══ IComparable Implementation                                 ═══
-
-    #region ═══ Comparison Operators                                       ═══
-
-    /// <summary>
-    /// Determines whether the left IP address is less than the right IP address.
-    /// </summary>
+    /// <summary>Determines whether the left IP address is less than the right IP address.</summary>
+    /// <param name="left">The left IP address.</param>
+    /// <param name="right">The right IP address.</param>
+    /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
     public static bool operator <(IpAddress left, IpAddress right) => left.CompareTo(right) < 0;
 
-    /// <summary>
-    /// Determines whether the left IP address is greater than the right IP address.
-    /// </summary>
+    /// <summary>Determines whether the left IP address is greater than the right IP address.</summary>
+    /// <param name="left">The left IP address.</param>
+    /// <param name="right">The right IP address.</param>
+    /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
     public static bool operator >(IpAddress left, IpAddress right) => left.CompareTo(right) > 0;
 
-    /// <summary>
-    /// Determines whether the left IP address is less than or equal to the right IP address.
-    /// </summary>
+    /// <summary>Determines whether the left IP address is less than or equal to the right IP address.</summary>
+    /// <param name="left">The left IP address.</param>
+    /// <param name="right">The right IP address.</param>
+    /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
     public static bool operator <=(IpAddress left, IpAddress right) => left.CompareTo(right) <= 0;
 
-    /// <summary>
-    /// Determines whether the left IP address is greater than or equal to the right IP address.
-    /// </summary>
+    /// <summary>Determines whether the left IP address is greater than or equal to the right IP address.</summary>
+    /// <param name="left">The left IP address.</param>
+    /// <param name="right">The right IP address.</param>
+    /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
     public static bool operator >=(IpAddress left, IpAddress right) => left.CompareTo(right) >= 0;
-
-    #endregion ═══ Comparison Operators                                       ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
 
     /// <inheritdoc />
     public override string ToString() => Value;
 
-    /// <summary>
-    /// Explicitly converts an <see cref="IpAddress"/> to its normalized string value.
-    /// </summary>
+    /// <summary>Explicitly converts an <see cref="IpAddress"/> to its normalized string value.</summary>
+    /// <param name="ip">The IP address instance to convert.</param>
+    /// <returns>The normalized string representation of the IP address.</returns>
     public static explicit operator string(IpAddress ip) => ip.Value;
 
-    #endregion ═══ Helpers & Overrides                                        ═══
+    /// <summary>
+    /// Explicitly converts an <see cref="IpAddress"/> to a <see cref="System.Net.IPAddress"/> instance.
+    /// </summary>
+    /// <param name="ip">The IP address value object to convert.</param>
+    /// <returns>The underlying <see cref="System.Net.IPAddress"/>.</returns>
+    public static explicit operator IPAddress(IpAddress ip) => ip._ipAddress;
 }

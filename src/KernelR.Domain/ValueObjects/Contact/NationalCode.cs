@@ -1,6 +1,5 @@
-using KernelR.Patterns;
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
@@ -28,12 +27,8 @@ namespace KernelR.Domain.ValueObjects;
 /// }
 /// </code>
 /// </example>
-public readonly partial record struct NationalCode :
-    IValueObject,
-    IParsable<NationalCode>
+public readonly partial record struct NationalCode : IValueObject, IParsable<NationalCode>
 {
-    #region ═══ Constants & Fields                                       ═══
-
     /// <summary>
     /// The generated regex pattern used to validate the exact 10-digit format.
     /// </summary>
@@ -46,19 +41,11 @@ public readonly partial record struct NationalCode :
     [GeneratedRegex(@"[\s\-]")]
     private static partial Regex Separators();
 
-    #endregion ═══ Constants & Fields                                       ═══
-
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets the normalized national code (10 digits).
     /// </summary>
     /// <value>A string containing the 10-digit national code without separators.</value>
     public string Value { get; }
-
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NationalCode"/> struct.
@@ -91,39 +78,28 @@ public readonly partial record struct NationalCode :
     public static Result<NationalCode> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
-            return Result<NationalCode>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.NationalCode.EMPTY",
-                    "National code cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.NationalCode.EMPTY",
+                "National code cannot be empty.",
+                ErrorType.ValidationError);
 
         string normalized = Separators().Replace(value, string.Empty);
 
         if (!AllowedPattern().IsMatch(normalized))
-        {
-            return Result<NationalCode>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.NationalCode.INVALID_FORMAT",
-                    "National code must be exactly 10 digits.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.NationalCode.INVALID_FORMAT",
+                "National code must be exactly 10 digits.",
+                ErrorType.ValidationError);
 
         if (normalized.All(c => c == normalized[0]))
-        {
-            return Result<NationalCode>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.NationalCode.INVALID_CHECKSUM",
-                    "National code is invalid.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.NationalCode.INVALID_CHECKSUM",
+                "National code is invalid.",
+                ErrorType.ValidationError);
 
         int sum = 0;
         for (int i = 0; i < 9; i++)
-        {
             sum += (normalized[i] - '0') * (10 - i);
-        }
 
         int remainder = sum % 11;
         int checkDigit = normalized[9] - '0';
@@ -133,17 +109,12 @@ public readonly partial record struct NationalCode :
             : checkDigit == 11 - remainder;
 
         return !isValid
-            ? Result<NationalCode>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.NationalCode.INVALID_CHECKSUM",
-                    "National code is invalid.",
-                    ErrorType.ValidationError))
-            : Result<NationalCode>.Success(new NationalCode(normalized));
+            ? new Error(
+                "KernelR.ValueObjects.NationalCode.INVALID_CHECKSUM",
+                "National code is invalid.",
+                ErrorType.ValidationError)
+            : new NationalCode(normalized);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
 
     /// <summary>
     /// Parses the specified string into a <see cref="NationalCode"/> instance.
@@ -156,10 +127,7 @@ public readonly partial record struct NationalCode :
     /// has all-identical digits, or has an invalid checksum. The exception message contains 
     /// the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
-    public static NationalCode Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
+    public static NationalCode Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="NationalCode"/> instance.
@@ -169,26 +137,7 @@ public readonly partial record struct NationalCode :
     /// <param name="result">When this method returns, contains the parsed <see cref="NationalCode"/> instance, if the parsing succeeded, or the default value if it failed.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out NationalCode result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<NationalCode> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
+        => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
     /// Returns the normalized national code as a string.
@@ -202,6 +151,4 @@ public readonly partial record struct NationalCode :
     /// <param name="code">The national code to convert.</param>
     /// <returns>The normalized 10-digit string representation.</returns>
     public static explicit operator string(NationalCode code) => code.Value;
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }

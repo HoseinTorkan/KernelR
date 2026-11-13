@@ -1,6 +1,5 @@
-using KernelR.Patterns;
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
@@ -14,6 +13,11 @@ namespace KernelR.Domain.ValueObjects;
 /// This value object is intended <b>only for human names</b>. It accepts Unicode letters,
 /// the zero-width non-joiner (<c>U+200C</c>, used in Persian names such as
 /// <c>فاطمه‌زهرا</c>), apostrophes, and hyphens. Digits and other symbols are rejected.
+/// </para>
+/// <para>
+/// <b>Normalization:</b> Consecutive whitespace characters (spaces, tabs, etc.) are
+/// collapsed into a single space before validation. The zero-width non-joiner (ZWNJ)
+/// is preserved because it carries meaning in Persian names (e.g., <c>فاطمه‌زهرا</c>).
 /// </para>
 /// <para>
 /// For non-person names (product, category, brand, etc.), do <b>not</b> use this type.
@@ -34,8 +38,6 @@ public readonly partial record struct PersonName :
     IValueObject,
     IParsable<PersonName>
 {
-    #region ═══ Constants & Fields                                           ═══
-
     /// <summary>
     /// The minimum allowed length for a person's name.
     /// </summary>
@@ -53,19 +55,18 @@ public readonly partial record struct PersonName :
     [GeneratedRegex(@"^[\p{L}\u200C'\-]+([\s\u200C][\p{L}\u200C'\-]+)*$")]
     private static partial Regex AllowedPattern();
 
-    #endregion ═══ Constants & Fields                                       ═══
-
-    #region ═══ Properties                                                 ═══
+    /// <summary>
+    /// The generated regex pattern used to collapse consecutive whitespace characters
+    /// into a single space. ZWNJ is intentionally not matched here.
+    /// </summary>
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex WhitespaceCollapser();
 
     /// <summary>
     /// Gets the trimmed name value.
     /// </summary>
     /// <value>A string containing the validated name.</value>
     public string Value { get; }
-
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PersonName"/> struct.
@@ -91,6 +92,7 @@ public readonly partial record struct PersonName :
     /// PersonName.Create("علی");           // → Success
     /// PersonName.Create("فاطمه‌زهرا");    // → Success (ZWNJ allowed)
     /// PersonName.Create("John Doe");      // → Success
+    /// PersonName.Create("John  Doe");     // → Success (collapsed to "John Doe")
     /// PersonName.Create("A");             // → Failure (too short)
     /// PersonName.Create("User123");       // → Failure (digits not allowed)
     /// </code>
@@ -98,49 +100,36 @@ public readonly partial record struct PersonName :
     public static Result<PersonName> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
-            return Result<PersonName>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PersonName.EMPTY",
-                    "Person name cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PersonName.EMPTY",
+                "Person name cannot be empty.",
+                ErrorType.ValidationError);
 
-        string trimmed = value.Trim();
+        // Collapse any run of whitespace (spaces, tabs, etc.) into a single space.
+        // This is crucial for user input where double-spaces are extremely common.
+        // Note: ZWNJ (\u200C) is preserved because it carries meaning in Persian names.
+        string normalized = WhitespaceCollapser().Replace(value.Trim(), " ");
 
-        if (trimmed.Length < MinLength)
-        {
-            return Result<PersonName>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PersonName.TOO_SHORT",
-                    "Person name is too short.",
-                    ErrorType.ValidationError));
-        }
+        if (normalized.Length < MinLength)
+            return new Error(
+                "KernelR.ValueObjects.PersonName.TOO_SHORT",
+                "Person name is too short.",
+                ErrorType.ValidationError);
 
-        if (trimmed.Length > MaxLength)
-        {
-            return Result<PersonName>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PersonName.TOO_LONG",
-                    "Person name is too long.",
-                    ErrorType.ValidationError));
-        }
+        if (normalized.Length > MaxLength)
+            return new Error(
+                "KernelR.ValueObjects.PersonName.TOO_LONG",
+                "Person name is too long.",
+                ErrorType.ValidationError);
 
-        if (!AllowedPattern().IsMatch(trimmed))
-        {
-            return Result<PersonName>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PersonName.INVALID_CHARACTERS",
-                    "Person name contains invalid characters.",
-                    ErrorType.ValidationError));
-        }
+        if (!AllowedPattern().IsMatch(normalized))
+            return new Error(
+                "KernelR.ValueObjects.PersonName.INVALID_CHARACTERS",
+                "Person name contains invalid characters.",
+                ErrorType.ValidationError);
 
-        return Result<PersonName>.Success(new PersonName(trimmed));
+        return new PersonName(normalized);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
 
     /// <summary>
     /// Parses the specified string into a <see cref="PersonName"/> instance.
@@ -152,10 +141,7 @@ public readonly partial record struct PersonName :
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, too short, too long, 
     /// or contains invalid characters. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
-    public static PersonName Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
+    public static PersonName Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="PersonName"/> instance.
@@ -165,26 +151,7 @@ public readonly partial record struct PersonName :
     /// <param name="result">When this method returns, contains the parsed <see cref="PersonName"/> instance, if the parsing succeeded, or the default value if it failed.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out PersonName result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<PersonName> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
+        => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
     /// Returns the name as a string.
@@ -198,6 +165,4 @@ public readonly partial record struct PersonName :
     /// <param name="name">The person name instance to convert.</param>
     /// <returns>The string representation of the name.</returns>
     public static explicit operator string(PersonName name) => name.Value;
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }

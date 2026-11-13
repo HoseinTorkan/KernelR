@@ -1,6 +1,5 @@
-using KernelR.Patterns;
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
@@ -33,12 +32,8 @@ namespace KernelR.Domain.ValueObjects;
 /// }
 /// </code>
 /// </example>
-public readonly partial record struct PhoneNumber :
-    IValueObject,
-    IParsable<PhoneNumber>
+public readonly partial record struct PhoneNumber : IValueObject, IParsable<PhoneNumber>
 {
-    #region ═══ Constants & Fields                                       ═══
-
     /// <summary>
     /// Matches a normalized Iranian mobile number: a leading <c>0</c>, a <c>9</c>, and nine digits.
     /// </summary>
@@ -57,19 +52,11 @@ public readonly partial record struct PhoneNumber :
     [GeneratedRegex(@"^(\+98|0098|98)")]
     private static partial Regex CountryCodePrefix();
 
-    #endregion ═══ Constants & Fields                                       ═══
-
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets the normalized phone number in the format <c>09XXXXXXXXX</c>.
     /// </summary>
     /// <value>A string containing the normalized 11-digit phone number.</value>
     public string Value { get; }
-
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PhoneNumber"/> struct.
@@ -102,28 +89,20 @@ public readonly partial record struct PhoneNumber :
     public static Result<PhoneNumber> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
-            return Result<PhoneNumber>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhoneNumber.EMPTY",
-                    "Phone number cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhoneNumber.EMPTY",
+                "Phone number cannot be empty.",
+                ErrorType.ValidationError);
 
         string normalized = Normalize(value);
 
         return !AllowedPattern().IsMatch(normalized)
-            ? Result<PhoneNumber>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhoneNumber.INVALID_FORMAT",
-                    "Phone number format is invalid.",
-                    ErrorType.ValidationError))
-            : Result<PhoneNumber>.Success(new PhoneNumber(normalized));
+            ? new Error(
+                "KernelR.ValueObjects.PhoneNumber.INVALID_FORMAT",
+                "Phone number format is invalid.",
+                ErrorType.ValidationError)
+            : new PhoneNumber(normalized);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
 
     /// <summary>
     /// Parses the specified string into a <see cref="PhoneNumber"/> instance.
@@ -135,10 +114,7 @@ public readonly partial record struct PhoneNumber :
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, or does not match the expected format. 
     /// The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
-    public static PhoneNumber Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
+    public static PhoneNumber Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="PhoneNumber"/> instance.
@@ -148,26 +124,7 @@ public readonly partial record struct PhoneNumber :
     /// <param name="result">When this method returns, contains the parsed <see cref="PhoneNumber"/> instance, if the parsing succeeded, or the default value if it failed.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out PhoneNumber result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<PhoneNumber> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
+        => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
     /// Normalizes the raw phone number by removing separators and standardizing the country code.
@@ -192,6 +149,4 @@ public readonly partial record struct PhoneNumber :
     /// <param name="phoneNumber">The phone number instance to convert.</param>
     /// <returns>The normalized string representation of the phone number.</returns>
     public static explicit operator string(PhoneNumber phoneNumber) => phoneNumber.Value;
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }

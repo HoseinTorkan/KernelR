@@ -1,6 +1,5 @@
-using KernelR.Patterns;
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
@@ -31,12 +30,8 @@ namespace KernelR.Domain.ValueObjects.Contact;
 /// }
 /// </code>
 /// </example>
-public readonly partial record struct Email :
-    IValueObject,
-    IParsable<Email>
+public readonly partial record struct Email : IValueObject, IParsable<Email>
 {
-    #region ═══ Constants & Fields                                       ═══
-
     /// <summary>
     /// The maximum allowed length for an email address according to RFC 5321.
     /// </summary>
@@ -51,19 +46,11 @@ public readonly partial record struct Email :
         @"([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$")]
     private static partial Regex AllowedPattern();
 
-    #endregion ═══ Constants & Fields                                       ═══
-
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets the normalized (lowercase) string representation of the email address.
     /// </summary>
     /// <value>A string containing the normalized email address.</value>
     public string Value { get; }
-
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Email"/> struct.
@@ -87,40 +74,27 @@ public readonly partial record struct Email :
     public static Result<Email> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
-            return Result<Email>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.Email.EMPTY",
-                    "Email cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.Email.EMPTY",
+                "Email cannot be empty.",
+                ErrorType.ValidationError);
 
         string normalized = value.Trim().ToLowerInvariant();
 
         if (normalized.Length > MaxLength)
-        {
-            return Result<Email>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.Email.TOO_LONG",
-                    "Email is too long.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.Email.TOO_LONG",
+                "Email is too long.",
+                ErrorType.ValidationError);
 
         if (!AllowedPattern().IsMatch(normalized))
-        {
-            return Result<Email>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.Email.INVALID_FORMAT",
-                    "Email format is invalid.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.Email.INVALID_FORMAT",
+                "Email format is invalid.",
+                ErrorType.ValidationError);
 
-        return Result<Email>.Success(new(normalized));
+        return new Email(normalized);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
 
     /// <summary>
     /// Parses the specified string into an <see cref="Email"/> instance.
@@ -132,10 +106,7 @@ public readonly partial record struct Email :
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, too long, or does not match 
     /// the expected email pattern. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
-    public static Email Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
+    public static Email Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into an <see cref="Email"/> instance.
@@ -145,26 +116,7 @@ public readonly partial record struct Email :
     /// <param name="result">When this method returns, contains the parsed <see cref="Email"/> instance, if the parsing succeeded, or the default value if it failed.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Email result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<Email> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
+        => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
     /// Returns the normalized email address as a string.
@@ -178,6 +130,4 @@ public readonly partial record struct Email :
     /// <param name="email">The email instance to convert.</param>
     /// <returns>The normalized string representation of the email.</returns>
     public static explicit operator string(Email email) => email.Value;
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }

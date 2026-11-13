@@ -1,7 +1,6 @@
 using KernelR.Domain.Enums;
-using KernelR.Patterns;
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -42,14 +41,8 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// }
 /// </code>
 /// </example>
-public readonly record struct PhysicalWeight :
-    IValueObject,
-    IParsable<PhysicalWeight>,
-    IComparable<PhysicalWeight>,
-    IComparable
+public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalWeight>, IComparable<PhysicalWeight>, IComparable
 {
-    #region ═══ Constants & Fields                                       ═══
-
     /// <summary>
     /// The maximum allowed value before conversion.
     /// </summary>
@@ -59,10 +52,6 @@ public readonly record struct PhysicalWeight :
     /// The number of decimal places to round the value to.
     /// </summary>
     private const int Precision = 2;
-
-    #endregion ═══ Constants & Fields                                       ═══
-
-    #region ═══ Properties                                                 ═══
 
     /// <summary>
     /// Gets the numeric value, rounded to two decimal places.
@@ -75,10 +64,6 @@ public readonly record struct PhysicalWeight :
     /// </summary>
     /// <value>The <see cref="PhysicalWeightUnit"/> representing the measurement unit.</value>
     public PhysicalWeightUnit Unit { get; }
-
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PhysicalWeight"/> struct.
@@ -107,34 +92,27 @@ public readonly record struct PhysicalWeight :
     public static Result<PhysicalWeight> Create(decimal value, PhysicalWeightUnit unit)
     {
         if (value <= 0)
-        {
-            return Result<PhysicalWeight>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalWeight.INVALID_VALUE",
-                    "Physical weight value must be greater than zero.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.INVALID_VALUE",
+                "Physical weight value must be greater than zero.",
+                ErrorType.ValidationError);
 
         if (value > MaxValue)
-        {
-            return Result<PhysicalWeight>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalWeight.TOO_LARGE",
-                    $"Physical weight value must not exceed {MaxValue}.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.TOO_LARGE",
+                $"Physical weight value must not exceed {MaxValue}.",
+                ErrorType.ValidationError);
 
-        if (!Enum.IsDefined<PhysicalWeightUnit>(unit))
+        if (!Enum.IsDefined(unit))
         {
             string validUnits = string.Join(", ", Enum.GetNames<PhysicalWeightUnit>());
-            return Result<PhysicalWeight>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT",
-                    $"Physical weight unit '{(int)unit}' is not defined. Valid units are: {validUnits}.",
-                    ErrorType.ValidationError));
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT",
+                $"Physical weight unit '{(int)unit}' is not defined. Valid units are: {validUnits}.",
+                ErrorType.ValidationError);
         }
 
-        return Result<PhysicalWeight>.Success(new PhysicalWeight(value, unit));
+        return new PhysicalWeight(value, unit);
     }
 
     /// <summary>
@@ -156,50 +134,36 @@ public readonly record struct PhysicalWeight :
     public static Result<PhysicalWeight> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
-            return Result<PhysicalWeight>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalWeight.EMPTY",
-                    "Physical weight cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.EMPTY",
+                "Physical weight cannot be empty.",
+                ErrorType.ValidationError);
 
         string[] parts = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 
         if (parts.Length != 2)
-        {
-            return Result<PhysicalWeight>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalWeight.INVALID_FORMAT",
-                    "Physical weight must be formatted as '<value> <unit>', for example '2.5 kg'.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.INVALID_FORMAT",
+                "Physical weight must be formatted as '<value> <unit>', for example '2.5 kg'.",
+                ErrorType.ValidationError);
 
         if (!decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount))
-        {
-            return Result<PhysicalWeight>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalWeight.INVALID_VALUE",
-                    "Physical weight value is not a valid number.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.INVALID_VALUE",
+                "Physical weight value is not a valid number.",
+                ErrorType.ValidationError);
 
         if (!TryParseUnit(parts[1], out PhysicalWeightUnit unit))
         {
             string validUnits = string.Join(", ", Enum.GetNames<PhysicalWeightUnit>());
-            return Result<PhysicalWeight>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT",
-                    $"Physical weight unit '{parts[1]}' is not recognized. Valid units are: {validUnits}.",
-                    ErrorType.ValidationError));
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT",
+                $"Physical weight unit '{parts[1]}' is not recognized. Valid units are: {validUnits}.",
+                ErrorType.ValidationError);
         }
 
         return Create(amount, unit);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
 
     /// <summary>
     /// Parses the specified string into a <see cref="PhysicalWeight"/> instance.
@@ -211,10 +175,7 @@ public readonly record struct PhysicalWeight :
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, not in the form <c>"&lt;value&gt; &lt;unit&gt;"</c>, 
     /// or contains an invalid value or unit. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
-    public static PhysicalWeight Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
+    public static PhysicalWeight Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="PhysicalWeight"/> instance.
@@ -224,52 +185,19 @@ public readonly record struct PhysicalWeight :
     /// <param name="result">When this method returns, contains the parsed <see cref="PhysicalWeight"/> instance, if the parsing succeeded, or the default value if it failed.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out PhysicalWeight result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<PhysicalWeight> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Safe Functional Operations (Math & Comparison)              ═══
-
-    // ─── Math Operations (Returns Result) ───
+        => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
     /// Adds the specified physical weight to the current weight, returning a <see cref="Result{T}"/>.
     /// </summary>
     /// <param name="other">The physical weight to add. It will be automatically converted to the current unit.</param>
     /// <returns>
-    /// A successful result carrying the sum, or a failure with <c>KernelR.ValueObjects.PhysicalWeight.OVERFLOW</c> 
-    /// if the result exceeds the maximum capacity.
+    /// A successful result carrying the sum.
     /// </returns>
     public Result<PhysicalWeight> Add(PhysicalWeight other)
     {
-        try
-        {
-            PhysicalWeight convertedOther = other.Convert(Unit);
-            return Result<PhysicalWeight>.Success(new(Value + convertedOther.Value, Unit));
-        }
-        catch (OverflowException)
-        {
-            return Result<PhysicalWeight>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalWeight.OVERFLOW",
-                    "The addition resulted in a value that is too large.",
-                    ErrorType.ValidationError));
-        }
+        PhysicalWeight convertedOther = other.Convert(Unit);
+        return new PhysicalWeight(Value + convertedOther.Value, Unit);
     }
 
     /// <summary>
@@ -280,166 +208,122 @@ public readonly record struct PhysicalWeight :
     /// A successful result carrying the difference, or a failure with one of:
     /// <list type="bullet">
     ///   <item><description><c>KernelR.ValueObjects.PhysicalWeight.NEGATIVE_OR_ZERO_RESULT</c> when the subtraction would result in a value less than or equal to zero.</description></item>
-    ///   <item><description><c>KernelR.ValueObjects.PhysicalWeight.OVERFLOW</c> when the result exceeds the bounds.</description></item>
     /// </list>
     /// </returns>
     public Result<PhysicalWeight> Subtract(PhysicalWeight other)
     {
-        try
-        {
-            PhysicalWeight convertedOther = other.Convert(Unit);
-            decimal newValue = Value - convertedOther.Value;
+        PhysicalWeight convertedOther = other.Convert(Unit);
+        decimal newValue = Value - convertedOther.Value;
 
-            if (newValue <= 0)
-            {
-                return Result<PhysicalWeight>.Failure(
-                    new Error(
-                        "KernelR.ValueObjects.PhysicalWeight.NEGATIVE_OR_ZERO_RESULT",
-                        "Subtraction resulted in a weight that is zero or negative.",
-                        ErrorType.ValidationError));
-            }
-
-            return Result<PhysicalWeight>.Success(new(newValue, Unit));
-        }
-        catch (OverflowException)
-        {
-            return Result<PhysicalWeight>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.PhysicalWeight.OVERFLOW",
-                    "The subtraction resulted in a value that is out of bounds.",
-                    ErrorType.ValidationError));
-        }
+        return newValue <= 0
+            ? new Error(
+                "KernelR.ValueObjects.PhysicalWeight.NEGATIVE_OR_ZERO_RESULT",
+                "Subtraction resulted in a weight that is zero or negative.",
+                ErrorType.ValidationError)
+            : new PhysicalWeight(newValue, Unit);
     }
-
-    // ─── Comparison Operations (Returns Result) ───
 
     /// <summary>
     /// Determines whether the current weight is greater than the specified weight.
     /// </summary>
-    public Result<bool> GreaterThan(PhysicalWeight other)
-    {
-        PhysicalWeight convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value > convertedOther.Value);
-    }
+    /// <param name="other">The physical weight to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> GreaterThan(PhysicalWeight other) => Result<bool>.Success(Value > other.Convert(Unit).Value);
 
     /// <summary>
     /// Determines whether the current weight is less than the specified weight.
     /// </summary>
-    public Result<bool> LessThan(PhysicalWeight other)
-    {
-        PhysicalWeight convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value < convertedOther.Value);
-    }
+    /// <param name="other">The physical weight to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> LessThan(PhysicalWeight other) => Result<bool>.Success(Value < other.Convert(Unit).Value);
 
     /// <summary>
     /// Determines whether the current weight is greater than or equal to the specified weight.
     /// </summary>
-    public Result<bool> GreaterThanOrEqual(PhysicalWeight other)
-    {
-        PhysicalWeight convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value >= convertedOther.Value);
-    }
+    /// <param name="other">The physical weight to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> GreaterThanOrEqual(PhysicalWeight other) => Result<bool>.Success(Value >= other.Convert(Unit).Value);
 
     /// <summary>
     /// Determines whether the current weight is less than or equal to the specified weight.
     /// </summary>
-    public Result<bool> LessThanOrEqual(PhysicalWeight other)
-    {
-        PhysicalWeight convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value <= convertedOther.Value);
-    }
-
-    #endregion ═══ Safe Functional Operations (Math & Comparison)              ═══
-
-    #region ═══ Arithmetic Operators                                       ═══
+    /// <param name="other">The physical weight to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> LessThanOrEqual(PhysicalWeight other) => Result<bool>.Success(Value <= other.Convert(Unit).Value);
 
     /// <summary>Adds two physical weights.</summary>
-    public static PhysicalWeight operator +(PhysicalWeight left, PhysicalWeight right)
-    {
-        return left.Add(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The first physical weight.</param>
+    /// <param name="right">The second physical weight.</param>
+    /// <returns>The sum of the two physical weights.</returns>
+    public static PhysicalWeight operator +(PhysicalWeight left, PhysicalWeight right) => left.Add(right).OrThrow();
 
     /// <summary>Subtracts one physical weight from another.</summary>
-    public static PhysicalWeight operator -(PhysicalWeight left, PhysicalWeight right)
-    {
-        return left.Subtract(right).OrThrowInvalidOperationException();
-    }
-
-    #endregion ═══ Arithmetic Operators                                       ═══
-
-    #region ═══ Comparison Operators (PhysicalWeight vs PhysicalWeight)     ═══
+    /// <param name="left">The first physical weight.</param>
+    /// <param name="right">The physical weight to subtract.</param>
+    /// <returns>The difference between the two physical weights.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the result is zero or negative.</exception>
+    public static PhysicalWeight operator -(PhysicalWeight left, PhysicalWeight right) => left.Subtract(right).OrThrow();
 
     /// <summary>Determines whether the left weight is greater than the right weight.</summary>
-    public static bool operator >(PhysicalWeight left, PhysicalWeight right)
-    {
-        return left.GreaterThan(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The left weight.</param>
+    /// <param name="right">The right weight.</param>
+    /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >(PhysicalWeight left, PhysicalWeight right) => left.GreaterThan(right).OrThrow();
 
     /// <summary>Determines whether the left weight is less than the right weight.</summary>
-    public static bool operator <(PhysicalWeight left, PhysicalWeight right)
-    {
-        return left.LessThan(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The left weight.</param>
+    /// <param name="right">The right weight.</param>
+    /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <(PhysicalWeight left, PhysicalWeight right) => left.LessThan(right).OrThrow();
 
     /// <summary>Determines whether the left weight is greater than or equal to the right weight.</summary>
-    public static bool operator >=(PhysicalWeight left, PhysicalWeight right)
-    {
-        return left.GreaterThanOrEqual(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The left weight.</param>
+    /// <param name="right">The right weight.</param>
+    /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >=(PhysicalWeight left, PhysicalWeight right) => left.GreaterThanOrEqual(right).OrThrow();
 
     /// <summary>Determines whether the left weight is less than or equal to the right weight.</summary>
-    public static bool operator <=(PhysicalWeight left, PhysicalWeight right)
-    {
-        return left.LessThanOrEqual(right).OrThrowInvalidOperationException();
-    }
-
-    #endregion ═══ Comparison Operators (PhysicalWeight vs PhysicalWeight)     ═══
-
-    #region ═══ IComparable Implementation                                 ═══
+    /// <param name="left">The left weight.</param>
+    /// <param name="right">The right weight.</param>
+    /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <=(PhysicalWeight left, PhysicalWeight right) => left.LessThanOrEqual(right).OrThrow();
 
     /// <inheritdoc />
-    public int CompareTo(PhysicalWeight other)
-    {
-        PhysicalWeight convertedOther = other.Convert(Unit);
-        return Value.CompareTo(convertedOther.Value);
-    }
+    public int CompareTo(PhysicalWeight other) => Value.CompareTo(other.Convert(Unit).Value);
 
     /// <inheritdoc />
     int IComparable.CompareTo(object? obj)
     {
-        if (obj is null)
+        return obj switch
         {
-            return 1; // Any instance is greater than null.
-        }
-
-        if (obj is not PhysicalWeight other)
-        {
-            throw new ArgumentException($"Object must be of type {nameof(PhysicalWeight)}.", nameof(obj));
-        }
-
-        return CompareTo(other);
+            null => 1,
+            PhysicalWeight other => CompareTo(other),
+            _ => throw new ArgumentException($"Object must be of type {nameof(PhysicalWeight)}.", nameof(obj)),
+        };
     }
 
-    #endregion ═══ IComparable Implementation                                 ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
-
     /// <summary>Converts this physical weight to milligrams.</summary>
+    /// <returns>A new <see cref="PhysicalWeight"/> expressed in milligrams.</returns>
     public PhysicalWeight ToMilligram() => Convert(PhysicalWeightUnit.Milligram);
 
     /// <summary>Converts this physical weight to grams.</summary>
+    /// <returns>A new <see cref="PhysicalWeight"/> expressed in grams.</returns>
     public PhysicalWeight ToGram() => Convert(PhysicalWeightUnit.Gram);
 
     /// <summary>Converts this physical weight to kilograms.</summary>
+    /// <returns>A new <see cref="PhysicalWeight"/> expressed in kilograms.</returns>
     public PhysicalWeight ToKilogram() => Convert(PhysicalWeightUnit.Kilogram);
 
     /// <summary>Converts this physical weight to tons.</summary>
+    /// <returns>A new <see cref="PhysicalWeight"/> expressed in tons.</returns>
     public PhysicalWeight ToTon() => Convert(PhysicalWeightUnit.Ton);
 
     /// <summary>Converts this physical weight to pounds.</summary>
+    /// <returns>A new <see cref="PhysicalWeight"/> expressed in pounds.</returns>
     public PhysicalWeight ToPound() => Convert(PhysicalWeightUnit.Pound);
 
     /// <summary>Converts this physical weight to ounces.</summary>
+    /// <returns>A new <see cref="PhysicalWeight"/> expressed in ounces.</returns>
     public PhysicalWeight ToOunce() => Convert(PhysicalWeightUnit.Ounce);
 
     /// <summary>
@@ -450,15 +334,9 @@ public readonly record struct PhysicalWeight :
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="target"/> is not a supported unit.</exception>
     private PhysicalWeight Convert(PhysicalWeightUnit target)
     {
-        if (Unit == target)
-        {
-            return this;
-        }
-
+        if (Unit == target) return this;
         decimal inGrams = Value * ToGramFactor(Unit);
-        decimal result = inGrams / ToGramFactor(target);
-
-        return new PhysicalWeight(result, target);
+        return new PhysicalWeight(inGrams / ToGramFactor(target), target);
     }
 
     /// <summary>
@@ -496,10 +374,8 @@ public readonly record struct PhysicalWeight :
             case "oz": unit = PhysicalWeightUnit.Ounce; return true;
         }
 
-        if (Enum.TryParse(text, ignoreCase: true, out unit) && Enum.IsDefined<PhysicalWeightUnit>(unit))
-        {
+        if (Enum.TryParse(text, ignoreCase: true, out unit) && Enum.IsDefined(unit))
             return true;
-        }
 
         unit = default;
         return false;
@@ -517,6 +393,4 @@ public readonly record struct PhysicalWeight :
     /// <param name="weight">The physical weight instance to convert.</param>
     /// <returns>The string representation of the physical weight.</returns>
     public static explicit operator string(PhysicalWeight weight) => weight.ToString();
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }

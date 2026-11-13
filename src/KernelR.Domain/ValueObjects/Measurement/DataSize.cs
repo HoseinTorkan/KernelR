@@ -1,7 +1,6 @@
 using KernelR.Domain.Enums;
-using KernelR.Patterns;
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -47,14 +46,8 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// }
 /// </code>
 /// </example>
-public readonly record struct DataSize :
-    IValueObject,
-    IParsable<DataSize>,
-    IComparable<DataSize>,
-    IComparable
+public readonly record struct DataSize : IValueObject, IParsable<DataSize>, IComparable<DataSize>, IComparable
 {
-    #region ═══ Constants                                                  ═══
-
     /// <summary>
     /// The maximum allowed value before conversion.
     /// </summary>
@@ -64,10 +57,6 @@ public readonly record struct DataSize :
     /// The number of decimal places to round the value to.
     /// </summary>
     private const int Precision = 2;
-
-    #endregion ═══ Constants                                                  ═══
-
-    #region ═══ Properties                                                 ═══
 
     /// <summary>
     /// Gets the numeric value, rounded to two decimal places.
@@ -80,10 +69,6 @@ public readonly record struct DataSize :
     /// </summary>
     /// <value>The <see cref="DataSizeUnit"/> representing the measurement unit.</value>
     public DataSizeUnit Unit { get; }
-
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DataSize"/> struct.
@@ -112,34 +97,27 @@ public readonly record struct DataSize :
     public static Result<DataSize> Create(decimal amount, DataSizeUnit unit)
     {
         if (amount < 0)
-        {
-            return Result<DataSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DataSize.INVALID_AMOUNT",
-                    "Data size cannot be negative.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.DataSize.INVALID_AMOUNT",
+                "Data size cannot be negative.",
+                ErrorType.ValidationError);
 
         if (amount > MaxValue)
-        {
-            return Result<DataSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DataSize.TOO_LARGE",
-                    $"Data size value must not exceed {MaxValue}.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.DataSize.TOO_LARGE",
+                $"Data size value must not exceed {MaxValue}.",
+                ErrorType.ValidationError);
 
-        if (!Enum.IsDefined<DataSizeUnit>(unit))
+        if (!Enum.IsDefined(unit))
         {
             string validUnits = string.Join(", ", Enum.GetNames<DataSizeUnit>());
-            return Result<DataSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DataSize.INVALID_UNIT",
-                    $"Data size unit '{(int)unit}' is not defined. Valid units are: {validUnits}.",
-                    ErrorType.ValidationError));
+            return new Error(
+                "KernelR.ValueObjects.DataSize.INVALID_UNIT",
+                $"Data size unit '{(int)unit}' is not defined. Valid units are: {validUnits}.",
+                ErrorType.ValidationError);
         }
 
-        return Result<DataSize>.Success(new DataSize(amount, unit));
+        return new DataSize(amount, unit);
     }
 
     /// <summary>
@@ -169,42 +147,32 @@ public readonly record struct DataSize :
     public static Result<DataSize> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
-            return Result<DataSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DataSize.EMPTY",
-                    "Data size cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.DataSize.EMPTY",
+                "Data size cannot be empty.",
+                ErrorType.ValidationError);
 
         string[] parts = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 
         if (parts.Length != 2)
-        {
-            return Result<DataSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DataSize.INVALID_FORMAT",
-                    "Data size must be formatted as '<value> <unit>', for example '1.5 GB'.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.DataSize.INVALID_FORMAT",
+                "Data size must be formatted as '<value> <unit>', for example '1.5 GB'.",
+                ErrorType.ValidationError);
 
         if (!decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount))
-        {
-            return Result<DataSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DataSize.INVALID_AMOUNT",
-                    "Data size value is not a valid number.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.DataSize.INVALID_AMOUNT",
+                "Data size value is not a valid number.",
+                ErrorType.ValidationError);
 
         if (!TryParseUnit(parts[1], out DataSizeUnit unit))
         {
             string validUnits = string.Join(", ", Enum.GetNames<DataSizeUnit>());
-            return Result<DataSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DataSize.INVALID_UNIT",
-                    $"Data size unit '{parts[1]}' is not recognized. Valid units are: {validUnits}.",
-                    ErrorType.ValidationError));
+            return new Error(
+                "KernelR.ValueObjects.DataSize.INVALID_UNIT",
+                $"Data size unit '{parts[1]}' is not recognized. Valid units are: {validUnits}.",
+                ErrorType.ValidationError);
         }
 
         return Create(amount, unit);
@@ -217,10 +185,6 @@ public readonly record struct DataSize :
     /// <returns>A <see cref="Result{T}"/> containing a new <see cref="DataSize"/> with a value of zero.</returns>
     public static Result<DataSize> Zero(DataSizeUnit unit) => Create(0m, unit);
 
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
-
     /// <summary>
     /// Parses the specified string into a <see cref="DataSize"/> instance.
     /// </summary>
@@ -231,10 +195,7 @@ public readonly record struct DataSize :
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, not in the form <c>"&lt;value&gt; &lt;unit&gt;"</c>, 
     /// or contains an invalid value or unit. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
-    public static DataSize Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
+    public static DataSize Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="DataSize"/> instance.
@@ -244,52 +205,19 @@ public readonly record struct DataSize :
     /// <param name="result">When this method returns, contains the parsed <see cref="DataSize"/> instance, if the parsing succeeded, or the default value if it failed.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out DataSize result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<DataSize> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Safe Functional Operations (Math & Comparison)           ═══
-
-    // ─── Math Operations (Returns Result) ───
+        => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
     /// Adds the specified data size to the current data size, returning a <see cref="Result{T}"/>.
     /// </summary>
     /// <param name="other">The data size to add. It will be automatically converted to the current unit.</param>
     /// <returns>
-    /// A successful result carrying the sum, or a failure with <c>KernelR.ValueObjects.DataSize.OVERFLOW</c> 
-    /// if the result exceeds the maximum capacity.
+    /// A successful result carrying the sum.
     /// </returns>
     public Result<DataSize> Add(DataSize other)
     {
-        try
-        {
-            DataSize convertedOther = other.Convert(Unit);
-            return Result<DataSize>.Success(new(Value + convertedOther.Value, Unit));
-        }
-        catch (OverflowException)
-        {
-            return Result<DataSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DataSize.OVERFLOW",
-                    "The addition resulted in a value that is too large.",
-                    ErrorType.ValidationError));
-        }
+        DataSize convertedOther = other.Convert(Unit);
+        return new DataSize(Value + convertedOther.Value, Unit);
     }
 
     /// <summary>
@@ -300,183 +228,117 @@ public readonly record struct DataSize :
     /// A successful result carrying the difference, or a failure with one of:
     /// <list type="bullet">
     ///   <item><description><c>KernelR.ValueObjects.DataSize.NEGATIVE_RESULT</c> when the subtraction would result in a negative value.</description></item>
-    ///   <item><description><c>KernelR.ValueObjects.DataSize.OVERFLOW</c> when the result exceeds the bounds.</description></item>
     /// </list>
     /// </returns>
     public Result<DataSize> Subtract(DataSize other)
     {
-        try
-        {
-            DataSize convertedOther = other.Convert(Unit);
-            decimal newValue = Value - convertedOther.Value;
+        DataSize convertedOther = other.Convert(Unit);
+        decimal newValue = Value - convertedOther.Value;
 
-            if (newValue < 0)
-            {
-                return Result<DataSize>.Failure(
-                    new Error(
-                        "KernelR.ValueObjects.DataSize.NEGATIVE_RESULT",
-                        "Subtraction resulted in a negative data size.",
-                        ErrorType.ValidationError));
-            }
-
-            return Result<DataSize>.Success(new(newValue, Unit));
-        }
-        catch (OverflowException)
-        {
-            return Result<DataSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DataSize.OVERFLOW",
-                    "The subtraction resulted in a value that is out of bounds.",
-                    ErrorType.ValidationError));
-        }
+        return newValue < 0
+            ? new Error(
+                "KernelR.ValueObjects.DataSize.NEGATIVE_RESULT",
+                "Subtraction resulted in a negative data size.",
+                ErrorType.ValidationError)
+            : new DataSize(newValue, Unit);
     }
-
-    // ─── Comparison Operations (Returns Result) ───
 
     /// <summary>
     /// Determines whether the current data size is greater than the specified data size.
     /// </summary>
-    public Result<bool> GreaterThan(DataSize other)
-    {
-        DataSize convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value > convertedOther.Value);
-    }
+    /// <param name="other">The data size to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> GreaterThan(DataSize other) => Result<bool>.Success(Value > other.Convert(Unit).Value);
 
     /// <summary>
     /// Determines whether the current data size is less than the specified data size.
     /// </summary>
-    public Result<bool> LessThan(DataSize other)
-    {
-        DataSize convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value < convertedOther.Value);
-    }
+    /// <param name="other">The data size to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> LessThan(DataSize other) => Result<bool>.Success(Value < other.Convert(Unit).Value);
 
     /// <summary>
     /// Determines whether the current data size is greater than or equal to the specified data size.
     /// </summary>
-    public Result<bool> GreaterThanOrEqual(DataSize other)
-    {
-        DataSize convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value >= convertedOther.Value);
-    }
+    /// <param name="other">The data size to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> GreaterThanOrEqual(DataSize other) => Result<bool>.Success(Value >= other.Convert(Unit).Value);
 
     /// <summary>
     /// Determines whether the current data size is less than or equal to the specified data size.
     /// </summary>
-    public Result<bool> LessThanOrEqual(DataSize other)
-    {
-        DataSize convertedOther = other.Convert(Unit);
-        return Result<bool>.Success(Value <= convertedOther.Value);
-    }
+    /// <param name="other">The data size to compare.</param>
+    /// <returns>A successful result carrying the comparison result.</returns>
+    public Result<bool> LessThanOrEqual(DataSize other) => Result<bool>.Success(Value <= other.Convert(Unit).Value);
 
-    #endregion ═══ Safe Functional Operations (Math & Comparison)              ═══
+    /// <summary>Adds two data sizes.</summary>
+    /// <param name="left">The first data size.</param>
+    /// <param name="right">The second data size.</param>
+    /// <returns>The sum of the two data sizes.</returns>
+    public static DataSize operator +(DataSize left, DataSize right) => left.Add(right).OrThrow();
 
-    #region ═══ Arithmetic Operators                                       ═══
-
-    /// <summary>
-    /// Adds two data sizes.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown when the addition overflows. The message contains JSON-serialized <see cref="Error"/>.</exception>
-    public static DataSize operator +(DataSize left, DataSize right)
-    {
-        return left.Add(right).OrThrowInvalidOperationException();
-    }
-
-    /// <summary>
-    /// Subtracts one data size from another.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown when the result is negative or overflows. The message contains JSON-serialized <see cref="Error"/>.</exception>
-    public static DataSize operator -(DataSize left, DataSize right)
-    {
-        return left.Subtract(right).OrThrowInvalidOperationException();
-    }
-
-    #endregion ═══ Arithmetic Operators                                       ═══
-
-    #region ═══ Comparison Operators (DataSize vs DataSize)                  ═══
+    /// <summary>Subtracts one data size from another.</summary>
+    /// <param name="left">The first data size.</param>
+    /// <param name="right">The data size to subtract.</param>
+    /// <returns>The difference between the two data sizes.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the result is negative.</exception>
+    public static DataSize operator -(DataSize left, DataSize right) => left.Subtract(right).OrThrow();
 
     /// <summary>Determines whether the left size is greater than the right size.</summary>
-    public static bool operator >(DataSize left, DataSize right)
-    {
-        return left.GreaterThan(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >(DataSize left, DataSize right) => left.GreaterThan(right).OrThrow();
 
     /// <summary>Determines whether the left size is less than the right size.</summary>
-    public static bool operator <(DataSize left, DataSize right)
-    {
-        return left.LessThan(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <(DataSize left, DataSize right) => left.LessThan(right).OrThrow();
 
     /// <summary>Determines whether the left size is greater than or equal to the right size.</summary>
-    public static bool operator >=(DataSize left, DataSize right)
-    {
-        return left.GreaterThanOrEqual(right).OrThrowInvalidOperationException();
-    }
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >=(DataSize left, DataSize right) => left.GreaterThanOrEqual(right).OrThrow();
 
     /// <summary>Determines whether the left size is less than or equal to the right size.</summary>
-    public static bool operator <=(DataSize left, DataSize right)
-    {
-        return left.LessThanOrEqual(right).OrThrowInvalidOperationException();
-    }
-
-    #endregion ═══ Comparison Operators (DataSize vs DataSize)                 ═══
-
-    #region ═══ IComparable Implementation                                 ═══
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <=(DataSize left, DataSize right) => left.LessThanOrEqual(right).OrThrow();
 
     /// <inheritdoc />
-    public int CompareTo(DataSize other)
-    {
-        DataSize convertedOther = other.Convert(Unit);
-        return Value.CompareTo(convertedOther.Value);
-    }
+    public int CompareTo(DataSize other) => Value.CompareTo(other.Convert(Unit).Value);
 
     /// <inheritdoc />
     int IComparable.CompareTo(object? obj)
     {
-        if (obj is null)
+        return obj switch
         {
-            return 1; // Any instance is greater than null.
-        }
-
-        if (obj is not DataSize other)
-        {
-            throw new ArgumentException($"Object must be of type {nameof(DataSize)}.", nameof(obj));
-        }
-
-        return CompareTo(other);
+            null => 1,
+            DataSize other => CompareTo(other),
+            _ => throw new ArgumentException($"Object must be of type {nameof(DataSize)}.", nameof(obj))
+        };
     }
 
-    #endregion ═══ IComparable Implementation                                 ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
-
-    /// <summary>
-    /// Converts this data size to bytes.
-    /// </summary>
+    /// <summary>Converts this data size to bytes.</summary>
     /// <returns>A new <see cref="DataSize"/> expressed in bytes.</returns>
     public DataSize ToByte() => Convert(DataSizeUnit.Byte);
 
-    /// <summary>
-    /// Converts this data size to kilobytes.
-    /// </summary>
+    /// <summary>Converts this data size to kilobytes.</summary>
     /// <returns>A new <see cref="DataSize"/> expressed in kilobytes.</returns>
     public DataSize ToKilobyte() => Convert(DataSizeUnit.Kilobyte);
 
-    /// <summary>
-    /// Converts this data size to megabytes.
-    /// </summary>
+    /// <summary>Converts this data size to megabytes.</summary>
     /// <returns>A new <see cref="DataSize"/> expressed in megabytes.</returns>
     public DataSize ToMegabyte() => Convert(DataSizeUnit.Megabyte);
 
-    /// <summary>
-    /// Converts this data size to gigabytes.
-    /// </summary>
+    /// <summary>Converts this data size to gigabytes.</summary>
     /// <returns>A new <see cref="DataSize"/> expressed in gigabytes.</returns>
     public DataSize ToGigabyte() => Convert(DataSizeUnit.Gigabyte);
 
-    /// <summary>
-    /// Converts this data size to terabytes.
-    /// </summary>
+    /// <summary>Converts this data size to terabytes.</summary>
     /// <returns>A new <see cref="DataSize"/> expressed in terabytes.</returns>
     public DataSize ToTerabyte() => Convert(DataSizeUnit.Terabyte);
 
@@ -488,15 +350,9 @@ public readonly record struct DataSize :
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="target"/> is not a supported unit.</exception>
     private DataSize Convert(DataSizeUnit target)
     {
-        if (Unit == target)
-        {
-            return this;
-        }
-
+        if (Unit == target) return this;
         decimal inBytes = Value * ToByteFactor(Unit);
-        decimal result = inBytes / ToByteFactor(target);
-
-        return new DataSize(result, target);
+        return new DataSize(inBytes / ToByteFactor(target), target);
     }
 
     /// <summary>
@@ -532,10 +388,8 @@ public readonly record struct DataSize :
             case "TB": unit = DataSizeUnit.Terabyte; return true;
         }
 
-        if (Enum.TryParse(text, ignoreCase: true, out unit) && Enum.IsDefined<DataSizeUnit>(unit))
-        {
+        if (Enum.TryParse(text, ignoreCase: true, out unit) && Enum.IsDefined(unit))
             return true;
-        }
 
         unit = default;
         return false;
@@ -553,6 +407,4 @@ public readonly record struct DataSize :
     /// <param name="size">The data size instance to convert.</param>
     /// <returns>The string representation of the data size.</returns>
     public static explicit operator string(DataSize size) => size.ToString();
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }

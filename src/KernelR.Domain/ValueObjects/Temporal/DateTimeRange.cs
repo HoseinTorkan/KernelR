@@ -1,5 +1,5 @@
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -9,9 +9,11 @@ namespace KernelR.Domain.ValueObjects.Temporal;
 /// Represents a contiguous range of time with a start and an end.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This value object guarantees that the <see cref="Start"/> is always less than or equal to 
 /// the <see cref="End"/>. It provides useful operations like checking if a specific date/time 
 /// is within the range, or if two ranges overlap.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -24,17 +26,11 @@ namespace KernelR.Domain.ValueObjects.Temporal;
 /// </example>
 public readonly record struct DateTimeRange : IValueObject, IParsable<DateTimeRange>
 {
-    #region ═══ Constants & Fields                                          ═══
-
     /// <summary>
     /// The character used to separate the start and end of the time range in string representations.
     /// Follows the ISO 8601 interval standard.
     /// </summary>
     private const char RangeSeparator = '/';
-
-    #endregion ═══ Constants & Fields                                       ═══
-
-    #region ═══ Properties                                                 ═══
 
     /// <summary>
     /// Gets the start of the time range.
@@ -51,13 +47,11 @@ public readonly record struct DateTimeRange : IValueObject, IParsable<DateTimeRa
     /// </summary>
     public TimeSpan Duration => End - Start;
 
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
-
     /// <summary>
     /// Initializes a new instance of the <see cref="DateTimeRange"/> struct.
     /// </summary>
+    /// <param name="start">The start of the range.</param>
+    /// <param name="end">The end of the range.</param>
     private DateTimeRange(DateTimeOffset start, DateTimeOffset end)
     {
         Start = start;
@@ -75,16 +69,12 @@ public readonly record struct DateTimeRange : IValueObject, IParsable<DateTimeRa
     /// </returns>
     public static Result<DateTimeRange> Create(DateTimeOffset start, DateTimeOffset end)
     {
-        if (start > end)
-        {
-            return Result<DateTimeRange>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DateTimeRange.INVALID_RANGE",
-                    "The start of the range must be before or equal to the end.",
-                    ErrorType.ValidationError));
-        }
-
-        return Result<DateTimeRange>.Success(new DateTimeRange(start, end));
+        return start > end
+            ? new Error(
+                "KernelR.ValueObjects.DateTimeRange.INVALID_RANGE",
+                "The start of the range must be before or equal to the end.",
+                ErrorType.ValidationError)
+            : new DateTimeRange(start, end);
     }
 
     /// <summary>
@@ -103,41 +93,28 @@ public readonly record struct DateTimeRange : IValueObject, IParsable<DateTimeRa
     public static Result<DateTimeRange> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
-            return Result<DateTimeRange>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DateTimeRange.EMPTY",
-                    "DateTimeRange cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.DateTimeRange.EMPTY",
+                "DateTimeRange cannot be empty.",
+                ErrorType.ValidationError);
 
         string[] parts = value.Split(RangeSeparator, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
         if (parts.Length != 2)
-        {
-            return Result<DateTimeRange>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DateTimeRange.INVALID_FORMAT",
-                    "DateTimeRange must be formatted as '<start>/<end>', for example '2023-10-01T00:00:00Z/2023-10-31T23:59:59Z'.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.DateTimeRange.INVALID_FORMAT",
+                "DateTimeRange must be formatted as '<start>/<end>', for example '2023-10-01T00:00:00Z/2023-10-31T23:59:59Z'.",
+                ErrorType.ValidationError);
 
         if (!DateTimeOffset.TryParse(parts[0], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset start) ||
             !DateTimeOffset.TryParse(parts[1], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset end))
-        {
-            return Result<DateTimeRange>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DateTimeRange.INVALID_FORMAT",
-                    "The start or end date is not a valid ISO 8601 date-time string.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.DateTimeRange.INVALID_FORMAT",
+                "The start or end date is not a valid ISO 8601 date-time string.",
+                ErrorType.ValidationError);
 
         return Create(start, end);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
 
     /// <summary>
     /// Parses the specified string into a <see cref="DateTimeRange"/> instance.
@@ -148,10 +125,7 @@ public readonly record struct DateTimeRange : IValueObject, IParsable<DateTimeRa
     /// <exception cref="FormatException">
     /// Thrown when <paramref name="s"/> is invalid. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
-    public static DateTimeRange Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
+    public static DateTimeRange Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="DateTimeRange"/> instance.
@@ -161,26 +135,7 @@ public readonly record struct DateTimeRange : IValueObject, IParsable<DateTimeRa
     /// <param name="result">When this method returns, contains the parsed <see cref="DateTimeRange"/> instance, if the parsing succeeded, or the default value if it failed.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out DateTimeRange result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<DateTimeRange> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Functional Operations                                      ═══
+        => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
     /// Determines whether the specified date and time falls within this range.
@@ -207,13 +162,10 @@ public readonly record struct DateTimeRange : IValueObject, IParsable<DateTimeRa
     public Result<DateTimeRange> IntersectionWith(DateTimeRange other)
     {
         if (!OverlapsWith(other))
-        {
-            return Result<DateTimeRange>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.DateTimeRange.NO_OVERLAP",
-                    "The two time ranges do not overlap.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.DateTimeRange.NO_OVERLAP",
+                "The two time ranges do not overlap.",
+                ErrorType.ValidationError);
 
         DateTimeOffset newStart = Start > other.Start ? Start : other.Start;
         DateTimeOffset newEnd = End < other.End ? End : other.End;
@@ -226,20 +178,11 @@ public readonly record struct DateTimeRange : IValueObject, IParsable<DateTimeRa
     /// </summary>
     /// <param name="shift">The duration to shift the range by (e.g., 1 day, 2 hours).</param>
     /// <returns>A new <see cref="DateTimeRange"/> shifted by the specified duration.</returns>
-    public DateTimeRange Shift(TimeSpan shift)
-    {
-        return new DateTimeRange(Start.Add(shift), End.Add(shift));
-    }
-
-    #endregion ═══ Functional Operations                                      ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
+    public DateTimeRange Shift(TimeSpan shift) => new(Start.Add(shift), End.Add(shift));
 
     /// <summary>
     /// Returns a string representation of the range in ISO 8601 interval format.
     /// </summary>
     /// <returns>A string formatted as <c>"&lt;Start&gt;/&lt;End&gt;"</c>.</returns>
     public override string ToString() => $"{Start:O}/{End:O}";
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }

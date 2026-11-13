@@ -1,9 +1,25 @@
-namespace KernelR.Domain.Abstractions;
+using KernelR.Domain.Abstractions;
+using System.Runtime.CompilerServices;
+
+namespace KernelR.Domain.Entities;
 
 /// <summary>
 /// A base class for all entities, providing identity and equality based on the identifier.
 /// </summary>
 /// <typeparam name="TId">The type of the entity's identifier.</typeparam>
+/// <remarks>
+/// <para>
+/// Equality is based on <see cref="Id"/> when the entity has been persisted (i.e., its
+/// identifier is not the default value). Two transient entities (both with a default
+/// identifier) are considered equal only if they are the same instance.
+/// </para>
+/// <para>
+/// <b>Important:</b> This class assumes that <c>default(TId)</c> is never a valid identity.
+/// This is true for <see cref="Guid"/>, but for <see cref="int"/> or <see cref="long"/>
+/// identifiers, it means <c>0</c> cannot be used as a primary key. This is the standard
+/// convention in DDD and is also enforced by most ORMs.
+/// </para>
+/// </remarks>
 public abstract class BaseEntity<TId> : IEntity<TId>, IEquatable<BaseEntity<TId>>
     where TId : struct
 {
@@ -29,6 +45,11 @@ public abstract class BaseEntity<TId> : IEntity<TId>, IEquatable<BaseEntity<TId>
         if (ReferenceEquals(this, other)) return true;
         if (GetType() != other.GetType()) return false;
 
+        // If either entity is transient (no identity yet), they are equal only by reference
+        // (which is already handled by ReferenceEquals above).
+        if (IsTransient(this) || IsTransient(other))
+            return false;
+
         return EqualityComparer<TId>.Default.Equals(Id, other.Id);
     }
 
@@ -36,7 +57,13 @@ public abstract class BaseEntity<TId> : IEntity<TId>, IEquatable<BaseEntity<TId>
     public override bool Equals(object? obj) => obj is BaseEntity<TId> entity && Equals(entity);
 
     /// <inheritdoc />
-    public override int GetHashCode() => HashCode.Combine(GetType(), Id);
+    public override int GetHashCode()
+    {
+        // Transient entities must be hashed by reference to keep Equals/GetHashCode consistent.
+        return IsTransient(this)
+            ? RuntimeHelpers.GetHashCode(this)
+            : HashCode.Combine(GetType(), Id);
+    }
 
     /// <summary>
     /// Determines whether two entity instances are equal.
@@ -53,4 +80,12 @@ public abstract class BaseEntity<TId> : IEntity<TId>, IEquatable<BaseEntity<TId>
     /// <param name="right">The second entity to compare.</param>
     /// <returns><see langword="true"/> if the entities are not equal; otherwise, <see langword="false"/>.</returns>
     public static bool operator !=(BaseEntity<TId>? left, BaseEntity<TId>? right) => !Equals(left, right);
+
+    /// <summary>
+    /// Determines whether the entity has not yet been persisted (i.e., its identifier is the default value).
+    /// </summary>
+    /// <param name="entity">The entity to check.</param>
+    /// <returns><see langword="true"/> if the entity is transient; otherwise, <see langword="false"/>.</returns>
+    private static bool IsTransient(BaseEntity<TId> entity) =>
+        EqualityComparer<TId>.Default.Equals(entity.Id, default!);
 }

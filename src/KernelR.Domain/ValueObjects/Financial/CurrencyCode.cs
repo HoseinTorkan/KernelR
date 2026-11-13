@@ -1,6 +1,5 @@
-using KernelR.Patterns;
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace KernelR.Domain.ValueObjects.Financial;
@@ -34,12 +33,8 @@ namespace KernelR.Domain.ValueObjects.Financial;
 /// }
 /// </code>
 /// </example>
-public readonly record struct CurrencyCode :
-    IValueObject,
-    IParsable<CurrencyCode>
+public readonly record struct CurrencyCode : IValueObject, IParsable<CurrencyCode>
 {
-    #region ═══ Constants & Fields                                       ═══
-
     /// <summary>
     /// A set of all valid ISO 4217 currency codes (plus IRT).
     /// Using a HashSet ensures O(1) lookup performance.
@@ -62,23 +57,14 @@ public readonly record struct CurrencyCode :
         "SOS", "SRD", "SSP", "STN", "SVC", "SYP", "SZL", "THB", "TJS", "TMT",
         "TND", "TOP", "TRY", "TTD", "TWD", "TZS", "UAH", "UGX", "USD", "USN",
         "UYI", "UYU", "UYW", "UZS", "VED", "VES", "VND", "VUV", "WST", "XAF",
-        "XCD", "XOF", "XPF", "YER", "ZAR", "ZMW", "ZWL",
-        "IRT"
+        "XCD", "XOF", "XPF", "YER", "ZAR", "ZMW", "ZWL", "IRT"
     };
-
-    #endregion ═══ Constants & Fields                                       ═══
-
-    #region ═══ Properties                                                 ═══
 
     /// <summary>
     /// Gets the uppercase 3-letter currency code.
     /// </summary>
     /// <value>A string containing the valid currency code (e.g., "USD", "IRR").</value>
     public string Value { get; }
-
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CurrencyCode"/> struct.
@@ -102,31 +88,20 @@ public readonly record struct CurrencyCode :
     public static Result<CurrencyCode> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
-            return Result<CurrencyCode>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.CurrencyCode.EMPTY",
-                    "Currency code cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.CurrencyCode.EMPTY",
+                "Currency code cannot be empty.",
+                ErrorType.ValidationError);
 
         string normalized = value.Trim().ToUpperInvariant();
 
-        if (!ValidCodes.Contains(normalized))
-        {
-            return Result<CurrencyCode>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.CurrencyCode.INVALID",
-                    "Currency code is not a valid ISO 4217 code.",
-                    ErrorType.ValidationError));
-        }
-
-        return Result<CurrencyCode>.Success(new CurrencyCode(normalized));
+        return !ValidCodes.Contains(normalized)
+            ? new Error(
+                "KernelR.ValueObjects.CurrencyCode.INVALID",
+                "Currency code is not a valid ISO 4217 code.",
+                ErrorType.ValidationError)
+            : new CurrencyCode(normalized);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
 
     /// <summary>
     /// Parses the specified string into a <see cref="CurrencyCode"/> instance.
@@ -138,10 +113,7 @@ public readonly record struct CurrencyCode :
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, or not a recognized ISO 4217 code. 
     /// The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
-    public static CurrencyCode Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
+    public static CurrencyCode Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="CurrencyCode"/> instance.
@@ -151,26 +123,7 @@ public readonly record struct CurrencyCode :
     /// <param name="result">When this method returns, contains the parsed <see cref="CurrencyCode"/> instance, if the parsing succeeded, or the default value if it failed.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CurrencyCode result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<CurrencyCode> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
+        => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
     /// Returns the currency code as a string.
@@ -184,6 +137,4 @@ public readonly record struct CurrencyCode :
     /// <param name="code">The currency code to convert.</param>
     /// <returns>The 3-letter currency code string.</returns>
     public static explicit operator string(CurrencyCode code) => code.Value;
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }

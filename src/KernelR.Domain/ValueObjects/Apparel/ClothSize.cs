@@ -1,7 +1,6 @@
 using KernelR.Domain.Enums;
-using KernelR.Patterns;
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace KernelR.Domain.ValueObjects.Apparel;
@@ -29,23 +28,13 @@ namespace KernelR.Domain.ValueObjects.Apparel;
 /// }
 /// </code>
 /// </example>
-public readonly record struct ClothSize :
-    IValueObject,
-    IParsable<ClothSize>,
-    IComparable<ClothSize>,
-    IComparable
+public readonly record struct ClothSize : IValueObject, IParsable<ClothSize>, IComparable<ClothSize>, IComparable
 {
-    #region ═══ Properties                                                 ═══
-
     /// <summary>
     /// Gets the underlying enum value representing the clothing size.
     /// </summary>
     /// <value>The <see cref="ClothSizeType"/> representing the size (e.g., Medium, Large).</value>
     public ClothSizeType Value { get; }
-
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Constructors & Factories                                   ═══
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ClothSize"/> struct.
@@ -63,16 +52,12 @@ public readonly record struct ClothSize :
     /// </returns>
     public static Result<ClothSize> Create(ClothSizeType value)
     {
-        if (!Enum.IsDefined<ClothSizeType>(value))
-        {
-            return Result<ClothSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.ClothSize.INVALID",
-                    $"Cloth size type '{(int)value}' is not defined.",
-                    ErrorType.ValidationError));
-        }
-
-        return Result<ClothSize>.Success(new ClothSize(value));
+        return !Enum.IsDefined(value)
+            ? new Error(
+                "KernelR.ValueObjects.ClothSize.INVALID",
+                $"Cloth size type '{(int)value}' is not defined.",
+                ErrorType.ValidationError)
+            : new ClothSize(value);
     }
 
     /// <summary>
@@ -96,13 +81,10 @@ public readonly record struct ClothSize :
     public static Result<ClothSize> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-        {
-            return Result<ClothSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.ClothSize.EMPTY",
-                    "Cloth size cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.ClothSize.EMPTY",
+                "Cloth size cannot be empty.",
+                ErrorType.ValidationError);
 
         string normalized = value.Trim().ToUpperInvariant();
 
@@ -118,108 +100,58 @@ public readonly record struct ClothSize :
             _ => null
         };
 
-        if (type is null)
-        {
-            return Result<ClothSize>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.ClothSize.INVALID",
-                    "Cloth size is not recognized.",
-                    ErrorType.ValidationError));
-        }
-
-        return Result<ClothSize>.Success(new ClothSize(type.Value));
+        return type is null
+            ? new Error(
+                "KernelR.ValueObjects.ClothSize.INVALID",
+                "Cloth size is not recognized.",
+                ErrorType.ValidationError)
+            : new ClothSize(type.Value);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
-
-    /// <summary>
-    /// Parses the specified string into a <see cref="ClothSize"/> instance.
-    /// </summary>
-    public static ClothSize Parse(string s, IFormatProvider? provider)
-    {
-        return Create(s).OrThrowFormatException();
-    }
-
-    /// <summary>
-    /// Attempts to parse the specified string into a <see cref="ClothSize"/> instance.
-    /// </summary>
-    public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out ClothSize result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<ClothSize> createResult = Create(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Comparison Operators                                       ═══
-
-    /// <summary>Determines whether the left size is smaller than the right size (e.g., S &lt; M).</summary>
-    public static bool operator <(ClothSize left, ClothSize right)
-    {
-        return left.CompareTo(right) < 0;
-    }
-
-    /// <summary>Determines whether the left size is larger than the right size (e.g., L &gt; M).</summary>
-    public static bool operator >(ClothSize left, ClothSize right)
-    {
-        return left.CompareTo(right) > 0;
-    }
-
-    /// <summary>Determines whether the left size is smaller than or equal to the right size.</summary>
-    public static bool operator <=(ClothSize left, ClothSize right)
-    {
-        return left.CompareTo(right) <= 0;
-    }
-
-    /// <summary>Determines whether the left size is larger than or equal to the right size.</summary>
-    public static bool operator >=(ClothSize left, ClothSize right)
-    {
-        return left.CompareTo(right) >= 0;
-    }
-
-    #endregion ═══ Comparison Operators                                       ═══
-
-    #region ═══ IComparable Implementation                                 ═══
 
     /// <inheritdoc />
-    public int CompareTo(ClothSize other)
-    {
-        return Value.CompareTo(other.Value);
-    }
+    public static ClothSize Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
+
+    /// <inheritdoc />
+    public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out ClothSize result)
+        => Create(s ?? string.Empty).TryGetValue(out result);
+
+    /// <summary>Determines whether the left size is smaller than the right size (e.g., S &lt; M).</summary>
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is smaller; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <(ClothSize left, ClothSize right) => left.CompareTo(right) < 0;
+
+    /// <summary>Determines whether the left size is larger than the right size (e.g., L &gt; M).</summary>
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is larger; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >(ClothSize left, ClothSize right) => left.CompareTo(right) > 0;
+
+    /// <summary>Determines whether the left size is smaller than or equal to the right size.</summary>
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is smaller or equal; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <=(ClothSize left, ClothSize right) => left.CompareTo(right) <= 0;
+
+    /// <summary>Determines whether the left size is larger than or equal to the right size.</summary>
+    /// <param name="left">The left size.</param>
+    /// <param name="right">The right size.</param>
+    /// <returns><see langword="true"/> if left is larger or equal; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >=(ClothSize left, ClothSize right) => left.CompareTo(right) >= 0;
+
+    /// <inheritdoc />
+    public int CompareTo(ClothSize other) => Value.CompareTo(other.Value);
 
     /// <inheritdoc />
     int IComparable.CompareTo(object? obj)
     {
-        if (obj is null)
+        return obj switch
         {
-            return 1; // Any instance is greater than null.
-        }
-
-        if (obj is not ClothSize other)
-        {
-            throw new ArgumentException($"Object must be of type {nameof(ClothSize)}.", nameof(obj));
-        }
-
-        return CompareTo(other);
+            null => 1,
+            ClothSize other => CompareTo(other),
+            _ => throw new ArgumentException($"Object must be of type {nameof(ClothSize)}.", nameof(obj))
+        };
     }
-
-    #endregion ═══ IComparable Implementation                                 ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
 
     /// <summary>
     /// Returns the standard abbreviation for the clothing size.
@@ -243,6 +175,4 @@ public readonly record struct ClothSize :
     /// <param name="size">The clothing size instance to convert.</param>
     /// <returns>The standard abbreviation of the clothing size.</returns>
     public static explicit operator string(ClothSize size) => size.ToString();
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }

@@ -1,6 +1,7 @@
+using KernelR.Domain.Abstractions;
 using KernelR.Domain.Events;
 
-namespace KernelR.Domain.Abstractions;
+namespace KernelR.Domain.Entities;
 
 /// <summary>
 /// A base class for all aggregate roots, providing identity and domain event management.

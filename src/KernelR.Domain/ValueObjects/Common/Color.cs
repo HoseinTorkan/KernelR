@@ -1,6 +1,5 @@
-using KernelR.Patterns;
-using KernelR.Patterns.Results;
-using KernelR.Patterns.Results.Extensions;
+using KernelR.Primitives.Results;
+using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -26,21 +25,13 @@ namespace KernelR.Domain.ValueObjects.Common;
 /// }
 /// </code>
 /// </example>
-public readonly partial record struct Color :
-    IValueObject,
-    IParsable<Color>
+public readonly partial record struct Color : IValueObject, IParsable<Color>
 {
-    #region ═══ Constants & Fields                                           ═══
-
     /// <summary>
     /// The regex pattern used to validate standard 6-digit (RGB) and 8-digit (ARGB) hex colors.
     /// </summary>
     [GeneratedRegex(@"^#(?:[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$")]
     private static partial Regex HexPattern();
-
-    #endregion ═══ Constants & Fields                                       ═══
-
-    #region ═══ Properties                                                 ═══
 
     /// <summary>Gets the alpha component (0 = fully transparent, 255 = fully opaque).</summary>
     public byte A { get; }
@@ -70,10 +61,6 @@ public readonly partial record struct Color :
     /// <summary>Gets a value indicating whether the color is considered dark.</summary>
     public bool IsDark => Brightness < 0.5;
 
-    #endregion ═══ Properties                                                 ═══
-
-    #region ═══ Predefined Colors                                          ═══
-
     /// <summary>Gets a fully transparent color.</summary>
     public static Color Transparent => new(0, 0, 0, 0);
 
@@ -92,10 +79,6 @@ public readonly partial record struct Color :
     /// <summary>Gets the pure blue color.</summary>
     public static Color Blue => new(255, 0, 0, 255);
 
-    #endregion ═══ Predefined Colors                                          ═══
-
-    #region ═══ Constructors & Factories                                   ═══
-
     /// <summary>Initializes a new instance of the <see cref="Color"/> struct.</summary>
     private Color(byte a, byte r, byte g, byte b)
     {
@@ -106,37 +89,43 @@ public readonly partial record struct Color :
     }
 
     /// <summary>Creates a color from ARGB components.</summary>
+    /// <param name="a">The alpha component.</param>
+    /// <param name="r">The red component.</param>
+    /// <param name="g">The green component.</param>
+    /// <param name="b">The blue component.</param>
+    /// <returns>A new <see cref="Color"/> instance.</returns>
     public static Color FromArgb(byte a, byte r, byte g, byte b) => new(a, r, g, b);
 
     /// <summary>Creates an opaque color from RGB components (Alpha is set to 255).</summary>
+    /// <param name="r">The red component.</param>
+    /// <param name="g">The green component.</param>
+    /// <param name="b">The blue component.</param>
+    /// <returns>A new <see cref="Color"/> instance.</returns>
     public static Color FromRgb(byte r, byte g, byte b) => new(255, r, g, b);
 
     /// <summary>Creates a new <see cref="Color"/> from an HSL color representation.</summary>
     /// <param name="hsl">The HSL color to convert.</param>
+    /// <returns>A new <see cref="Color"/> instance.</returns>
     public static Color FromHsl(HslColor hsl) => hsl.ToColor();
 
     /// <summary>Creates a new <see cref="Color"/> from a hex string.</summary>
+    /// <param name="hex">The hex string (e.g., "#FF5733" or "#80FF5733").</param>
+    /// <returns>A successful result carrying the color, or a failure if the hex string is invalid.</returns>
     public static Result<Color> FromHex(string hex)
     {
         if (string.IsNullOrWhiteSpace(hex))
-        {
-            return Result<Color>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.Color.EMPTY",
-                    "Color cannot be empty.",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.Color.EMPTY",
+                "Color cannot be empty.",
+                ErrorType.ValidationError);
 
         string normalized = hex.Trim().ToUpperInvariant();
 
         if (!HexPattern().IsMatch(normalized))
-        {
-            return Result<Color>.Failure(
-                new Error(
-                    "KernelR.ValueObjects.Color.INVALID_FORMAT",
-                    "Color must be a valid hex string (e.g., #FF5733 or #80FF5733).",
-                    ErrorType.ValidationError));
-        }
+            return new Error(
+                "KernelR.ValueObjects.Color.INVALID_FORMAT",
+                "Color must be a valid hex string (e.g., #FF5733 or #80FF5733).",
+                ErrorType.ValidationError);
 
         byte a = 255;
         int offset = 1;
@@ -151,52 +140,37 @@ public readonly partial record struct Color :
         byte g = byte.Parse(normalized.AsSpan(offset + 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
         byte b = byte.Parse(normalized.AsSpan(offset + 4, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 
-        return Result<Color>.Success(new Color(a, r, g, b));
+        return new Color(a, r, g, b);
     }
-
-    #endregion ═══ Constructors & Factories                                   ═══
-
-    #region ═══ IParsable Implementation                                   ═══
 
     /// <summary>Parses the specified string into a <see cref="Color"/> instance.</summary>
-    public static Color Parse(string s, IFormatProvider? provider)
-    {
-        return FromHex(s).OrThrowFormatException();
-    }
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <returns>A <see cref="Color"/> instance representing the parsed value.</returns>
+    /// <exception cref="FormatException">Thrown when <paramref name="s"/> is not a valid hex color.</exception>
+    public static Color Parse(string s, IFormatProvider? provider) => FromHex(s).OrThrowFormatException();
 
     /// <summary>Attempts to parse the specified string into a <see cref="Color"/> instance.</summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <param name="result">When this method returns, contains the parsed <see cref="Color"/> instance, if the parsing succeeded, or the default value if it failed.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Color result)
-    {
-        result = default;
-        if (string.IsNullOrWhiteSpace(s))
-        {
-            return false;
-        }
-
-        Result<Color> createResult = FromHex(s);
-        if (createResult.IsFailure)
-        {
-            return false;
-        }
-
-        result = createResult.Value;
-        return true;
-    }
-
-    #endregion ═══ IParsable Implementation                                   ═══
-
-    #region ═══ Functional Operations                                      ═══
+        => FromHex(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>Returns a new color with the specified alpha component.</summary>
+    /// <param name="alpha">The alpha component (0 to 255).</param>
+    /// <returns>A new <see cref="Color"/> with the specified alpha.</returns>
     public Color WithAlpha(byte alpha) => new(alpha, R, G, B);
 
     /// <summary>Returns a lighter version of the current color.</summary>
+    /// <param name="amount">The amount to lighten (0.0 to 1.0).</param>
+    /// <returns>A new, lighter <see cref="Color"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="amount"/> is outside 0.0 to 1.0.</exception>
     public Color Lighten(double amount)
     {
         if (amount is < 0 or > 1)
-        {
             throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be between 0.0 and 1.0.");
-        }
 
         return new Color(
             A,
@@ -206,12 +180,13 @@ public readonly partial record struct Color :
     }
 
     /// <summary>Returns a darker version of the current color.</summary>
+    /// <param name="amount">The amount to darken (0.0 to 1.0).</param>
+    /// <returns>A new, darker <see cref="Color"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="amount"/> is outside 0.0 to 1.0.</exception>
     public Color Darken(double amount)
     {
         if (amount is < 0 or > 1)
-        {
             throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be between 0.0 and 1.0.");
-        }
 
         return new Color(
             A,
@@ -221,20 +196,19 @@ public readonly partial record struct Color :
     }
 
     /// <summary>Returns the inverted version of the current color.</summary>
+    /// <returns>A new <see cref="Color"/> with inverted RGB values.</returns>
     public Color Invert() => new(A, (byte)(255 - R), (byte)(255 - G), (byte)(255 - B));
-
-    #endregion ═══ Functional Operations                                      ═══
-
-    #region ═══ Conversions                                                ═══
 
     /// <summary>
     /// Converts the color to a standard CSS-like RGB string format (e.g., <c>rgb(255, 87, 51)</c>).
     /// </summary>
+    /// <returns>The RGB string representation.</returns>
     public string ToRgbString() => $"rgb({R}, {G}, {B})";
 
     /// <summary>
     /// Converts the color to a standard CSS-like RGBA string format (e.g., <c>rgba(255, 87, 51, 0.5)</c>).
     /// </summary>
+    /// <returns>The RGBA string representation.</returns>
     public string ToRgbaString()
     {
         double alpha = Math.Round(A / 255.0, 2);
@@ -244,6 +218,7 @@ public readonly partial record struct Color :
     /// <summary>
     /// Converts the color to its HSL (Hue, Saturation, Lightness) representation.
     /// </summary>
+    /// <returns>A new <see cref="HslColor"/> instance representing the same color in HSL space.</returns>
     public HslColor ToHsl()
     {
         double r = R / 255.0;
@@ -255,41 +230,32 @@ public readonly partial record struct Color :
         double delta = max - min;
 
         double h = 0;
-        double s;
         double l = (max + min) / 2.0;
 
-        if (delta == 0)
-        {
-            s = 0;
-        }
-        else
-        {
-            s = l > 0.5 ? delta / (2.0 - max - min) : delta / (max + min);
+        double s = delta == 0
+            ? 0
+            : l > 0.5 ? delta / (2.0 - max - min) : delta / (max + min);
 
-            if (max == r)
-            {
-                h = (g - b) / delta + (g < b ? 6 : 0);
-            }
-            else
-            {
-                h = max == g ? (b - r) / delta + 2 : (r - g) / delta + 4;
-            }
+        if (delta != 0)
+        {
+            h = max == r
+                ? (g - b) / delta + (g < b ? 6 : 0)
+                : max == g
+                    ? (b - r) / delta + 2
+                    : (r - g) / delta + 4;
 
             h /= 6;
         }
 
-        return HslColor.Create(h * 360, s * 100, l * 100).Value;
+        return HslColor.Create(h * 360, s * 100, l * 100).OrThrow();
     }
 
-    #endregion ═══ Conversions                                                ═══
-
-    #region ═══ Helpers & Overrides                                        ═══
-
     /// <summary>Returns the color as a normalized hex string.</summary>
+    /// <returns>The hex string representation.</returns>
     public override string ToString() => Hex;
 
     /// <summary>Explicitly converts a <see cref="Color"/> to its normalized hex string.</summary>
+    /// <param name="color">The color instance to convert.</param>
+    /// <returns>The normalized hex string.</returns>
     public static explicit operator string(Color color) => color.Hex;
-
-    #endregion ═══ Helpers & Overrides                                        ═══
 }
