@@ -4,6 +4,10 @@
     <!-- Package Metadata                           -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+
+        
         <!-- Unique identifier for the NuGet package -->
         <PackageId>KernelR.Domain</PackageId>
 
@@ -51,6 +55,20 @@
     <!-- ═══════════════════════════════════════════ -->
     <ItemGroup>
         <ProjectReference Include="..\KernelR.Primitives\KernelR.Primitives.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\KernelR.Domain.SourceGenerators\KernelR.Domain.SourceGenerators.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Include the Source Generator in the NuGet package -->
+        <None Include="..\KernelR.Domain.SourceGenerators\bin\$(Configuration)\netstandard2.0\KernelR.Domain.SourceGenerators.dll"
+              Pack="true"
+              PackagePath="analyzers/dotnet/cs"
+              Visible="false" />
     </ItemGroup>
 
 </Project>

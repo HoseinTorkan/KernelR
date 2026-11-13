@@ -8,6 +8,7 @@
     <Project Path="test/KernelR.AspNetCore.Tests/KernelR.AspNetCore.Tests.csproj" />
   </Folder>
   <Folder Name="/Core/">
+    <Project Path="src/KernelR.Domain.SourceGenerators/KernelR.Domain.SourceGenerators.csproj" Id="83253a60-61c9-46c3-aeba-a4759e67050d" />
     <Project Path="src/KernelR.Domain/KernelR.Domain.csproj" />
     <Project Path="test/KernelR.Domain.Tests/KernelR.Domain.Tests.csproj" />
   </Folder>
