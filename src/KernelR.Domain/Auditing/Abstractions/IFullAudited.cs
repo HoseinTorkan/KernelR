@@ -1,4 +1,4 @@
-namespace KernelR.Domain.Auditing;
+namespace KernelR.Domain.Auditing.Abstractions;
 
 /// <summary>
 /// Combines creation, modification, and deletion auditing into a single comprehensive contract.

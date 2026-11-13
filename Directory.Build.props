@@ -52,6 +52,13 @@
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <!-- Optionally downgrade nullable warnings during local development -->
         <!-- <WarningsNotAsErrors>nullable</WarningsNotAsErrors> -->
+
+        <!-- 
+          Suppress CA1711 globally. As a DDD framework, suffixes like "Handler" 
+          (e.g., IDomainEventHandler) are standard domain terminology and do not 
+          imply Microsoft's reserved base types. 
+        -->
+        <NoWarn>$(NoWarn);CA1711</NoWarn>
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->

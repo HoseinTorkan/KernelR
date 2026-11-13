@@ -1,4 +1,5 @@
 using KernelR.Domain.ValueObjects;
+using KernelR.Primitives.Results;
 
 namespace KernelR.Domain.StronglyTypedIds;
 

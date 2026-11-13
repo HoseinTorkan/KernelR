@@ -1,6 +1,6 @@
-using KernelR.Domain.Auditing;
+using KernelR.Domain.Auditing.Abstractions;
 
-namespace KernelR.Domain.Entities;
+namespace KernelR.Domain.Auditing.Entities;
 
 /// <summary>
 /// A base class for entities that track creation, modification, and soft-deletion.

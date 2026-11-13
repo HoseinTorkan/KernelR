@@ -1,4 +1,4 @@
-namespace KernelR.Domain.Auditing;
+namespace KernelR.Domain.Auditing.Abstractions;
 
 /// <summary>
 /// Combines modification time and modifier tracking into a single contract.

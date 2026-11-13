@@ -1,4 +1,5 @@
 using KernelR.Domain.Abstractions;
+using KernelR.Domain.Specifications;
 using System.Linq.Expressions;
 
 namespace KernelR.Domain.Repositories;
@@ -28,12 +29,19 @@ namespace KernelR.Domain.Repositories;
 /// interfaces (for example <c>IOrderRepository</c>) in the domain layer.
 /// </para>
 /// <para>
+/// <b>Expressions vs. Specifications:</b> Most query methods come in two flavors.
+/// Use <see cref="Expression{TDelegate}"/> overloads for one-off queries; use
+/// <see cref="ISpecification{T}"/> overloads for reusable, composable, and
+/// testable domain criteria.
+/// </para>
+/// <para>
 /// <typeparamref name="TId"/> is expected to match
 /// <c>TAggregateRoot.Id</c>; implementations should enforce this by
 /// delegating <see cref="GetByIdAsync"/> to the aggregate's identity.
 /// </para>
 /// </remarks>
 /// <seealso cref="IAggregateRoot{TId}"/>
+/// <seealso cref="ISpecification{T}"/>
 public interface IRepository<TId, TAggregateRoot>
     where TId : struct
     where TAggregateRoot : IAggregateRoot<TId>
@@ -71,6 +79,24 @@ public interface IRepository<TId, TAggregateRoot>
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets the first aggregate root satisfying the specified specification, or
+    /// <see langword="null"/> if none found.
+    /// </summary>
+    /// <param name="specification">The specification to apply.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>
+    /// The first aggregate root satisfying the specification, or
+    /// <see langword="null"/> if no match exists.
+    /// </returns>
+    /// <remarks>
+    /// The order in which rows are returned is not defined; implementations
+    /// should apply an explicit ordering if the caller relies on it.
+    /// </remarks>
+    Task<TAggregateRoot?> FirstOrDefaultAsync(
+        ISpecification<TAggregateRoot> specification,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets all aggregate roots matching the specified predicate.
     /// </summary>
     /// <param name="predicate">The condition to filter aggregate roots.</param>
@@ -88,6 +114,23 @@ public interface IRepository<TId, TAggregateRoot>
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets all aggregate roots satisfying the specified specification.
+    /// </summary>
+    /// <param name="specification">The specification to apply.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>
+    /// A read-only list of aggregate roots satisfying the specification.
+    /// Returns an empty list if no match exists.
+    /// </returns>
+    /// <remarks>
+    /// The order in which rows are returned is not defined; implementations
+    /// should apply an explicit ordering if the caller relies on it.
+    /// </remarks>
+    Task<IReadOnlyList<TAggregateRoot>> ListAsync(
+        ISpecification<TAggregateRoot> specification,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets all aggregate roots in the repository.
     /// </summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
@@ -97,8 +140,8 @@ public interface IRepository<TId, TAggregateRoot>
     /// </returns>
     /// <remarks>
     /// This method is typically used for small datasets only. For large
-    /// datasets, prefer <see cref="ListAsync"/> with a predicate or implement
-    /// pagination in a dedicated repository.
+    /// datasets, prefer <see cref="ListAsync(ISpecification{TAggregateRoot}, CancellationToken)"/>
+    /// with a specification or implement pagination in a dedicated repository.
     /// </remarks>
     Task<IReadOnlyList<TAggregateRoot>> GetAllAsync(
         CancellationToken cancellationToken = default);
@@ -114,6 +157,19 @@ public interface IRepository<TId, TAggregateRoot>
     /// </returns>
     Task<bool> AnyAsync(
         Expression<Func<TAggregateRoot, bool>> predicate,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks whether any aggregate root satisfies the specified specification.
+    /// </summary>
+    /// <param name="specification">The specification to apply.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>
+    /// <see langword="true"/> if at least one aggregate root satisfies the specification;
+    /// otherwise, <see langword="false"/>.
+    /// </returns>
+    Task<bool> AnyAsync(
+        ISpecification<TAggregateRoot> specification,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -139,6 +195,18 @@ public interface IRepository<TId, TAggregateRoot>
     /// </returns>
     Task<int> CountAsync(
         Expression<Func<TAggregateRoot, bool>> predicate,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Counts the aggregate roots satisfying the specified specification.
+    /// </summary>
+    /// <param name="specification">The specification to apply.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>
+    /// The number of aggregate roots satisfying the specification.
+    /// </returns>
+    Task<int> CountAsync(
+        ISpecification<TAggregateRoot> specification,
         CancellationToken cancellationToken = default);
 
     /// <summary>

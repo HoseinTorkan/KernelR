@@ -1,4 +1,4 @@
-namespace KernelR.Domain.Auditing;
+namespace KernelR.Domain.Auditing.Abstractions;
 
 /// <summary>
 /// Combines creation time and creator tracking into a single contract.

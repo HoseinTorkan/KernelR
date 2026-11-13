@@ -1,4 +1,4 @@
-namespace KernelR.Domain.Auditing;
+namespace KernelR.Domain.Auditing.Abstractions;
 
 /// <summary>
 /// Defines a contract for entities that track their soft-deletion time.

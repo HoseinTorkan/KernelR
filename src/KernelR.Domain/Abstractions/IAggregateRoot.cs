@@ -1,5 +1,4 @@
 using KernelR.Domain.Events;
-using KernelR.Domain.StronglyTypedIds;
 
 namespace KernelR.Domain.Abstractions;
 
@@ -12,7 +11,7 @@ namespace KernelR.Domain.Abstractions;
 /// The type of the aggregate root's identifier.
 /// Must be a value type (struct), such as <see cref="Guid"/>, <see cref="long"/>,
 /// or a strongly-typed identifier implementing
-/// <see cref="IStronglyTypedId{TSelf, TValue}"/>.
+/// <see cref="StronglyTypedIds.IStronglyTypedId{TSelf, TValue}"/>.
 /// </typeparam>
 /// <remarks>
 /// <para>
@@ -26,19 +25,17 @@ namespace KernelR.Domain.Abstractions;
 /// This keeps side effects out of the domain model while still allowing the
 /// aggregate to announce what happened.
 /// </para>
+/// <para>
+/// <b>Read vs. Write:</b> Reading and clearing events is inherited from
+/// <see cref="IHasDomainEvents"/>. Raising events is exposed here, because only
+/// aggregate roots may raise domain events.
+/// </para>
 /// </remarks>
-public interface IAggregateRoot<TId> : IEntity<TId>
+/// <seealso cref="IHasDomainEvents"/>
+/// <seealso cref="IEntity{TId}"/>
+public interface IAggregateRoot<TId> : IEntity<TId>, IHasDomainEvents
     where TId : struct
 {
-    /// <summary>
-    /// Gets the collection of domain events raised by this aggregate root.
-    /// </summary>
-    /// <remarks>
-    /// The collection is read-only; use <see cref="AddDomainEvent"/> to add
-    /// events and <see cref="ClearDomainEvents"/> to clear them.
-    /// </remarks>
-    IReadOnlyCollection<IDomainEvent> DomainEvents { get; }
-
     /// <summary>
     /// Adds a domain event to be dispatched after the aggregate is persisted.
     /// </summary>
@@ -48,13 +45,4 @@ public interface IAggregateRoot<TId> : IEntity<TId>
     /// when a state change occurs that other parts of the system should react to.
     /// </remarks>
     void AddDomainEvent(IDomainEvent domainEvent);
-
-    /// <summary>
-    /// Clears all domain events from this aggregate root.
-    /// </summary>
-    /// <remarks>
-    /// Called by the persistence layer after the collected events have been
-    /// dispatched, so they are not dispatched again on the next save.
-    /// </remarks>
-    void ClearDomainEvents();
 }
