@@ -9,15 +9,6 @@ namespace KernelR.Primitives.Results.Extensions;
 /// </summary>
 public static class ErrorExtensions
 {
-    /// <summary>Throws a default <see cref="InvalidOperationException"/> containing the serialized error.</summary>
-    /// <param name="error">The error to serialize.</param>
-    /// <exception cref="InvalidOperationException">Always thrown.</exception>
-    [DoesNotReturn]
-    public static void Throw(this Error error)
-    {
-        throw new InvalidOperationException(error.ToJson());
-    }
-
     /// <summary>Throws a custom exception created by the <paramref name="exceptionFactory"/>.</summary>
     /// <typeparam name="TException">The type of the custom exception.</typeparam>
     /// <param name="error">The error to serialize.</param>
@@ -26,9 +17,14 @@ public static class ErrorExtensions
     [DoesNotReturn]
     public static void Throw<TException>(this Error error, Func<string, TException> exceptionFactory)
         where TException : Exception
-    {
-        throw exceptionFactory(error.ToJson());
-    }
+        => throw exceptionFactory(error.ToJson());
+
+    /// <summary>Throws a default <see cref="InvalidOperationException"/> containing the serialized error.</summary>
+    /// <param name="error">The error to serialize.</param>
+    /// <exception cref="InvalidOperationException">Always thrown.</exception>
+    [DoesNotReturn]
+    public static void ThrowInvalidOperationException(this Error error)
+        => throw new InvalidOperationException(error.ToJson());
 
     /// <summary>
     /// Serializes the error to a JSON string using the Source-Generated Context (AOT-safe).
@@ -36,7 +32,5 @@ public static class ErrorExtensions
     /// <param name="error">The error to serialize.</param>
     /// <returns>The JSON-serialized representation of the error.</returns>
     public static string ToJson(this Error error)
-    {
-        return JsonSerializer.Serialize(error, KernelRJsonContext.Default.Error);
-    }
+        => JsonSerializer.Serialize(error, KernelRJsonContext.Default.Error);
 }

@@ -255,38 +255,38 @@ public readonly record struct PhysicalSize : IValueObject, IParsable<PhysicalSiz
     /// <param name="left">The first physical size.</param>
     /// <param name="right">The second physical size.</param>
     /// <returns>The sum of the two physical sizes.</returns>
-    public static PhysicalSize operator +(PhysicalSize left, PhysicalSize right) => left.Add(right).OrThrow();
+    public static PhysicalSize operator +(PhysicalSize left, PhysicalSize right) => left.Add(right).OrThrowInvalidOperationException();
 
     /// <summary>Subtracts one physical size from another.</summary>
     /// <param name="left">The first physical size.</param>
     /// <param name="right">The physical size to subtract.</param>
     /// <returns>The difference between the two physical sizes.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the result is zero or negative.</exception>
-    public static PhysicalSize operator -(PhysicalSize left, PhysicalSize right) => left.Subtract(right).OrThrow();
+    public static PhysicalSize operator -(PhysicalSize left, PhysicalSize right) => left.Subtract(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left size is greater than the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
-    public static bool operator >(PhysicalSize left, PhysicalSize right) => left.GreaterThan(right).OrThrow();
+    public static bool operator >(PhysicalSize left, PhysicalSize right) => left.GreaterThan(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left size is less than the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
-    public static bool operator <(PhysicalSize left, PhysicalSize right) => left.LessThan(right).OrThrow();
+    public static bool operator <(PhysicalSize left, PhysicalSize right) => left.LessThan(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left size is greater than or equal to the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
-    public static bool operator >=(PhysicalSize left, PhysicalSize right) => left.GreaterThanOrEqual(right).OrThrow();
+    public static bool operator >=(PhysicalSize left, PhysicalSize right) => left.GreaterThanOrEqual(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left size is less than or equal to the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
-    public static bool operator <=(PhysicalSize left, PhysicalSize right) => left.LessThanOrEqual(right).OrThrow();
+    public static bool operator <=(PhysicalSize left, PhysicalSize right) => left.LessThanOrEqual(right).OrThrowInvalidOperationException();
 
     /// <inheritdoc />
     public int CompareTo(PhysicalSize other) => Value.CompareTo(other.Convert(Unit).Value);

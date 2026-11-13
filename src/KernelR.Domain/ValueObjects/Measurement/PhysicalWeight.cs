@@ -255,38 +255,38 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
     /// <param name="left">The first physical weight.</param>
     /// <param name="right">The second physical weight.</param>
     /// <returns>The sum of the two physical weights.</returns>
-    public static PhysicalWeight operator +(PhysicalWeight left, PhysicalWeight right) => left.Add(right).OrThrow();
+    public static PhysicalWeight operator +(PhysicalWeight left, PhysicalWeight right) => left.Add(right).OrThrowInvalidOperationException();
 
     /// <summary>Subtracts one physical weight from another.</summary>
     /// <param name="left">The first physical weight.</param>
     /// <param name="right">The physical weight to subtract.</param>
     /// <returns>The difference between the two physical weights.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the result is zero or negative.</exception>
-    public static PhysicalWeight operator -(PhysicalWeight left, PhysicalWeight right) => left.Subtract(right).OrThrow();
+    public static PhysicalWeight operator -(PhysicalWeight left, PhysicalWeight right) => left.Subtract(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left weight is greater than the right weight.</summary>
     /// <param name="left">The left weight.</param>
     /// <param name="right">The right weight.</param>
     /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
-    public static bool operator >(PhysicalWeight left, PhysicalWeight right) => left.GreaterThan(right).OrThrow();
+    public static bool operator >(PhysicalWeight left, PhysicalWeight right) => left.GreaterThan(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left weight is less than the right weight.</summary>
     /// <param name="left">The left weight.</param>
     /// <param name="right">The right weight.</param>
     /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
-    public static bool operator <(PhysicalWeight left, PhysicalWeight right) => left.LessThan(right).OrThrow();
+    public static bool operator <(PhysicalWeight left, PhysicalWeight right) => left.LessThan(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left weight is greater than or equal to the right weight.</summary>
     /// <param name="left">The left weight.</param>
     /// <param name="right">The right weight.</param>
     /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
-    public static bool operator >=(PhysicalWeight left, PhysicalWeight right) => left.GreaterThanOrEqual(right).OrThrow();
+    public static bool operator >=(PhysicalWeight left, PhysicalWeight right) => left.GreaterThanOrEqual(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left weight is less than or equal to the right weight.</summary>
     /// <param name="left">The left weight.</param>
     /// <param name="right">The right weight.</param>
     /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
-    public static bool operator <=(PhysicalWeight left, PhysicalWeight right) => left.LessThanOrEqual(right).OrThrow();
+    public static bool operator <=(PhysicalWeight left, PhysicalWeight right) => left.LessThanOrEqual(right).OrThrowInvalidOperationException();
 
     /// <inheritdoc />
     public int CompareTo(PhysicalWeight other) => Value.CompareTo(other.Convert(Unit).Value);

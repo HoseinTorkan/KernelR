@@ -247,7 +247,7 @@ public readonly partial record struct Color : IValueObject, IParsable<Color>
             h /= 6;
         }
 
-        return HslColor.Create(h * 360, s * 100, l * 100).OrThrow();
+        return HslColor.Create(h * 360, s * 100, l * 100).OrThrowInvalidOperationException();
     }
 
     /// <summary>Returns the color as a normalized hex string.</summary>

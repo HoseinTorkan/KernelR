@@ -275,38 +275,38 @@ public readonly record struct DataSize : IValueObject, IParsable<DataSize>, ICom
     /// <param name="left">The first data size.</param>
     /// <param name="right">The second data size.</param>
     /// <returns>The sum of the two data sizes.</returns>
-    public static DataSize operator +(DataSize left, DataSize right) => left.Add(right).OrThrow();
+    public static DataSize operator +(DataSize left, DataSize right) => left.Add(right).OrThrowInvalidOperationException();
 
     /// <summary>Subtracts one data size from another.</summary>
     /// <param name="left">The first data size.</param>
     /// <param name="right">The data size to subtract.</param>
     /// <returns>The difference between the two data sizes.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the result is negative.</exception>
-    public static DataSize operator -(DataSize left, DataSize right) => left.Subtract(right).OrThrow();
+    public static DataSize operator -(DataSize left, DataSize right) => left.Subtract(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left size is greater than the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
-    public static bool operator >(DataSize left, DataSize right) => left.GreaterThan(right).OrThrow();
+    public static bool operator >(DataSize left, DataSize right) => left.GreaterThan(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left size is less than the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
-    public static bool operator <(DataSize left, DataSize right) => left.LessThan(right).OrThrow();
+    public static bool operator <(DataSize left, DataSize right) => left.LessThan(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left size is greater than or equal to the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
-    public static bool operator >=(DataSize left, DataSize right) => left.GreaterThanOrEqual(right).OrThrow();
+    public static bool operator >=(DataSize left, DataSize right) => left.GreaterThanOrEqual(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left size is less than or equal to the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
-    public static bool operator <=(DataSize left, DataSize right) => left.LessThanOrEqual(right).OrThrow();
+    public static bool operator <=(DataSize left, DataSize right) => left.LessThanOrEqual(right).OrThrowInvalidOperationException();
 
     /// <inheritdoc />
     public int CompareTo(DataSize other) => Value.CompareTo(other.Convert(Unit).Value);

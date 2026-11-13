@@ -32,9 +32,9 @@ namespace KernelR.Domain.StronglyTypedIds;
 /// </code>
 /// </example>
 public interface IStronglyTypedId<TSelf, TValue> :
-    IValueObject, IParsable<TSelf>
+    IValueObject, IParsable<TSelf>, ISpanParsable<TSelf>
     where TSelf : struct, IStronglyTypedId<TSelf, TValue>
-    where TValue : struct, IEquatable<TValue>, IComparable<TValue>, IParsable<TValue>
+    where TValue : struct, IEquatable<TValue>, IComparable<TValue>, IParsable<TValue>, ISpanParsable<TValue>
 {
     /// <summary>
     /// Gets the underlying primitive value of the identifier.

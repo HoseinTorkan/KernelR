@@ -28,7 +28,11 @@ public abstract class BaseAggregateRoot<TId> : BaseEntity<TId>, IAggregateRoot<T
     protected BaseAggregateRoot() { }
 
     /// <inheritdoc />
-    public void AddDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+    public void AddDomainEvent(IDomainEvent domainEvent)
+    {
+        ArgumentNullException.ThrowIfNull(domainEvent);
+        _domainEvents.Add(domainEvent);
+    }
 
     /// <inheritdoc />
     public void ClearDomainEvents() => _domainEvents.Clear();

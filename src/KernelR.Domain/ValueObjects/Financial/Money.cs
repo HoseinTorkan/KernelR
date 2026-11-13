@@ -269,7 +269,7 @@ public readonly record struct Money :
     /// <param name="right">The second amount.</param>
     /// <returns>The sum of the two amounts.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the currencies do not match.</exception>
-    public static Money operator +(Money left, Money right) => left.Add(right).OrThrow();
+    public static Money operator +(Money left, Money right) => left.Add(right).OrThrowInvalidOperationException();
 
     /// <summary>
     /// Subtracts one monetary amount from another of the same currency.
@@ -278,7 +278,7 @@ public readonly record struct Money :
     /// <param name="right">The second amount.</param>
     /// <returns>The difference between the two amounts.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the currencies do not match.</exception>
-    public static Money operator -(Money left, Money right) => left.Subtract(right).OrThrow();
+    public static Money operator -(Money left, Money right) => left.Subtract(right).OrThrowInvalidOperationException();
 
     /// <summary>
     /// Multiplies a monetary amount by a scalar factor.
@@ -286,7 +286,7 @@ public readonly record struct Money :
     /// <param name="money">The monetary amount.</param>
     /// <param name="multiplier">The scalar factor.</param>
     /// <returns>The product of the amount and the factor.</returns>
-    public static Money operator *(Money money, decimal multiplier) => money.Multiply(multiplier).OrThrow();
+    public static Money operator *(Money money, decimal multiplier) => money.Multiply(multiplier).OrThrowInvalidOperationException();
 
     /// <summary>
     /// Multiplies a scalar factor by a monetary amount (commutative support).
@@ -294,7 +294,7 @@ public readonly record struct Money :
     /// <param name="multiplier">The scalar factor.</param>
     /// <param name="money">The monetary amount.</param>
     /// <returns>The product of the amount and the factor.</returns>
-    public static Money operator *(decimal multiplier, Money money) => money.Multiply(multiplier).OrThrow();
+    public static Money operator *(decimal multiplier, Money money) => money.Multiply(multiplier).OrThrowInvalidOperationException();
 
     /// <summary>
     /// Divides a monetary amount by a scalar divisor.
@@ -303,7 +303,7 @@ public readonly record struct Money :
     /// <param name="divisor">The scalar divisor.</param>
     /// <returns>The quotient of the amount and the divisor.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the divisor is zero.</exception>
-    public static Money operator /(Money money, decimal divisor) => money.Divide(divisor).OrThrow();
+    public static Money operator /(Money money, decimal divisor) => money.Divide(divisor).OrThrowInvalidOperationException();
 
     /// <summary>
     /// Negates a monetary amount.
@@ -319,7 +319,7 @@ public readonly record struct Money :
     /// <param name="right">The right amount.</param>
     /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the currencies do not match.</exception>
-    public static bool operator >(Money left, Money right) => left.GreaterThan(right).OrThrow();
+    public static bool operator >(Money left, Money right) => left.GreaterThan(right).OrThrowInvalidOperationException();
 
     /// <summary>
     /// Determines whether the left amount is less than the right amount.
@@ -328,7 +328,7 @@ public readonly record struct Money :
     /// <param name="right">The right amount.</param>
     /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the currencies do not match.</exception>
-    public static bool operator <(Money left, Money right) => left.LessThan(right).OrThrow();
+    public static bool operator <(Money left, Money right) => left.LessThan(right).OrThrowInvalidOperationException();
 
     /// <summary>
     /// Determines whether the left amount is greater than or equal to the right amount.
@@ -337,7 +337,7 @@ public readonly record struct Money :
     /// <param name="right">The right amount.</param>
     /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the currencies do not match.</exception>
-    public static bool operator >=(Money left, Money right) => left.GreaterThanOrEqual(right).OrThrow();
+    public static bool operator >=(Money left, Money right) => left.GreaterThanOrEqual(right).OrThrowInvalidOperationException();
 
     /// <summary>
     /// Determines whether the left amount is less than or equal to the right amount.
@@ -346,7 +346,7 @@ public readonly record struct Money :
     /// <param name="right">The right amount.</param>
     /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the currencies do not match.</exception>
-    public static bool operator <=(Money left, Money right) => left.LessThanOrEqual(right).OrThrow();
+    public static bool operator <=(Money left, Money right) => left.LessThanOrEqual(right).OrThrowInvalidOperationException();
 
     /// <inheritdoc />
     public int CompareTo(Money other)
@@ -355,7 +355,7 @@ public readonly record struct Money :
             new Error(
                 "KernelR.ValueObjects.Money.CURRENCY_MISMATCH",
                 "Cannot compare amounts with different currencies.",
-                ErrorType.ValidationError).Throw();
+                ErrorType.ValidationError).ThrowInvalidOperationException();
 
         return Amount.CompareTo(other.Amount);
     }
