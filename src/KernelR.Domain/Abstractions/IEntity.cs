@@ -25,7 +25,8 @@ namespace KernelR.Domain.Abstractions;
 /// with the same <see cref="Id"/> are considered equal. Implementations should
 /// override <see cref="object.Equals(object)"/> and
 /// <see cref="object.GetHashCode"/> accordingly, or derive from a base class
-/// that does so.
+/// that does so. See <c>KernelR.Domain.Entities.BaseEntity{TId}</c> for a
+/// reference implementation.
 /// </para>
 /// </remarks>
 /// <example>

@@ -17,11 +17,17 @@ namespace KernelR.Domain.Events;
 /// they should let their aggregate root do so.
 /// </para>
 /// </remarks>
+/// <seealso cref="Abstractions.IAggregateRoot{TId}"/>
+/// <seealso cref="IDomainEvent"/>
 public interface IHasDomainEvents
 {
     /// <summary>
     /// Gets the collection of domain events raised by this entity.
     /// </summary>
+    /// <value>
+    /// A read-only collection of pending <see cref="IDomainEvent"/> instances.
+    /// Returns an empty collection if no events have been raised.
+    /// </value>
     IReadOnlyCollection<IDomainEvent> DomainEvents { get; }
 
     /// <summary>

@@ -19,11 +19,35 @@ namespace KernelR.Domain.Entities;
 /// identifiers, it means <c>0</c> cannot be used as a primary key. This is the standard
 /// convention in DDD and is also enforced by most ORMs.
 /// </para>
+/// <para>
+/// Derived classes do not need to override <see cref="Equals(object)"/> or
+/// <see cref="GetHashCode"/>; the implementation here is based on identity and is
+/// suitable for all entities.
+/// </para>
 /// </remarks>
+/// <example>
+/// <code>
+/// public sealed class Product : BaseEntity&lt;Guid&gt;
+/// {
+///     public string Name { get; private set; }
+///
+///     public Product(Guid id, string name) : base(id)
+///     {
+///         Name = name;
+///     }
+/// }
+/// </code>
+/// </example>
+/// <seealso cref="IEntity{TId}"/>
 public abstract class BaseEntity<TId> : IEntity<TId>, IEquatable<BaseEntity<TId>>
     where TId : struct
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// The setter is <see langword="protected"/> to allow ORMs (such as EF Core) and
+    /// derived classes to assign the identifier during materialization or construction.
+    /// Application code should not mutate the identifier after the entity is created.
+    /// </remarks>
     public TId Id { get; protected set; }
 
     /// <summary>
@@ -86,6 +110,11 @@ public abstract class BaseEntity<TId> : IEntity<TId>, IEquatable<BaseEntity<TId>
     /// </summary>
     /// <param name="entity">The entity to check.</param>
     /// <returns><see langword="true"/> if the entity is transient; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// A transient entity has not been assigned a real identifier, so it cannot be
+    /// compared by identity. Two transient entities are considered equal only if they
+    /// are the same instance.
+    /// </remarks>
     private static bool IsTransient(BaseEntity<TId> entity) =>
         EqualityComparer<TId>.Default.Equals(entity.Id, default!);
 }

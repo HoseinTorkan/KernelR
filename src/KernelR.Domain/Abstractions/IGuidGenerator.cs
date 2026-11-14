@@ -11,7 +11,7 @@ namespace KernelR.Domain.Abstractions;
 /// <list type="number">
 ///   <item><description>
 ///     <b>Testability:</b> Unit tests can inject a deterministic implementation
-///     that returns predictable IDs, making assertions reliable.
+///     that returns predictable IDs, making assertions reliable and reproducible.
 ///   </description></item>
 ///   <item><description>
 ///     <b>Database performance:</b> The <c>useSequential</c> parameter lets
