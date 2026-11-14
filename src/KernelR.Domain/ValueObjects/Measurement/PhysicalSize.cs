@@ -515,42 +515,42 @@ public readonly record struct PhysicalSize :
     /// <param name="right">The second physical size.</param>
     /// <returns>The sum of the two physical sizes.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the sum overflows <see cref="long.MaxValue"/>.</exception>
-    public static PhysicalSize operator +(PhysicalSize left, PhysicalSize right) => left.Add(right).OrThrow();
+    public static PhysicalSize operator +(PhysicalSize left, PhysicalSize right) => left.Add(right).OrThrowInvalidOperationException();
 
     /// <summary>Subtracts one physical size from another.</summary>
     /// <param name="left">The first physical size.</param>
     /// <param name="right">The physical size to subtract.</param>
     /// <returns>The difference between the two physical sizes.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the result is negative.</exception>
-    public static PhysicalSize operator -(PhysicalSize left, PhysicalSize right) => left.Subtract(right).OrThrow();
+    public static PhysicalSize operator -(PhysicalSize left, PhysicalSize right) => left.Subtract(right).OrThrowInvalidOperationException();
 
     /// <summary>Multiplies a physical size by a scalar factor.</summary>
     /// <param name="size">The physical size.</param>
     /// <param name="multiplier">The scalar factor.</param>
     /// <returns>The product of the size and the factor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the multiplier is negative or the product overflows.</exception>
-    public static PhysicalSize operator *(PhysicalSize size, decimal multiplier) => size.Multiply(multiplier).OrThrow();
+    public static PhysicalSize operator *(PhysicalSize size, decimal multiplier) => size.Multiply(multiplier).OrThrowInvalidOperationException();
 
     /// <summary>Multiplies a scalar factor by a physical size (commutative support).</summary>
     /// <param name="multiplier">The scalar factor.</param>
     /// <param name="size">The physical size.</param>
     /// <returns>The product of the size and the factor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the multiplier is negative or the product overflows.</exception>
-    public static PhysicalSize operator *(decimal multiplier, PhysicalSize size) => size.Multiply(multiplier).OrThrow();
+    public static PhysicalSize operator *(decimal multiplier, PhysicalSize size) => size.Multiply(multiplier).OrThrowInvalidOperationException();
 
     /// <summary>Divides a physical size by a scalar divisor.</summary>
     /// <param name="size">The physical size.</param>
     /// <param name="divisor">The scalar divisor.</param>
     /// <returns>The quotient of the size and the divisor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the divisor is zero or negative.</exception>
-    public static PhysicalSize operator /(PhysicalSize size, decimal divisor) => size.Divide(divisor).OrThrow();
+    public static PhysicalSize operator /(PhysicalSize size, decimal divisor) => size.Divide(divisor).OrThrowInvalidOperationException();
 
     /// <summary>Returns the ratio of two physical sizes as a <see cref="decimal"/>.</summary>
     /// <param name="left">The numerator.</param>
     /// <param name="right">The denominator.</param>
     /// <returns>The ratio of the two sizes.</returns>
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="right"/> is zero.</exception>
-    public static decimal operator /(PhysicalSize left, PhysicalSize right) => left.Ratio(right).OrThrow();
+    public static decimal operator /(PhysicalSize left, PhysicalSize right) => left.Ratio(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left size is greater than the right size.</summary>
     /// <param name="left">The left size.</param>

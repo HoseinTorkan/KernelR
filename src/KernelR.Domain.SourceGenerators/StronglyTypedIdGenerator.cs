@@ -13,8 +13,6 @@ namespace KernelR.Domain.SourceGenerators;
 public sealed class StronglyTypedIdGenerator : IIncrementalGenerator
 {
     private const string AttributeName = "KernelR.Domain.StronglyTypedIds.StronglyTypedIdAttribute`1";
-    private const string IParsableName = "System.IParsable`1";
-    private const string ISpanParsableName = "System.ISpanParsable`1";
 
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -29,6 +27,11 @@ public sealed class StronglyTypedIdGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(targets, static (spc, source) => Execute(source, spc));
     }
 
+    /// <summary>
+    /// Extracts the necessary data from the syntax and semantic model.
+    /// </summary>
+    /// <param name="context">The generator attribute syntax context.</param>
+    /// <returns>A new <see cref="Target"/> instance containing the extracted data.</returns>
     private static Target GetTarget(GeneratorAttributeSyntaxContext context)
     {
         INamedTypeSymbol structSymbol = (INamedTypeSymbol)context.TargetSymbol;
@@ -46,9 +49,14 @@ public sealed class StronglyTypedIdGenerator : IIncrementalGenerator
                 allowEmpty = allow;
         }
 
-        return new Target(structSymbol, tValueType, useSequentialGuid, allowEmpty, context.SemanticModel.Compilation);
+        return new Target(structSymbol, tValueType, useSequentialGuid, allowEmpty);
     }
 
+    /// <summary>
+    /// Validates the target and generates the strongly-typed ID implementation code.
+    /// </summary>
+    /// <param name="target">The target data extracted from the syntax.</param>
+    /// <param name="context">The source production context.</param>
     private static void Execute(Target target, SourceProductionContext context)
     {
         INamedTypeSymbol structSymbol = target.StructSymbol;
@@ -96,39 +104,38 @@ public sealed class StronglyTypedIdGenerator : IIncrementalGenerator
         }
 
         // 5. TValue must implement IParsable<TValue>
-        INamedTypeSymbol? parsableInterface = target.Compilation.GetTypeByMetadataName(IParsableName);
-        if (parsableInterface is not null)
-        {
-            INamedTypeSymbol constructedParsable = parsableInterface.Construct(tValueType);
-            bool implementsParsable = tValueType.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, constructedParsable));
+        // Checked directly via AllInterfaces to avoid retaining Compilation in the incremental pipeline.
+        bool implementsParsable = tValueType.AllInterfaces.Any(i =>
+            i.Name == "IParsable" &&
+            i.ContainingNamespace.ToDisplayString() == "System" &&
+            i.TypeArguments.Length == 1 &&
+            SymbolEqualityComparer.Default.Equals(i.TypeArguments[0], tValueType));
 
-            if (!implementsParsable)
-            {
-                context.ReportDiagnostic(Diagnostic.Create(
-                    DiagnosticDescriptors.TValueNotParsable,
-                    structSymbol.Locations.FirstOrDefault(),
-                    tValueType.ToDisplayString(),
-                    structSymbol.Name));
-                return;
-            }
+        if (!implementsParsable)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.TValueNotParsable,
+                structSymbol.Locations.FirstOrDefault(),
+                tValueType.ToDisplayString(),
+                structSymbol.Name));
+            return;
         }
 
         // 6. TValue must implement ISpanParsable<TValue>
-        INamedTypeSymbol? spanParsableInterface = target.Compilation.GetTypeByMetadataName(ISpanParsableName);
-        if (spanParsableInterface is not null)
-        {
-            INamedTypeSymbol constructedSpanParsable = spanParsableInterface.Construct(tValueType);
-            bool implementsSpanParsable = tValueType.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, constructedSpanParsable));
+        bool implementsSpanParsable = tValueType.AllInterfaces.Any(i =>
+            i.Name == "ISpanParsable" &&
+            i.ContainingNamespace.ToDisplayString() == "System" &&
+            i.TypeArguments.Length == 1 &&
+            SymbolEqualityComparer.Default.Equals(i.TypeArguments[0], tValueType));
 
-            if (!implementsSpanParsable)
-            {
-                context.ReportDiagnostic(Diagnostic.Create(
-                    DiagnosticDescriptors.TValueNotSpanParsable,
-                    structSymbol.Locations.FirstOrDefault(),
-                    tValueType.ToDisplayString(),
-                    structSymbol.Name));
-                return;
-            }
+        if (!implementsSpanParsable)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.TValueNotSpanParsable,
+                structSymbol.Locations.FirstOrDefault(),
+                tValueType.ToDisplayString(),
+                structSymbol.Name));
+            return;
         }
 
         // 7. Generate the code
@@ -277,6 +284,11 @@ public sealed class StronglyTypedIdGenerator : IIncrementalGenerator
         context.AddSource($"{typeName}.StronglyTypedId.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
     }
 
+    /// <summary>
+    /// Gets the C# keyword representation of the specified accessibility.
+    /// </summary>
+    /// <param name="accessibility">The accessibility to convert.</param>
+    /// <returns>The C# keyword string.</returns>
     private static string GetAccessibility(Accessibility accessibility) => accessibility switch
     {
         Accessibility.Public => "public",
@@ -288,23 +300,47 @@ public sealed class StronglyTypedIdGenerator : IIncrementalGenerator
         _ => "public",
     };
 
+    /// <summary>
+    /// Represents the data extracted from a syntax node required for code generation.
+    /// </summary>
     private sealed class Target : IEquatable<Target>
     {
+        /// <summary>
+        /// Gets the symbol of the decorated struct.
+        /// </summary>
         public INamedTypeSymbol StructSymbol { get; }
-        public ITypeSymbol TValueType { get; }
-        public bool UseSequentialGuid { get; }
-        public bool AllowEmpty { get; }
-        public Compilation Compilation { get; }
 
-        public Target(INamedTypeSymbol structSymbol, ITypeSymbol tValueType, bool useSequentialGuid, bool allowEmpty, Compilation compilation)
+        /// <summary>
+        /// Gets the underlying value type of the identifier.
+        /// </summary>
+        public ITypeSymbol TValueType { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether to use sequential GUIDs (v7) in the <c>New()</c> method.
+        /// </summary>
+        public bool UseSequentialGuid { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the <c>Create</c> factory method allows the default value.
+        /// </summary>
+        public bool AllowEmpty { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Target"/> class.
+        /// </summary>
+        /// <param name="structSymbol">The symbol of the decorated struct.</param>
+        /// <param name="tValueType">The underlying value type of the identifier.</param>
+        /// <param name="useSequentialGuid">Whether to use sequential GUIDs.</param>
+        /// <param name="allowEmpty">Whether the default value is allowed.</param>
+        public Target(INamedTypeSymbol structSymbol, ITypeSymbol tValueType, bool useSequentialGuid, bool allowEmpty)
         {
             StructSymbol = structSymbol;
             TValueType = tValueType;
             UseSequentialGuid = useSequentialGuid;
             AllowEmpty = allowEmpty;
-            Compilation = compilation;
         }
 
+        /// <inheritdoc />
         public bool Equals(Target? other)
         {
             if (other is null) return false;
@@ -314,8 +350,10 @@ public sealed class StronglyTypedIdGenerator : IIncrementalGenerator
                 && AllowEmpty == other.AllowEmpty;
         }
 
+        /// <inheritdoc />
         public override bool Equals(object? obj) => Equals(obj as Target);
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked

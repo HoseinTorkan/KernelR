@@ -517,42 +517,42 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
     /// <param name="right">The second physical weight.</param>
     /// <returns>The sum of the two physical weights.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the sum overflows <see cref="long.MaxValue"/>.</exception>
-    public static PhysicalWeight operator +(PhysicalWeight left, PhysicalWeight right) => left.Add(right).OrThrow();
+    public static PhysicalWeight operator +(PhysicalWeight left, PhysicalWeight right) => left.Add(right).OrThrowInvalidOperationException();
 
     /// <summary>Subtracts one physical weight from another.</summary>
     /// <param name="left">The first physical weight.</param>
     /// <param name="right">The physical weight to subtract.</param>
     /// <returns>The difference between the two physical weights.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the result is negative.</exception>
-    public static PhysicalWeight operator -(PhysicalWeight left, PhysicalWeight right) => left.Subtract(right).OrThrow();
+    public static PhysicalWeight operator -(PhysicalWeight left, PhysicalWeight right) => left.Subtract(right).OrThrowInvalidOperationException();
 
     /// <summary>Multiplies a physical weight by a scalar factor.</summary>
     /// <param name="weight">The physical weight.</param>
     /// <param name="multiplier">The scalar factor.</param>
     /// <returns>The product of the weight and the factor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the multiplier is negative or the product overflows.</exception>
-    public static PhysicalWeight operator *(PhysicalWeight weight, decimal multiplier) => weight.Multiply(multiplier).OrThrow();
+    public static PhysicalWeight operator *(PhysicalWeight weight, decimal multiplier) => weight.Multiply(multiplier).OrThrowInvalidOperationException();
 
     /// <summary>Multiplies a scalar factor by a physical weight (commutative support).</summary>
     /// <param name="multiplier">The scalar factor.</param>
     /// <param name="weight">The physical weight.</param>
     /// <returns>The product of the weight and the factor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the multiplier is negative or the product overflows.</exception>
-    public static PhysicalWeight operator *(decimal multiplier, PhysicalWeight weight) => weight.Multiply(multiplier).OrThrow();
+    public static PhysicalWeight operator *(decimal multiplier, PhysicalWeight weight) => weight.Multiply(multiplier).OrThrowInvalidOperationException();
 
     /// <summary>Divides a physical weight by a scalar divisor.</summary>
     /// <param name="weight">The physical weight.</param>
     /// <param name="divisor">The scalar divisor.</param>
     /// <returns>The quotient of the weight and the divisor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the divisor is zero or negative.</exception>
-    public static PhysicalWeight operator /(PhysicalWeight weight, decimal divisor) => weight.Divide(divisor).OrThrow();
+    public static PhysicalWeight operator /(PhysicalWeight weight, decimal divisor) => weight.Divide(divisor).OrThrowInvalidOperationException();
 
     /// <summary>Returns the ratio of two physical weights as a <see cref="decimal"/>.</summary>
     /// <param name="left">The numerator.</param>
     /// <param name="right">The denominator.</param>
     /// <returns>The ratio of the two weights.</returns>
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="right"/> is zero.</exception>
-    public static decimal operator /(PhysicalWeight left, PhysicalWeight right) => left.Ratio(right).OrThrow();
+    public static decimal operator /(PhysicalWeight left, PhysicalWeight right) => left.Ratio(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left weight is greater than the right weight.</summary>
     /// <param name="left">The left weight.</param>

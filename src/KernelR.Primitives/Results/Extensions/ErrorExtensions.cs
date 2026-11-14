@@ -9,7 +9,9 @@ namespace KernelR.Primitives.Results.Extensions;
 /// </summary>
 public static class ErrorExtensions
 {
-    /// <summary>Throws a custom exception created by the <paramref name="exceptionFactory"/>.</summary>
+    /// <summary>
+    /// Throws a custom exception created by the <paramref name="exceptionFactory"/>.
+    /// </summary>
     /// <typeparam name="TException">The type of the custom exception.</typeparam>
     /// <param name="error">The error to serialize.</param>
     /// <param name="exceptionFactory">A factory that receives the JSON-serialized error and returns the custom exception.</param>
@@ -19,7 +21,9 @@ public static class ErrorExtensions
         where TException : Exception
         => throw exceptionFactory(error.ToJson());
 
-    /// <summary>Throws a default <see cref="InvalidOperationException"/> containing the serialized error.</summary>
+    /// <summary>
+    /// Throws a default <see cref="InvalidOperationException"/> containing the serialized error.
+    /// </summary>
     /// <param name="error">The error to serialize.</param>
     /// <exception cref="InvalidOperationException">Always thrown.</exception>
     [DoesNotReturn]

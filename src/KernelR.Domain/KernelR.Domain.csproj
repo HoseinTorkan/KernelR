@@ -1,15 +1,63 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- Package Metadata                           -->
+    <!-- Package Identity                           -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
         <PackageId>KernelR.Domain</PackageId>
-        <Version>1.0.0</Version>
+        <Title>KernelR Domain</Title>
 
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- Versioning Strategy (.NET-aligned SemVer)  -->
+        <!-- ═══════════════════════════════════════════ -->
+        <!--
+            This project follows .NET-aligned SemVer 2.0:
+
+              MAJOR = Target .NET major version (e.g., 10 for .NET 10)
+              MINOR = Feature release within that .NET line
+              PATCH = Bug fixes
+
+            Examples:
+              10.0.0        → first release for .NET 10
+              10.0.1        → bug fix
+              10.1.0        → new features (backward compatible)
+              10.99.0       → deprecation warning (prelude to 11.0.0)
+              10.1.0-beta.1 → pre-release of 10.1.0
+              11.0.0        → first release for .NET 11 (or a breaking change)
+
+            See docs/VERSIONING.md for the full policy.
+        -->
+        <Version>10.0.0</Version>
+
+        <!--
+            AssemblyVersion is used by the CLR for assembly binding.
+            It only changes when a breaking API change is introduced.
+            Format: MAJOR.0.0.0 (MINOR and PATCH never appear here).
+            This prevents "DLL hell" for consumers who use strong-named assemblies.
+        -->
+        <AssemblyVersion>10.0.0.0</AssemblyVersion>
+
+        <!--
+            FileVersion appears in Windows Explorer file properties.
+            It carries the full version and matches the PackageVersion.
+        -->
+        <FileVersion>10.0.0.0</FileVersion>
+
+        <!--
+            InformationalVersion is displayed by `dotnet info` and included in
+            assembly metadata. In CI, override it with the commit SHA:
+              dotnet pack -p:InformationalVersion=10.0.0+abc1234
+        -->
+        <InformationalVersion>$(Version)</InformationalVersion>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Package Metadata                           -->
+    <!-- ═══════════════════════════════════════════ -->
+    <PropertyGroup>
         <Description>
             Foundational building blocks for Domain-Driven Design (DDD) and
-            Clean Architecture in .NET. Provides a rich set of value objects
+            Clean Architecture in .NET 10+. Provides a rich set of value objects
             (PhoneNumber, Email, Money, CurrencyCode, NationalCode, PersonName,
             Url, Size, DataSize) with built-in validation via the Result
             pattern, plus entities, aggregate roots, strongly-typed identifiers,
@@ -20,7 +68,7 @@
             making it usable in any .NET application (Console, WPF, MAUI, Web API, etc.).
         </Description>
 
-        <PackageTags>ddd;clean-architecture;domain;abstractions;value-objects;strongly-typed-id;auditing;repository;unit-of-work;entities;aggregate-root;marker-interfaces;phone-number;email;money;currency</PackageTags>
+        <PackageTags>ddd;clean-architecture;domain;abstractions;value-objects;strongly-typed-id;auditing;repository;unit-of-work;entities;aggregate-root;marker-interfaces;phone-number;email;money;currency;aot;trimming</PackageTags>
 
         <!-- AOT & Trimming Support -->
         <IsAotCompatible>true</IsAotCompatible>

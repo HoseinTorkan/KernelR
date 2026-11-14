@@ -30,15 +30,17 @@ public sealed record Error
     /// <summary>
     /// Gets the unique code identifying this error.
     /// </summary>
+    /// <value>A stable, machine-readable identifier (e.g., "PRODUCT_NOT_FOUND").</value>
     /// <remarks>
     /// The code is intended for programmatic identification and should be
-    /// stable across versions. Examples: "PRODUCT_NOT_FOUND", "INVALID_EMAIL".
+    /// stable across versions.
     /// </remarks>
     public string Code { get; }
 
     /// <summary>
     /// Gets the human-readable message of this error.
     /// </summary>
+    /// <value>A description of the error for display or logging.</value>
     /// <remarks>
     /// The message is intended for display to users or for logging.
     /// It should be concise and informative.
@@ -49,6 +51,7 @@ public sealed record Error
     /// Gets the type of this error, indicating its nature
     /// (e.g., validation error, not found, conflict).
     /// </summary>
+    /// <value>The <see cref="ErrorType"/> category of the error.</value>
     public ErrorType ErrorType { get; }
 
     /// <summary>

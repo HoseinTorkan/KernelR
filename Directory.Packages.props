@@ -1,0 +1,38 @@
+<Project>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Central Package Management (CPM)           -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!--
+        Enables CPM for the entire solution. With CPM:
+          - Package versions are defined ONLY here.
+          - Individual .csproj files reference packages WITHOUT versions.
+          - This prevents "diamond dependency" issues where different projects
+            pick different versions of the same package, causing runtime failures.
+        
+        Reference: https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management
+    -->
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Package Versions                           -->
+    <!-- ═══════════════════════════════════════════ -->
+    <ItemGroup>
+        <!-- ─── Roslyn (Source Generators) ─── -->
+        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
+        <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
+
+        <!-- ─── Application Layer (آینده) ─── -->
+        <!-- <PackageVersion Include="FluentValidation" Version="11.9.0" /> -->
+        <!-- <PackageVersion Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.0" /> -->
+
+        <!-- ─── Infrastructure Layer (آینده) ─── -->
+        <!-- <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0" /> -->
+
+        <!-- ─── Testing (آینده) ─── -->
+        <!-- <PackageVersion Include="xunit" Version="2.9.0" /> -->
+    </ItemGroup>
+
+</Project>

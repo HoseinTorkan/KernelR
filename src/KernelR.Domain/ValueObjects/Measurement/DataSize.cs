@@ -525,42 +525,42 @@ public readonly record struct DataSize :
     /// <param name="right">The second data size.</param>
     /// <returns>The sum of the two data sizes.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the sum overflows <see cref="long.MaxValue"/>.</exception>
-    public static DataSize operator +(DataSize left, DataSize right) => left.Add(right).OrThrow();
+    public static DataSize operator +(DataSize left, DataSize right) => left.Add(right).OrThrowInvalidOperationException();
 
     /// <summary>Subtracts one data size from another.</summary>
     /// <param name="left">The first data size.</param>
     /// <param name="right">The data size to subtract.</param>
     /// <returns>The difference between the two data sizes.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the result is negative.</exception>
-    public static DataSize operator -(DataSize left, DataSize right) => left.Subtract(right).OrThrow();
+    public static DataSize operator -(DataSize left, DataSize right) => left.Subtract(right).OrThrowInvalidOperationException();
 
     /// <summary>Multiplies a data size by a scalar factor.</summary>
     /// <param name="size">The data size.</param>
     /// <param name="multiplier">The scalar factor.</param>
     /// <returns>The product of the size and the factor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the multiplier is negative or the product overflows.</exception>
-    public static DataSize operator *(DataSize size, decimal multiplier) => size.Multiply(multiplier).OrThrow();
+    public static DataSize operator *(DataSize size, decimal multiplier) => size.Multiply(multiplier).OrThrowInvalidOperationException();
 
     /// <summary>Multiplies a scalar factor by a data size (commutative support).</summary>
     /// <param name="multiplier">The scalar factor.</param>
     /// <param name="size">The data size.</param>
     /// <returns>The product of the size and the factor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the multiplier is negative or the product overflows.</exception>
-    public static DataSize operator *(decimal multiplier, DataSize size) => size.Multiply(multiplier).OrThrow();
+    public static DataSize operator *(decimal multiplier, DataSize size) => size.Multiply(multiplier).OrThrowInvalidOperationException();
 
     /// <summary>Divides a data size by a scalar divisor.</summary>
     /// <param name="size">The data size.</param>
     /// <param name="divisor">The scalar divisor.</param>
     /// <returns>The quotient of the size and the divisor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the divisor is zero or negative.</exception>
-    public static DataSize operator /(DataSize size, decimal divisor) => size.Divide(divisor).OrThrow();
+    public static DataSize operator /(DataSize size, decimal divisor) => size.Divide(divisor).OrThrowInvalidOperationException();
 
     /// <summary>Returns the ratio of two data sizes as a <see cref="decimal"/>.</summary>
     /// <param name="left">The numerator.</param>
     /// <param name="right">The denominator.</param>
     /// <returns>The ratio of the two sizes.</returns>
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="right"/> is zero.</exception>
-    public static decimal operator /(DataSize left, DataSize right) => left.Ratio(right).OrThrow();
+    public static decimal operator /(DataSize left, DataSize right) => left.Ratio(right).OrThrowInvalidOperationException();
 
     /// <summary>Determines whether the left size is greater than the right size.</summary>
     /// <param name="left">The left size.</param>

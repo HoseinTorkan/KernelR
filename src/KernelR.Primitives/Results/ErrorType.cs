@@ -20,10 +20,6 @@ public enum ErrorType
     /// </remarks>
     None = 0,
 
-    // ──────────────────────────────────────────────────────────────
-    // Validation errors (20–29)
-    // ──────────────────────────────────────────────────────────────
-
     /// <summary>The input is not valid.</summary>
     ValidationError = 20,
 
@@ -36,10 +32,6 @@ public enum ErrorType
     /// <summary>The format of the provided value is invalid.</summary>
     InvalidFormat = 23,
 
-    // ──────────────────────────────────────────────────────────────
-    // Resource errors (30–39)
-    // ──────────────────────────────────────────────────────────────
-
     /// <summary>The requested resource was not found.</summary>
     NotFound = 30,
 
@@ -48,10 +40,6 @@ public enum ErrorType
 
     /// <summary>The operation conflicts with the current state of the resource.</summary>
     Conflict = 32,
-
-    // ──────────────────────────────────────────────────────────────
-    // Authentication and authorization errors (40–49)
-    // ──────────────────────────────────────────────────────────────
 
     /// <summary>The caller is not authenticated.</summary>
     Unauthorized = 40,
@@ -64,10 +52,6 @@ public enum ErrorType
 
     /// <summary>Too many failed attempts; the caller is temporarily blocked.</summary>
     TooManyAttempts = 43,
-
-    // ──────────────────────────────────────────────────────────────
-    // Business rule violations (50–59)
-    // ──────────────────────────────────────────────────────────────
 
     /// <summary>A business rule was violated.</summary>
     BusinessRuleViolation = 50,
@@ -84,10 +68,6 @@ public enum ErrorType
     /// <summary>The amount exceeds the maximum allowed.</summary>
     MaximumAmount = 54,
 
-    // ──────────────────────────────────────────────────────────────
-    // Infrastructure errors (60–69)
-    // ──────────────────────────────────────────────────────────────
-
     /// <summary>An infrastructure error occurred.</summary>
     Infrastructure = 60,
 
@@ -103,19 +83,11 @@ public enum ErrorType
     /// <summary>A file-related error occurred.</summary>
     FileError = 64,
 
-    // ──────────────────────────────────────────────────────────────
-    // Transient errors (70–79)
-    // ──────────────────────────────────────────────────────────────
-
     /// <summary>The operation timed out (caller-side).</summary>
     Timeout = 70,
 
     /// <summary>A concurrency conflict occurred (optimistic concurrency violation).</summary>
     Concurrency = 71,
-
-    // ──────────────────────────────────────────────────────────────
-    // General errors (80–99)
-    // ──────────────────────────────────────────────────────────────
 
     /// <summary>An unexpected or uncategorized error occurred.</summary>
     UnknownError = 80

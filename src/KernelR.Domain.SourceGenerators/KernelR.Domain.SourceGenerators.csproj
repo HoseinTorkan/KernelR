@@ -18,6 +18,20 @@
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
+    <!-- Versioning (Internal Tracking)             -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!--
+        This project is NOT packaged independently (IsPackable=false).
+        Its DLL is bundled into KernelR.Domain under "analyzers/dotnet/cs".
+        
+        The version here is for internal tracking only and matches the
+        KernelR.Domain package version. See docs/VERSIONING.md.
+    -->
+    <PropertyGroup>
+        <Version>10.0.0</Version>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════ -->
     <!-- Roslyn Analyzer Configuration              -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
@@ -29,8 +43,7 @@
 
         <!--
             Extended analyzer rules (CAxxxx) enforce best practices for generators,
-            such as requiring <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-            on consumers of the analyzer API.
+            such as requiring EnforceExtendedAnalyzerRules=true on consumers of the analyzer API.
         -->
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 
@@ -58,16 +71,18 @@
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- Roslyn SDK References                      -->
+    <!-- Roslyn SDK References (versions in CPM)    -->
     <!-- ═══════════════════════════════════════════ -->
     <ItemGroup>
         <!--
             PrivateAssets="all" ensures these dependencies are NOT propagated
             to the consuming project. The generator uses Roslyn only at
             compile-time; it must not add Roslyn as a runtime dependency.
+            
+            Versions are defined centrally in Directory.Packages.props (CPM).
         -->
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" PrivateAssets="all" />
-        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
     </ItemGroup>
 
 </Project>
