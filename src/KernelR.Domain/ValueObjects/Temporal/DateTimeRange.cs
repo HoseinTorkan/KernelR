@@ -14,6 +14,10 @@ namespace KernelR.Domain.ValueObjects.Temporal;
 /// the <see cref="End"/>. It provides useful operations like checking if a specific date/time 
 /// is within the range, or if two ranges overlap.
 /// </para>
+/// <para>
+/// <b>Immutability:</b> Once created, a <see cref="DateTimeRange"/> cannot be modified. 
+/// Operations like <see cref="Shift"/> and <see cref="IntersectionWith"/> return new instances.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -24,6 +28,7 @@ namespace KernelR.Domain.ValueObjects.Temporal;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IValueObject"/>
 public readonly record struct DateTimeRange : IValueObject, IParsable<DateTimeRange>
 {
     /// <summary>
@@ -35,16 +40,19 @@ public readonly record struct DateTimeRange : IValueObject, IParsable<DateTimeRa
     /// <summary>
     /// Gets the start of the time range.
     /// </summary>
+    /// <value>A <see cref="DateTimeOffset"/> representing the inclusive start of the range.</value>
     public DateTimeOffset Start { get; }
 
     /// <summary>
     /// Gets the end of the time range.
     /// </summary>
+    /// <value>A <see cref="DateTimeOffset"/> representing the inclusive end of the range.</value>
     public DateTimeOffset End { get; }
 
     /// <summary>
     /// Gets the total duration of the time range.
     /// </summary>
+    /// <value>A <see cref="TimeSpan"/> representing the difference between <see cref="End"/> and <see cref="Start"/>.</value>
     public TimeSpan Duration => End - Start;
 
     /// <summary>

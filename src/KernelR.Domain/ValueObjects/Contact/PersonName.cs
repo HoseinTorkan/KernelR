@@ -34,9 +34,8 @@ namespace KernelR.Domain.ValueObjects;
 /// }
 /// </code>
 /// </example>
-public readonly partial record struct PersonName :
-    IValueObject,
-    IParsable<PersonName>
+/// <seealso cref="IValueObject"/>
+public readonly partial record struct PersonName : IValueObject, IParsable<PersonName>
 {
     /// <summary>
     /// The minimum allowed length for a person's name.
@@ -105,9 +104,6 @@ public readonly partial record struct PersonName :
                 "Person name cannot be empty.",
                 ErrorType.ValidationError);
 
-        // Collapse any run of whitespace (spaces, tabs, etc.) into a single space.
-        // This is crucial for user input where double-spaces are extremely common.
-        // Note: ZWNJ (\u200C) is preserved because it carries meaning in Persian names.
         string normalized = WhitespaceCollapser().Replace(value.Trim(), " ");
 
         if (normalized.Length < MinLength)

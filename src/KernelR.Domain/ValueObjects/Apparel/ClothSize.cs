@@ -17,6 +17,8 @@ namespace KernelR.Domain.ValueObjects.Apparel;
 /// <para>
 /// The values are ordered sequentially (XS &lt; S &lt; M &lt; L &lt; XL &lt; XXL &lt; XXXL), 
 /// making this type safe for sorting and comparison using <see cref="IComparable{T}"/>.
+/// <b>Important:</b> This relies on the underlying <see cref="ClothSizeType"/> enum being 
+/// defined in the correct chronological order.
 /// </para>
 /// </remarks>
 /// <example>
@@ -28,6 +30,8 @@ namespace KernelR.Domain.ValueObjects.Apparel;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="ClothSizeType"/>
+/// <seealso cref="IValueObject"/>
 public readonly record struct ClothSize : IValueObject, IParsable<ClothSize>, IComparable<ClothSize>, IComparable
 {
     /// <summary>

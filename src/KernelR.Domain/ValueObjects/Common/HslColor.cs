@@ -28,15 +28,20 @@ namespace KernelR.Domain.ValueObjects.Common;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IValueObject"/>
+/// <seealso cref="Color"/>
 public readonly record struct HslColor : IValueObject, IParsable<HslColor>
 {
     /// <summary>Gets the hue component in degrees (0 to 360).</summary>
+    /// <value>The hue angle.</value>
     public double H { get; }
 
     /// <summary>Gets the saturation component as a percentage (0 to 100).</summary>
+    /// <value>The saturation percentage.</value>
     public double S { get; }
 
     /// <summary>Gets the lightness component as a percentage (0 to 100).</summary>
+    /// <value>The lightness percentage.</value>
     public double L { get; }
 
     /// <summary>Initializes a new instance of the <see cref="HslColor"/> struct.</summary>

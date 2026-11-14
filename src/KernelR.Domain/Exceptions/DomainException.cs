@@ -9,12 +9,26 @@ namespace KernelR.Domain.Exceptions;
 /// exceptions derived from this class are used for unrecoverable violations of 
 /// domain invariants (e.g., trying to cancel an already paid order).
 /// </para>
+/// <para>
+/// If structured error information is required, you can serialize the error 
+/// object to JSON and pass it as the <c>message</c> parameter, or add it 
+/// to the <see cref="Exception.Data"/> dictionary. This keeps the domain 
+/// completely decoupled from serialization formats.
+/// </para>
 /// </remarks>
 public class DomainException : Exception
 {
     /// <summary>
     /// Gets the optional error code for programmatic identification.
     /// </summary>
+    /// <value>
+    /// A stable, machine-readable code (e.g., <c>"ORDER_ALREADY_PAID"</c>),
+    /// or <see langword="null"/> if no code was provided.
+    /// </value>
+    /// <remarks>
+    /// This code is useful for clients that need to handle specific exception types
+    /// programmatically (e.g., in a global exception handler) without parsing the message.
+    /// </remarks>
     public string? Code { get; }
 
     /// <summary>

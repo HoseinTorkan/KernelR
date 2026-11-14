@@ -14,6 +14,12 @@ namespace KernelR.Domain.ValueObjects.Common;
 /// This value object is framework-independent (does not rely on System.Drawing or WPF) 
 /// and provides rich mathematical and functional operations like Lighten, Darken, and Invert.
 /// </para>
+/// <para>
+/// Since this type lives in the Domain layer, it deliberately does not provide implicit or
+/// explicit conversions to presentation-layer types (e.g., <c>System.Drawing.Color</c>).
+/// Such conversions should be implemented as extension methods in the outer layers
+/// (Infrastructure or UI) to preserve the Dependency Rule.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -25,6 +31,8 @@ namespace KernelR.Domain.ValueObjects.Common;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IValueObject"/>
+/// <seealso cref="HslColor"/>
 public readonly partial record struct Color : IValueObject, IParsable<Color>
 {
     /// <summary>
@@ -34,31 +42,39 @@ public readonly partial record struct Color : IValueObject, IParsable<Color>
     private static partial Regex HexPattern();
 
     /// <summary>Gets the alpha component (0 = fully transparent, 255 = fully opaque).</summary>
+    /// <value>The alpha channel value.</value>
     public byte A { get; }
 
     /// <summary>Gets the red component (0 to 255).</summary>
+    /// <value>The red channel value.</value>
     public byte R { get; }
 
     /// <summary>Gets the green component (0 to 255).</summary>
+    /// <value>The green channel value.</value>
     public byte G { get; }
 
     /// <summary>Gets the blue component (0 to 255).</summary>
+    /// <value>The blue channel value.</value>
     public byte B { get; }
 
     /// <summary>
     /// Gets the color as a normalized hex string.
     /// </summary>
+    /// <value>An 8-digit hex string (e.g., "#FF5733FF") or a 6-digit hex string (e.g., "#FF5733") if fully opaque.</value>
     public string Hex => A == 255
         ? $"#{R:X2}{G:X2}{B:X2}"
         : $"#{A:X2}{R:X2}{G:X2}{B:X2}";
 
     /// <summary>Gets a value indicating whether the color is fully transparent.</summary>
+    /// <value><see langword="true"/> if <see cref="A"/> is zero; otherwise, <see langword="false"/>.</value>
     public bool IsTransparent => A == 0;
 
     /// <summary>Gets the perceived brightness of the color (0.0 to 1.0).</summary>
+    /// <value>A double representing the perceived luminance.</value>
     public double Brightness => (0.299 * R + 0.587 * G + 0.114 * B) / 255.0;
 
     /// <summary>Gets a value indicating whether the color is considered dark.</summary>
+    /// <value><see langword="true"/> if the perceived brightness is less than 0.5; otherwise, <see langword="false"/>.</value>
     public bool IsDark => Brightness < 0.5;
 
     /// <summary>Gets a fully transparent color.</summary>
@@ -80,6 +96,10 @@ public readonly partial record struct Color : IValueObject, IParsable<Color>
     public static Color Blue => new(255, 0, 0, 255);
 
     /// <summary>Initializes a new instance of the <see cref="Color"/> struct.</summary>
+    /// <param name="a">The alpha component.</param>
+    /// <param name="r">The red component.</param>
+    /// <param name="g">The green component.</param>
+    /// <param name="b">The blue component.</param>
     private Color(byte a, byte r, byte g, byte b)
     {
         A = a;
@@ -110,7 +130,13 @@ public readonly partial record struct Color : IValueObject, IParsable<Color>
 
     /// <summary>Creates a new <see cref="Color"/> from a hex string.</summary>
     /// <param name="hex">The hex string (e.g., "#FF5733" or "#80FF5733").</param>
-    /// <returns>A successful result carrying the color, or a failure if the hex string is invalid.</returns>
+    /// <returns>
+    /// A successful result carrying the color, or a failure with one of:
+    /// <list type="bullet">
+    ///   <item><description><c>KernelR.ValueObjects.Color.EMPTY</c> when the input is null or whitespace.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.Color.INVALID_FORMAT</c> when the input is not a valid hex string.</description></item>
+    /// </list>
+    /// </returns>
     public static Result<Color> FromHex(string hex)
     {
         if (string.IsNullOrWhiteSpace(hex))
@@ -230,19 +256,16 @@ public readonly partial record struct Color : IValueObject, IParsable<Color>
         double delta = max - min;
 
         double h = 0;
+        double s;
         double l = (max + min) / 2.0;
 
-        double s = delta == 0
-            ? 0
-            : l > 0.5 ? delta / (2.0 - max - min) : delta / (max + min);
-
-        if (delta != 0)
+        if (delta == 0)
+            s = 0;
+        else
         {
-            h = max == r
-                ? (g - b) / delta + (g < b ? 6 : 0)
-                : max == g
-                    ? (b - r) / delta + 2
-                    : (r - g) / delta + 4;
+            s = l > 0.5 ? delta / (2.0 - max - min) : delta / (max + min);
+
+            h = max == r ? (g - b) / delta + (g < b ? 6 : 0) : max == g ? (b - r) / delta + 2 : (r - g) / delta + 4;
 
             h /= 6;
         }

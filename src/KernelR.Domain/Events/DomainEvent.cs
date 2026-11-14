@@ -17,12 +17,17 @@ namespace KernelR.Domain.Events;
 /// <see langword="init"/>-only so tests and replay scenarios can override it
 /// while the event remains immutable after construction.
 /// </para>
+/// <para>
+/// <b>Why <see langword="record"/>?</b> Domain events are inherently value objects:
+/// two events with the same data represent the same occurrence. Using a record
+/// gives value equality and immutability out of the box.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
 /// public sealed record UserCreatedEvent(
 ///     UserId UserId,
-///     PhoneNumber PhoneNumber) : DomainEvent;
+///     Email Email) : DomainEvent;
 /// </code>
 /// </example>
 /// <seealso cref="IDomainEvent"/>

@@ -16,4 +16,12 @@ namespace KernelR.Domain.ValueObjects;
 /// and free of any side effects.
 /// </para>
 /// </remarks>
+/// <example>
+/// <code>
+/// public readonly record struct Email : IValueObject
+/// {
+///     // ...
+/// }
+/// </code>
+/// </example>
 public interface IValueObject;

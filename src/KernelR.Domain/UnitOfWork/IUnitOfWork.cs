@@ -1,5 +1,3 @@
-using KernelR.Domain.Repositories;
-
 namespace KernelR.Domain.UnitOfWork;
 
 /// <summary>
@@ -24,7 +22,7 @@ namespace KernelR.Domain.UnitOfWork;
 /// share the same unit of work.
 /// </para>
 /// </remarks>
-/// <seealso cref="IRepository{TId, TAggregateRoot}"/>
+/// <seealso cref="Repositories.IRepository{TId, TAggregateRoot}"/>
 /// <seealso cref="IUnitOfWorkTransaction"/>
 public interface IUnitOfWork
 {
@@ -39,7 +37,7 @@ public interface IUnitOfWork
     /// </returns>
     /// <remarks>
     /// <para>
-    /// In most implementations (e.g. EF Core), this method implicitly wraps the
+    /// In most implementations (e.g., EF Core), this method implicitly wraps the
     /// pending changes in a single transaction and commits them atomically.
     /// If the underlying store does not support implicit transactions, the
     /// implementation must ensure that all changes are applied atomically.
@@ -73,7 +71,7 @@ public interface IUnitOfWork
     /// </para>
     /// <para>
     /// The returned transaction must be disposed after commit or rollback.
-    /// Disposing an uncommitted transaction rolls it back.
+    /// Disposing an uncommitted transaction rolls it back automatically.
     /// </para>
     /// </remarks>
     /// <example>

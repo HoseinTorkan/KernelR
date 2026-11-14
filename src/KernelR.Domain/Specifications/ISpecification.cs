@@ -13,7 +13,7 @@ namespace KernelR.Domain.Specifications;
 /// repositories and application services, and makes complex filters composable.
 /// </para>
 /// <para>
-/// <b>Example:</b> Instead of writing <c>o => o.Status == OrderStatus.Active</c> in
+/// <b>Example:</b> Instead of writing <c>o =&gt; o.Status == OrderStatus.Active</c> in
 /// several places, define an <c>ActiveOrderSpecification</c> once and reuse it everywhere.
 /// </para>
 /// </remarks>
@@ -22,7 +22,7 @@ namespace KernelR.Domain.Specifications;
 /// public sealed class ActiveOrderSpecification : Specification&lt;Order&gt;
 /// {
 ///     public override Expression&lt;Func&lt;Order, bool&gt;&gt; ToExpression()
-///         => order => order.Status == OrderStatus.Active;
+///         =&gt; order =&gt; order.Status == OrderStatus.Active;
 /// }
 /// 
 /// // Usage:
@@ -31,6 +31,7 @@ namespace KernelR.Domain.Specifications;
 /// var orders = await _repository.ListAsync(spec, cancellationToken);
 /// </code>
 /// </example>
+/// <seealso cref="Specification{T}"/>
 public interface ISpecification<T>
 {
     /// <summary>

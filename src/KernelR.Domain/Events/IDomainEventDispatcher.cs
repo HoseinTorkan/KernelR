@@ -1,5 +1,3 @@
-using KernelR.Domain.Abstractions;
-
 namespace KernelR.Domain.Events;
 
 /// <summary>
@@ -23,9 +21,9 @@ namespace KernelR.Domain.Events;
 /// </list>
 /// <para>
 /// <b>Why "dispatch" and not just "raise"?</b> The term is intentional. Raising happens
-/// inside the aggregate (<see cref="IAggregateRoot{TId}.AddDomainEvent"/>); dispatching
-/// happens outside the aggregate, in the application or persistence layer. Keeping the two
-/// separated preserves the purity of the domain model.
+/// inside the aggregate (<see cref="Abstractions.IAggregateRoot{TId}.AddDomainEvent"/>);
+/// dispatching happens outside the aggregate, in the application or persistence layer.
+/// Keeping the two separated preserves the purity of the domain model.
 /// </para>
 /// </remarks>
 /// <example>

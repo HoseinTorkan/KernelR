@@ -9,8 +9,9 @@ namespace KernelR.Domain.Auditing.Entities;
 /// <typeparam name="TUserId">The type of the user identifier.</typeparam>
 /// <remarks>
 /// <para>
-/// This is the most comprehensive audit base class. Use it for entities that need full
-/// lifecycle tracking: who created them, who modified them, and who soft-deleted them.
+/// This is the most comprehensive audit base class for entities. Use it for entities
+/// that need full lifecycle tracking: who created them, who modified them, and who
+/// soft-deleted them.
 /// </para>
 /// <para>
 /// <b>Soft delete:</b> Deleting a <see cref="FullAuditedEntity{TId, TUserId}"/> does not remove
@@ -19,30 +20,35 @@ namespace KernelR.Domain.Auditing.Entities;
 /// a global query filter (e.g., in EF Core via <c>HasQueryFilter</c>) to exclude soft-deleted
 /// entities from normal queries.
 /// </para>
-/// <para>
-/// <b>Initialization:</b> The audit properties are declared with a <c>protected set</c>
-/// so that they can be initialized by the infrastructure layer (e.g., an EF Core
-/// <c>SaveChanges</c> interceptor) or by derived classes.
-/// </para>
 /// </remarks>
 /// <example>
 /// <code>
 /// public sealed class Order : FullAuditedEntity&lt;OrderId, Guid&gt;
 /// {
 ///     public decimal Total { get; private set; }
-///     
+///
 ///     public Order(OrderId id, decimal total) : base(id) => Total = total;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IDeletionAudited{TUserId}"/>
+/// <seealso cref="ModificationAuditedEntity{TId, TUserId}"/>
 public abstract class FullAuditedEntity<TId, TUserId> : ModificationAuditedEntity<TId, TUserId>, IDeletionAudited<TUserId>
     where TId : struct
     where TUserId : struct
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// The setter is <see langword="protected"/> so that the persistence layer
+    /// (e.g., an EF Core interceptor) can populate it automatically.
+    /// </remarks>
     public DateTimeOffset? DeletedAt { get; protected set; }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The setter is <see langword="protected"/> so that the persistence layer
+    /// (e.g., an EF Core interceptor) can populate it automatically.
+    /// </remarks>
     public TUserId? DeletedBy { get; protected set; }
 
     /// <inheritdoc />

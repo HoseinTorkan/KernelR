@@ -27,6 +27,7 @@ namespace KernelR.Domain.ValueObjects;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IValueObject"/>
 public readonly partial record struct NationalCode : IValueObject, IParsable<NationalCode>
 {
     /// <summary>

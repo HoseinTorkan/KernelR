@@ -39,6 +39,8 @@ namespace KernelR.Domain.ValueObjects.Network;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IValueObject"/>
+/// <seealso cref="IpAddress"/>
 public readonly record struct Url : IValueObject, IParsable<Url>
 {
     private readonly Uri _uri;

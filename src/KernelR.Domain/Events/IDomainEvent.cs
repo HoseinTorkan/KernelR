@@ -1,5 +1,3 @@
-using KernelR.Domain.Abstractions;
-
 namespace KernelR.Domain.Events;
 
 /// <summary>
@@ -27,13 +25,16 @@ namespace KernelR.Domain.Events;
 /// }
 /// </code>
 /// </example>
-/// <seealso cref="IAggregateRoot{TId}"/>
 /// <seealso cref="DomainEvent"/>
+/// <seealso cref="Abstractions.IAggregateRoot{TId}"/>
 public interface IDomainEvent
 {
     /// <summary>
     /// Gets the moment when this event occurred.
     /// </summary>
+    /// <value>
+    /// A <see cref="DateTimeOffset"/> representing the exact instant of the event.
+    /// </value>
     /// <remarks>
     /// Implementations should persist this value in UTC.
     /// </remarks>

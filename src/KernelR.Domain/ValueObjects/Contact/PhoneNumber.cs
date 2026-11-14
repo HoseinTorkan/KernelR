@@ -22,6 +22,9 @@ namespace KernelR.Domain.ValueObjects;
 ///   <item><description>Whitespace, dashes, and parentheses are removed.</description></item>
 ///   <item><description>Country-code prefixes <c>+98</c>, <c>0098</c>, and <c>98</c> are replaced with a leading <c>0</c>.</description></item>
 /// </list>
+/// <para>
+/// The normalized format is always <c>09XXXXXXXXX</c> (11 digits).
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -32,6 +35,7 @@ namespace KernelR.Domain.ValueObjects;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IValueObject"/>
 public readonly partial record struct PhoneNumber : IValueObject, IParsable<PhoneNumber>
 {
     /// <summary>

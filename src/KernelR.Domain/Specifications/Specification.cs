@@ -24,10 +24,11 @@ namespace KernelR.Domain.Specifications;
 /// public sealed class ActiveOrderSpecification : Specification&lt;Order&gt;
 /// {
 ///     public override Expression&lt;Func&lt;Order, bool&gt;&gt; ToExpression()
-///         => order => order.Status == OrderStatus.Active;
+///         =&gt; order =&gt; order.Status == OrderStatus.Active;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="ISpecification{T}"/>
 public abstract class Specification<T> : ISpecification<T>
 {
     /// <inheritdoc />
@@ -41,6 +42,12 @@ public abstract class Specification<T> : ISpecification<T>
     /// </summary>
     /// <param name="other">The other specification.</param>
     /// <returns>A new specification that is satisfied only when both specifications are satisfied.</returns>
+    /// <example>
+    /// <code>
+    /// var activeAndForCustomer = new ActiveOrderSpecification()
+    ///     .And(new OrderForCustomerSpecification(customerId));
+    /// </code>
+    /// </example>
     public Specification<T> And(Specification<T> other)
     {
         return new AndSpecification<T>(this, other);
@@ -69,18 +76,30 @@ public abstract class Specification<T> : ISpecification<T>
     /// Creates a specification that always evaluates to true.
     /// </summary>
     /// <returns>A specification that is satisfied by every entity.</returns>
+    /// <remarks>
+    /// This is useful when building a dynamic filter list from an empty collection:
+    /// starting with <see cref="All"/> ensures the initial predicate matches everything.
+    /// </remarks>
     public static Specification<T> All() => new AllSpecification<T>();
 
     /// <summary>
     /// Creates a specification that always evaluates to false.
     /// </summary>
     /// <returns>A specification that is never satisfied.</returns>
+    /// <remarks>
+    /// This is useful for short-circuiting queries when no results are expected,
+    /// or for representing an impossible condition in a clean way.
+    /// </remarks>
     public static Specification<T> None() => new NoneSpecification<T>();
 
     #region Internal Combinators
 
+    /// <summary>
+    /// A specification that combines two specifications with a logical AND.
+    /// </summary>
     private sealed class AndSpecification<TEntity>(Specification<TEntity> left, Specification<TEntity> right) : Specification<TEntity>
     {
+        /// <inheritdoc />
         public override Expression<Func<TEntity, bool>> ToExpression()
         {
             Expression<Func<TEntity, bool>> leftExpr = left.ToExpression();
@@ -95,8 +114,12 @@ public abstract class Specification<T> : ISpecification<T>
         }
     }
 
+    /// <summary>
+    /// A specification that combines two specifications with a logical OR.
+    /// </summary>
     private sealed class OrSpecification<TEntity>(Specification<TEntity> left, Specification<TEntity> right) : Specification<TEntity>
     {
+        /// <inheritdoc />
         public override Expression<Func<TEntity, bool>> ToExpression()
         {
             Expression<Func<TEntity, bool>> leftExpr = left.ToExpression();
@@ -111,8 +134,12 @@ public abstract class Specification<T> : ISpecification<T>
         }
     }
 
+    /// <summary>
+    /// A specification that negates another specification with a logical NOT.
+    /// </summary>
     private sealed class NotSpecification<TEntity>(Specification<TEntity> spec) : Specification<TEntity>
     {
+        /// <inheritdoc />
         public override Expression<Func<TEntity, bool>> ToExpression()
         {
             Expression<Func<TEntity, bool>> expr = spec.ToExpression();
@@ -122,13 +149,21 @@ public abstract class Specification<T> : ISpecification<T>
         }
     }
 
+    /// <summary>
+    /// A specification that is satisfied by every entity.
+    /// </summary>
     private sealed class AllSpecification<TEntity> : Specification<TEntity>
     {
+        /// <inheritdoc />
         public override Expression<Func<TEntity, bool>> ToExpression() => _ => true;
     }
 
+    /// <summary>
+    /// A specification that is never satisfied.
+    /// </summary>
     private sealed class NoneSpecification<TEntity> : Specification<TEntity>
     {
+        /// <inheritdoc />
         public override Expression<Func<TEntity, bool>> ToExpression() => _ => false;
     }
 
@@ -144,6 +179,7 @@ public abstract class Specification<T> : ISpecification<T>
     /// </remarks>
     private sealed class ParameterReplacer(ParameterExpression from, ParameterExpression to) : ExpressionVisitor
     {
+        /// <inheritdoc />
         protected override Expression VisitParameter(ParameterExpression node) =>
             node == from ? to : base.VisitParameter(node);
     }

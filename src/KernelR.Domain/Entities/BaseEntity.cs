@@ -71,10 +71,10 @@ public abstract class BaseEntity<TId> : IEntity<TId>, IEquatable<BaseEntity<TId>
 
         // If either entity is transient (no identity yet), they are equal only by reference
         // (which is already handled by ReferenceEquals above).
-        if (IsTransient(this) || IsTransient(other))
-            return false;
-
-        return EqualityComparer<TId>.Default.Equals(Id, other.Id);
+        return
+            !IsTransient(this) &&
+            !IsTransient(other) &&
+            EqualityComparer<TId>.Default.Equals(Id, other.Id);
     }
 
     /// <inheritdoc />

@@ -11,6 +11,25 @@ namespace KernelR.Domain.Events;
 /// the dispatcher invokes all of them.
 /// </para>
 /// <para>
+/// <b>Handler contract:</b>
+/// </para>
+/// <list type="bullet">
+///   <item><description>
+///     Handlers are intended for <b>in-process, synchronous side effects</b> that must
+///     complete as part of the same unit of work (e.g., updating a denormalized view
+///     within the same transaction).
+///   </description></item>
+///   <item><description>
+///     For long-running or cross-service side effects (sending email, publishing to a
+///     message broker), use the Outbox pattern instead. Handlers here should not perform
+///     I/O that can fail after the transaction commits.
+///   </description></item>
+///   <item><description>
+///     If a handler throws, the exception propagates to the dispatcher and typically
+///     causes the surrounding transaction to roll back. Do not catch exceptions silently.
+///   </description></item>
+/// </list>
+/// <para>
 /// <b>Event inheritance:</b> A handler registered for <c>TEvent</c> receives only events
 /// whose runtime type is exactly <c>TEvent</c>. A handler for a base event type does
 /// <b>not</b> automatically receive derived events. This keeps dispatch predictable

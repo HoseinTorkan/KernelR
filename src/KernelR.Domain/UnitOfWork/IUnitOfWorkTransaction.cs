@@ -26,6 +26,7 @@ namespace KernelR.Domain.UnitOfWork;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IUnitOfWork"/>
 public interface IUnitOfWorkTransaction : IAsyncDisposable
 {
     /// <summary>

@@ -33,11 +33,13 @@ namespace KernelR.Domain.ValueObjects.Financial;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IValueObject"/>
+/// <seealso cref="Money"/>
 public readonly record struct CurrencyCode : IValueObject, IParsable<CurrencyCode>
 {
     /// <summary>
     /// A set of all valid ISO 4217 currency codes (plus IRT).
-    /// Using a HashSet ensures O(1) lookup performance.
+    /// Using a <see cref="HashSet{T}"/> ensures O(1) lookup performance.
     /// </summary>
     private static readonly HashSet<string> ValidCodes = new(StringComparer.Ordinal)
     {

@@ -25,19 +25,29 @@ namespace KernelR.Domain.Auditing.Entities;
 /// public sealed class Order : FullAuditedAggregateRoot&lt;OrderId, Guid&gt;
 /// {
 ///     public decimal Total { get; private set; }
-///     
+///
 ///     public Order(OrderId id, decimal total) : base(id) => Total = total;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IDeletionAudited{TUserId}"/>
+/// <seealso cref="ModificationAuditedAggregateRoot{TId, TUserId}"/>
 public abstract class FullAuditedAggregateRoot<TId, TUserId> : ModificationAuditedAggregateRoot<TId, TUserId>, IDeletionAudited<TUserId>
     where TId : struct
     where TUserId : struct
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// The setter is <see langword="protected"/> so that the persistence layer
+    /// (e.g., an EF Core interceptor) can populate it automatically.
+    /// </remarks>
     public DateTimeOffset? DeletedAt { get; protected set; }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The setter is <see langword="protected"/> so that the persistence layer
+    /// (e.g., an EF Core interceptor) can populate it automatically.
+    /// </remarks>
     public TUserId? DeletedBy { get; protected set; }
 
     /// <inheritdoc />

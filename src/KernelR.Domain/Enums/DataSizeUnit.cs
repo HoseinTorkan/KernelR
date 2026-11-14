@@ -25,19 +25,7 @@ namespace KernelR.Domain.Enums;
 /// Internally, every <see cref="DataSize"/> is stored as a <see cref="long"/> number of bytes,
 /// so this enum is never used for storage or comparison.
 /// </para>
-/// <para>
-/// <b>Extensibility:</b> Additional units (for example <c>PB</c>, <c>EB</c>) can be added
-/// later. Because the enum values are explicit and spaced, new members can be added
-/// without renumbering existing ones, preserving compatibility with persisted data
-/// (e.g., when the enum value is stored in a database column for legacy systems).
-/// </para>
 /// </remarks>
-/// <example>
-/// <code>
-/// DataSizeUnit unit = (DataSizeUnit)request.Unit;
-/// Result&lt;DataSize&gt; result = DataSize.Create(request.Amount, unit);
-/// </code>
-/// </example>
 /// <seealso cref="DataSize"/>
 public enum DataSizeUnit
 {
@@ -53,15 +41,9 @@ public enum DataSizeUnit
     /// Kilobytes (KB). 1 KB = 1024 bytes.
     /// </summary>
     /// <remarks>
-    /// <para>
     /// This is the binary kilobyte (1024 bytes), not the decimal kilobyte (1000 bytes).
     /// It matches the value displayed by Windows Explorer, Linux file managers, and
     /// most programming languages' size-formatting functions.
-    /// </para>
-    /// <para>
-    /// The SI-standard equivalent is kibibyte (KiB), but this type uses the more common
-    /// "KB" abbreviation for consistency with user expectations.
-    /// </para>
     /// </remarks>
     Kilobyte = 1,
 

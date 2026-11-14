@@ -20,6 +20,9 @@ namespace KernelR.Domain.ValueObjects.Contact;
 /// RFC-compliant addresses can be arbitrarily complex, and the only authoritative
 /// validation for an email is actual delivery.
 /// </para>
+/// <para>
+/// The maximum allowed length is 254 characters, as per RFC 5321.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -30,6 +33,7 @@ namespace KernelR.Domain.ValueObjects.Contact;
 /// }
 /// </code>
 /// </example>
+/// <seealso cref="IValueObject"/>
 public readonly partial record struct Email : IValueObject, IParsable<Email>
 {
     /// <summary>

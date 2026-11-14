@@ -9,31 +9,45 @@ namespace KernelR.Domain.Auditing.Entities;
 /// <typeparam name="TId">The type of the entity's identifier.</typeparam>
 /// <typeparam name="TUserId">The type of the user identifier.</typeparam>
 /// <remarks>
-/// This base class combines <see cref="BaseEntity{TId}"/> with <see cref="ICreationAudited{TUserId}"/>.
-/// Use this for entities that are immutable after creation (e.g., audit logs, snapshots).
-/// For entities that can be modified, use <see cref="ModificationAuditedEntity{TId, TUserId}"/>
-/// or <see cref="FullAuditedEntity{TId, TUserId}"/> instead.
+/// <para>
+/// This base class combines <see cref="BaseEntity{TId}"/> with
+/// <see cref="ICreationAudited{TUserId}"/>. Use it for entities that are immutable
+/// after creation (e.g., audit logs, immutable snapshots).
+/// </para>
+/// <para>
+/// For entities that can be modified after creation, use
+/// <see cref="ModificationAuditedEntity{TId, TUserId}"/> or
+/// <see cref="FullAuditedEntity{TId, TUserId}"/> instead.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
 /// public sealed class AuditLog : CreationAuditedEntity&lt;Guid, Guid&gt;
 /// {
 ///     public string Action { get; private set; }
-///     
+///
 ///     public AuditLog(Guid id, string action) : base(id) => Action = action;
 /// }
 /// </code>
 /// </example>
-public abstract class CreationAuditedEntity<TId, TUserId> :
-    BaseEntity<TId>,
-    ICreationAudited<TUserId>
+/// <seealso cref="ICreationAudited{TUserId}"/>
+/// <seealso cref="BaseEntity{TId}"/>
+public abstract class CreationAuditedEntity<TId, TUserId> : BaseEntity<TId>, ICreationAudited<TUserId>
     where TId : struct
     where TUserId : struct
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// The setter is <see langword="protected"/> so that the persistence layer
+    /// (e.g., an EF Core interceptor) can populate it automatically.
+    /// </remarks>
     public DateTimeOffset CreatedAt { get; protected set; }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The setter is <see langword="protected"/> so that the persistence layer
+    /// (e.g., an EF Core interceptor) can populate it automatically.
+    /// </remarks>
     public TUserId CreatedBy { get; protected set; }
 
     /// <summary>

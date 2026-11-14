@@ -8,18 +8,42 @@ namespace KernelR.Domain.Auditing.Entities;
 /// <typeparam name="TId">The type of the aggregate root's identifier.</typeparam>
 /// <typeparam name="TUserId">The type of the user identifier.</typeparam>
 /// <remarks>
-/// This class extends <see cref="CreationAuditedAggregateRoot{TId, TUserId}"/> with modification
-/// tracking. Use it for mutable aggregate roots that do not need soft-deletion.
+/// <para>
+/// This class extends <see cref="CreationAuditedAggregateRoot{TId, TUserId}"/> with
+/// modification tracking. Use it for mutable aggregate roots that do not need soft-deletion.
+/// </para>
+/// <para>
 /// For soft-deletion support, use <see cref="FullAuditedAggregateRoot{TId, TUserId}"/>.
+/// </para>
 /// </remarks>
+/// <example>
+/// <code>
+/// public sealed class BlogPost : ModificationAuditedAggregateRoot&lt;Guid, Guid&gt;
+/// {
+///     public string Title { get; private set; }
+///
+///     public BlogPost(Guid id, string title) : base(id) => Title = title;
+/// }
+/// </code>
+/// </example>
+/// <seealso cref="IModificationAudited{TUserId}"/>
+/// <seealso cref="CreationAuditedAggregateRoot{TId, TUserId}"/>
 public abstract class ModificationAuditedAggregateRoot<TId, TUserId> : CreationAuditedAggregateRoot<TId, TUserId>, IModificationAudited<TUserId>
     where TId : struct
     where TUserId : struct
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// The setter is <see langword="protected"/> so that the persistence layer
+    /// (e.g., an EF Core interceptor) can populate it automatically.
+    /// </remarks>
     public DateTimeOffset? UpdatedAt { get; protected set; }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The setter is <see langword="protected"/> so that the persistence layer
+    /// (e.g., an EF Core interceptor) can populate it automatically.
+    /// </remarks>
     public TUserId? UpdatedBy { get; protected set; }
 
     /// <summary>
