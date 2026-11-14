@@ -20,34 +20,72 @@ namespace KernelR.Domain.Enums;
 /// the convention users actually observe.
 /// </para>
 /// <para>
-/// Additional units (for example <c>TB</c>, <c>PB</c>) can be added later, but each
-/// addition requires extending the conversion factor in <see cref="DataSize"/>.
+/// <b>Canonical representation:</b> The enum is only used for <i>input</i> to the
+/// <see cref="DataSize"/> value object (via <c>FromXxx</c> or <c>Create(decimal, DataSizeUnit)</c>).
+/// Internally, every <see cref="DataSize"/> is stored as a <see cref="long"/> number of bytes,
+/// so this enum is never used for storage or comparison.
+/// </para>
+/// <para>
+/// <b>Extensibility:</b> Additional units (for example <c>PB</c>, <c>EB</c>) can be added
+/// later. Because the enum values are explicit and spaced, new members can be added
+/// without renumbering existing ones, preserving compatibility with persisted data
+/// (e.g., when the enum value is stored in a database column for legacy systems).
 /// </para>
 /// </remarks>
+/// <example>
+/// <code>
+/// DataSizeUnit unit = (DataSizeUnit)request.Unit;
+/// Result&lt;DataSize&gt; result = DataSize.Create(request.Amount, unit);
+/// </code>
+/// </example>
+/// <seealso cref="DataSize"/>
 public enum DataSizeUnit
 {
     /// <summary>
-    /// Bytes (B).
+    /// Bytes (B). The canonical unit used internally by <see cref="DataSize"/>.
     /// </summary>
+    /// <remarks>
+    /// 1 byte = 8 bits. This is the smallest unit of digital information.
+    /// </remarks>
     Byte = 0,
 
     /// <summary>
     /// Kilobytes (KB). 1 KB = 1024 bytes.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the binary kilobyte (1024 bytes), not the decimal kilobyte (1000 bytes).
+    /// It matches the value displayed by Windows Explorer, Linux file managers, and
+    /// most programming languages' size-formatting functions.
+    /// </para>
+    /// <para>
+    /// The SI-standard equivalent is kibibyte (KiB), but this type uses the more common
+    /// "KB" abbreviation for consistency with user expectations.
+    /// </para>
+    /// </remarks>
     Kilobyte = 1,
 
     /// <summary>
-    /// Megabytes (MB). 1 MB = 1024 KB.
+    /// Megabytes (MB). 1 MB = 1024 KB = 1,048,576 bytes.
     /// </summary>
+    /// <remarks>
+    /// This is the binary megabyte (1024² bytes), not the decimal megabyte (10⁶ bytes).
+    /// </remarks>
     Megabyte = 2,
 
     /// <summary>
-    /// Gigabytes (GB). 1 GB = 1024 MB.
+    /// Gigabytes (GB). 1 GB = 1024 MB = 1,073,741,824 bytes.
     /// </summary>
+    /// <remarks>
+    /// This is the binary gigabyte (1024³ bytes), not the decimal gigabyte (10⁹ bytes).
+    /// </remarks>
     Gigabyte = 3,
 
     /// <summary>
-    /// Terabytes (TB). 1 TB = 1024 GB.
+    /// Terabytes (TB). 1 TB = 1024 GB = 1,099,511,627,776 bytes.
     /// </summary>
-    Terabyte = 4
+    /// <remarks>
+    /// This is the binary terabyte (1024⁴ bytes), not the decimal terabyte (10¹² bytes).
+    /// </remarks>
+    Terabyte = 4,
 }
