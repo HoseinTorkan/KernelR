@@ -157,6 +157,18 @@ public sealed record Result<T>
     }
 
     /// <summary>
+    /// Executes one of the provided functions based on the success or failure of the result.
+    /// </summary>
+    /// <typeparam name="TOut">The return type of both branches.</typeparam>
+    /// <param name="onSuccess">The function to execute if the result is successful.</param>
+    /// <param name="onFailure">The function to execute if the result is a failure.</param>
+    /// <returns>The value returned by the executed function.</returns>
+    public TOut Match<TOut>(Func<T, TOut> onSuccess, Func<Error, TOut> onFailure)
+        => IsSuccess
+        ? onSuccess(Value)
+        : onFailure(Error);
+
+    /// <summary>
     /// Implicitly converts a value to a successful <see cref="Result{T}"/>.
     /// </summary>
     /// <param name="value">The value to convert.</param>
@@ -169,16 +181,4 @@ public sealed record Result<T>
     /// <param name="error">The error to convert.</param>
     /// <returns>A failed <see cref="Result{T}"/> carrying the specified error.</returns>
     public static implicit operator Result<T>(Error error) => Failure(error);
-
-    /// <summary>
-    /// Executes one of the provided functions based on the success or failure of the result.
-    /// </summary>
-    /// <typeparam name="TOut">The return type of both branches.</typeparam>
-    /// <param name="onSuccess">The function to execute if the result is successful.</param>
-    /// <param name="onFailure">The function to execute if the result is a failure.</param>
-    /// <returns>The value returned by the executed function.</returns>
-    public TOut Match<TOut>(Func<T, TOut> onSuccess, Func<Error, TOut> onFailure)
-        => IsSuccess
-        ? onSuccess(Value)
-        : onFailure(Error);
 }
