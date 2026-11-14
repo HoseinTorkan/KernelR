@@ -75,7 +75,9 @@ public sealed record Result
     /// <param name="onFailure">The function to execute if the result is a failure.</param>
     /// <returns>The value returned by the executed function.</returns>
     public TOut Match<TOut>(Func<TOut> onSuccess, Func<Error, TOut> onFailure)
-        => IsSuccess ? onSuccess() : onFailure(Error);
+        => IsSuccess
+        ? onSuccess()
+        : onFailure(Error);
 }
 
 /// <summary>
@@ -176,5 +178,7 @@ public sealed record Result<T>
     /// <param name="onFailure">The function to execute if the result is a failure.</param>
     /// <returns>The value returned by the executed function.</returns>
     public TOut Match<TOut>(Func<T, TOut> onSuccess, Func<Error, TOut> onFailure)
-        => IsSuccess ? onSuccess(Value) : onFailure(Error);
+        => IsSuccess
+        ? onSuccess(Value)
+        : onFailure(Error);
 }

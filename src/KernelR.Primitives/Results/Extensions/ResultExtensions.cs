@@ -8,19 +8,6 @@ namespace KernelR.Primitives.Results.Extensions;
 public static class ResultExtensions
 {
     /// <summary>
-    /// Returns the success value, or throws a default <see cref="InvalidOperationException"/>.
-    /// </summary>
-    /// <typeparam name="T">The type of the success value.</typeparam>
-    /// <param name="result">The result to evaluate.</param>
-    /// <returns>The success value.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the result is a failure.</exception>
-    public static T OrThrowInvalidOperationException<T>(this Result<T> result)
-    {
-        if (result.IsSuccess) return result.Value;
-        throw new InvalidOperationException(result.Error.ToJson());
-    }
-
-    /// <summary>
     /// Returns the success value, or throws a custom exception created by the <paramref name="exceptionFactory"/>.
     /// </summary>
     /// <typeparam name="T">The type of the success value.</typeparam>
@@ -31,10 +18,21 @@ public static class ResultExtensions
     /// <exception cref="Exception">Thrown when the result is a failure.</exception>
     public static T OrThrow<T, TException>(this Result<T> result, Func<string, TException> exceptionFactory)
         where TException : Exception
-    {
-        if (result.IsSuccess) return result.Value;
-        throw exceptionFactory(result.Error.ToJson());
-    }
+        => result.IsSuccess
+            ? result.Value
+            : throw exceptionFactory(result.Error.ToJson());
+
+    /// <summary>
+    /// Returns the success value, or throws a default <see cref="InvalidOperationException"/>.
+    /// </summary>
+    /// <typeparam name="T">The type of the success value.</typeparam>
+    /// <param name="result">The result to evaluate.</param>
+    /// <returns>The success value.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the result is a failure.</exception>
+    public static T OrThrowInvalidOperationException<T>(this Result<T> result)
+        => result.IsSuccess
+            ? result.Value
+            : throw new InvalidOperationException(result.Error.ToJson());
 
     /// <summary>
     /// Returns the success value, or throws a <see cref="FormatException"/>.
@@ -44,10 +42,9 @@ public static class ResultExtensions
     /// <returns>The success value.</returns>
     /// <exception cref="FormatException">Thrown when the result is a failure.</exception>
     public static T OrThrowFormatException<T>(this Result<T> result)
-    {
-        if (result.IsSuccess) return result.Value;
-        throw new FormatException(result.Error.ToJson());
-    }
+        => result.IsSuccess
+            ? result.Value
+            : throw new FormatException(result.Error.ToJson());
 
     /// <summary>
     /// Attempts to extract the success value without throwing.

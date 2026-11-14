@@ -31,7 +31,9 @@ namespace KernelR.Domain.Auditing.Entities;
 /// </example>
 /// <seealso cref="ICreationAudited{TUserId}"/>
 /// <seealso cref="BaseAggregateRoot{TId}"/>
-public abstract class CreationAuditedAggregateRoot<TId, TUserId> : BaseAggregateRoot<TId>, ICreationAudited<TUserId>
+public abstract class CreationAuditedAggregateRoot<TId, TUserId> :
+    BaseAggregateRoot<TId>,
+    ICreationAudited<TUserId>
     where TId : struct
     where TUserId : struct
 {

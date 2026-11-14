@@ -29,7 +29,9 @@ namespace KernelR.Domain.Auditing.Entities;
 /// </example>
 /// <seealso cref="IDeletionAudited{TUserId}"/>
 /// <seealso cref="BaseEntity{TId}"/>
-public abstract class SoftDeletableEntity<TId, TUserId> : BaseEntity<TId>, IDeletionAudited<TUserId>
+public abstract class SoftDeletableEntity<TId, TUserId> :
+    BaseEntity<TId>,
+    IDeletionAudited<TUserId>
     where TId : struct
     where TUserId : struct
 {

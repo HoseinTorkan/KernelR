@@ -16,5 +16,7 @@ namespace KernelR.Domain.Auditing.Abstractions;
 /// </remarks>
 /// <seealso cref="IHasCreationTime"/>
 /// <seealso cref="IHasCreator{TUserId}"/>
-public interface ICreationAudited<TUserId> : IHasCreationTime, IHasCreator<TUserId>
+public interface ICreationAudited<TUserId> :
+    IHasCreationTime,
+    IHasCreator<TUserId>
     where TUserId : struct;

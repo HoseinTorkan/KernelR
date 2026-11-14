@@ -35,7 +35,9 @@ namespace KernelR.Domain.Entities;
 /// </example>
 /// <seealso cref="IAggregateRoot{TId}"/>
 /// <seealso cref="BaseEntity{TId}"/>
-public abstract class BaseAggregateRoot<TId> : BaseEntity<TId>, IAggregateRoot<TId>
+public abstract class BaseAggregateRoot<TId> :
+    BaseEntity<TId>,
+    IAggregateRoot<TId>
     where TId : struct
 {
     private readonly List<IDomainEvent> _domainEvents = [];

@@ -15,5 +15,7 @@ namespace KernelR.Domain.Auditing.Abstractions;
 /// </remarks>
 /// <seealso cref="IHasModificationTime"/>
 /// <seealso cref="IHasModifier{TUserId}"/>
-public interface IModificationAudited<TUserId> : IHasModificationTime, IHasModifier<TUserId>
+public interface IModificationAudited<TUserId> :
+    IHasModificationTime,
+    IHasModifier<TUserId>
     where TUserId : struct;

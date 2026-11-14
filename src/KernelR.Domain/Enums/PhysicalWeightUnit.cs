@@ -27,29 +27,34 @@ namespace KernelR.Domain.Enums;
 public enum PhysicalWeightUnit
 {
     /// <summary>
+    /// Microgram (μg). The canonical unit used internally by <see cref="PhysicalWeight"/>.
+    /// </summary>
+    Microgram = 0,
+
+    /// <summary>
     /// Milligram (mg). 1 mg = 1,000 micrograms.
     /// </summary>
-    Milligram = 0,
+    Milligram = 1,
 
     /// <summary>
     /// Gram (g). 1 g = 1,000,000 micrograms.
     /// </summary>
-    Gram = 1,
+    Gram = 2,
 
     /// <summary>
     /// Kilogram (kg). 1 kg = 1,000,000,000 micrograms.
     /// </summary>
-    Kilogram = 2,
+    Kilogram = 3,
 
     /// <summary>
     /// Metric ton (t). 1 t = 1,000,000,000,000 micrograms.
     /// </summary>
-    Ton = 3,
+    Ton = 4,
 
     /// <summary>
     /// Pound (lb). 1 lb = 453,592,370 micrograms (exact by the international avoirdupois definition).
     /// </summary>
-    Pound = 4,
+    Pound = 5,
 
     /// <summary>
     /// Ounce (oz). 1 oz = 28,349,523 micrograms (rounded from 28,349,523.125).
@@ -57,10 +62,5 @@ public enum PhysicalWeightUnit
     /// <remarks>
     /// See the precision note on the enum itself for the negligible impact of this rounding.
     /// </remarks>
-    Ounce = 5,
-
-    /// <summary>
-    /// Microgram (μg). The canonical unit used internally by <see cref="PhysicalWeight"/>.
-    /// </summary>
-    Microgram = 6,
+    Ounce = 6,
 }

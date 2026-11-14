@@ -39,7 +39,9 @@ namespace KernelR.Domain.Entities;
 /// </code>
 /// </example>
 /// <seealso cref="IEntity{TId}"/>
-public abstract class BaseEntity<TId> : IEntity<TId>, IEquatable<BaseEntity<TId>>
+public abstract class BaseEntity<TId> :
+    IEntity<TId>,
+    IEquatable<BaseEntity<TId>>
     where TId : struct
 {
     /// <inheritdoc />

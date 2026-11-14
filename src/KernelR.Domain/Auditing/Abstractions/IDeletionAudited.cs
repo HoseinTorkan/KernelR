@@ -22,5 +22,8 @@ namespace KernelR.Domain.Auditing.Abstractions;
 /// <seealso cref="IHasDeletionTime"/>
 /// <seealso cref="IHasDeleter{TUserId}"/>
 /// <seealso cref="ISoftDeletable"/>
-public interface IDeletionAudited<TUserId> : IHasDeletionTime, IHasDeleter<TUserId>, ISoftDeletable
+public interface IDeletionAudited<TUserId> :
+    IHasDeletionTime,
+    IHasDeleter<TUserId>,
+    ISoftDeletable
     where TUserId : struct;

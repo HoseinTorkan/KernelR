@@ -30,7 +30,9 @@ namespace KernelR.Domain.Auditing.Entities;
 /// </example>
 /// <seealso cref="IModificationAudited{TUserId}"/>
 /// <seealso cref="CreationAuditedEntity{TId, TUserId}"/>
-public abstract class ModificationAuditedEntity<TId, TUserId> : CreationAuditedEntity<TId, TUserId>, IModificationAudited<TUserId>
+public abstract class ModificationAuditedEntity<TId, TUserId> :
+    CreationAuditedEntity<TId, TUserId>,
+    IModificationAudited<TUserId>
     where TId : struct
     where TUserId : struct
 {

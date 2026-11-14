@@ -26,32 +26,32 @@ namespace KernelR.Domain.Enums;
 public enum PhysicalSizeUnit
 {
     /// <summary>
+    /// Micrometer (μm). The canonical unit used internally by <see cref="PhysicalSize"/>.
+    /// </summary>
+    Micrometer = 0,
+
+    /// <summary>
     /// Millimeter (mm). 1 mm = 1,000 micrometers.
     /// </summary>
-    Millimeter = 0,
+    Millimeter = 1,
 
     /// <summary>
     /// Centimeter (cm). 1 cm = 10,000 micrometers.
     /// </summary>
-    Centimeter = 1,
+    Centimeter = 2,
 
     /// <summary>
     /// Meter (m). 1 m = 1,000,000 micrometers.
     /// </summary>
-    Meter = 2,
+    Meter = 3,
 
     /// <summary>
     /// Inch (in). 1 in = 25,400 micrometers (exact by the international definition).
     /// </summary>
-    Inch = 3,
+    Inch = 4,
 
     /// <summary>
     /// Foot (ft). 1 ft = 304,800 micrometers (exact by the international definition).
     /// </summary>
-    Foot = 4,
-
-    /// <summary>
-    /// Micrometer (μm). The canonical unit used internally by <see cref="PhysicalSize"/>.
-    /// </summary>
-    Micrometer = 5,
+    Foot = 5,
 }

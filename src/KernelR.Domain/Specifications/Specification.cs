@@ -48,29 +48,20 @@ public abstract class Specification<T> : ISpecification<T>
     ///     .And(new OrderForCustomerSpecification(customerId));
     /// </code>
     /// </example>
-    public Specification<T> And(Specification<T> other)
-    {
-        return new AndSpecification<T>(this, other);
-    }
+    public Specification<T> And(Specification<T> other) => new AndSpecification<T>(this, other);
 
     /// <summary>
     /// Combines the current specification with another specification using a logical OR.
     /// </summary>
     /// <param name="other">The other specification.</param>
     /// <returns>A new specification that is satisfied when at least one of the specifications is satisfied.</returns>
-    public Specification<T> Or(Specification<T> other)
-    {
-        return new OrSpecification<T>(this, other);
-    }
+    public Specification<T> Or(Specification<T> other) => new OrSpecification<T>(this, other);
 
     /// <summary>
     /// Negates the current specification using a logical NOT.
     /// </summary>
     /// <returns>A new specification that is satisfied only when the current specification is not satisfied.</returns>
-    public Specification<T> Not()
-    {
-        return new NotSpecification<T>(this);
-    }
+    public Specification<T> Not() => new NotSpecification<T>(this);
 
     /// <summary>
     /// Creates a specification that always evaluates to true.
