@@ -4,46 +4,14 @@
     ═══════════════════════════════════════════════════════════════════════════
     Shared build configuration for all KernelR packages.
     ═══════════════════════════════════════════════════════════════════════════
-
-    This file is automatically imported by MSBuild for every project in the
-    solution. It centralizes settings that must stay consistent across all
-    packages, so individual .csproj files remain small and focused.
-
-    Individual .csproj files should only declare:
-      - PackageId, Version, Description, PackageTags
-      - ProjectReference / PackageReference items
-      - FrameworkReference (for ASP.NET Core projects)
-      - InternalsVisibleTo (if needed)
-    ═══════════════════════════════════════════════════════════════════════════
     -->
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Language & Compiler                        -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <!--
-            LangVersion = latest
-            Uses the newest C# language features available in the installed SDK.
-            For a framework/library, this gives us access to record structs,
-            primary constructors, collection expressions, etc.
-        -->
         <LangVersion>latest</LangVersion>
-
-        <!--
-            Nullable = enable
-            Enables nullable reference types. Every reference-type variable
-            must be annotated with `?` if it can be null. This catches
-            potential NullReferenceExceptions at compile time.
-            Mandatory for a library that wants to be reliable.
-        -->
         <Nullable>enable</Nullable>
-
-        <!--
-            ImplicitUsings = enable
-            Automatically imports the most common namespaces (System, System.Linq,
-            System.Collections.Generic, etc.) so they don't need to be repeated
-            in every file. Only affects .NET 6+ projects.
-        -->
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
@@ -51,13 +19,6 @@
     <!-- Target Framework                           -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <!--
-            TargetFramework = net10.0
-            All projects target .NET 10. This is centralized so upgrading the
-            entire solution to a future .NET version is a one-line change.
-            (Source Generators override this in their own .csproj because
-            they must target netstandard2.0 for Roslyn compatibility.)
-        -->
         <TargetFramework>net10.0</TargetFramework>
     </PropertyGroup>
 
@@ -65,42 +26,10 @@
     <!-- Quality & Static Analysis                  -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <!--
-            TreatWarningsAsErrors = true
-            Any compiler warning becomes a build error. This forces developers
-            to fix warnings immediately, preventing "warning debt" from
-            accumulating over time. Essential for a production-quality library.
-        -->
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-
-        <!--
-            EnableNETAnalyzers = true
-            Enables the built-in .NET analyzers (CAxxxx rules, e.g., CA1305,
-            CA1062, CA2007). These catch common bugs, performance issues, and
-            API-design mistakes.
-        -->
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
-
-        <!--
-            AnalysisLevel = latest
-            Uses the newest set of analyzer rules shipped with the current SDK.
-            Newer rules = stricter analysis = fewer bugs.
-        -->
         <AnalysisLevel>latest</AnalysisLevel>
-
-        <!--
-            AnalysisMode = Recommended
-            Applies the Microsoft-recommended set of rules: a balance between
-            strictness and practicality. `All` would be too noisy for a public
-            library; `Recommended` is the sweet spot.
-        -->
         <AnalysisMode>Recommended</AnalysisMode>
-
-        <!--
-            EnforceCodeStyleInBuild = true
-            Enforces .editorconfig code-style rules during build. This keeps
-            formatting and naming consistent across the entire solution.
-        -->
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     </PropertyGroup>
 
@@ -109,44 +38,31 @@
     <!-- ═══════════════════════════════════════════ -->
 
     <!--
-        ⚠️ CRITICAL: Each NoWarn entry MUST end with a semicolon BEFORE the
-        code (e.g., `$(NoWarn);CA1305`), not after. Otherwise, MSBuild
-        concatenates the strings without a separator and the rule is NOT
-        suppressed. Each entry appends to the previous one via `$(NoWarn)`.
+        ⚠️ IMPORTANT: Each NoWarn entry MUST have a semicolon BEFORE the code
+        (e.g., `$(NoWarn);CA1711`). If the semicolon is missing, MSBuild will
+        concatenate the values into a single invalid code and NEITHER code
+        will be suppressed.
+
+        CA1305 is NOT suppressed. The codebase follows a strict culture policy:
+          - All culture-sensitive formatting uses CultureInfo.InvariantCulture.
+          - All ToString() / TryParse() on IFormattable values pass an explicit
+            CultureInfo.InvariantCulture.
+          - Error messages are in English, formatted with InvariantCulture.
+        
+        If a specific file has a legitimate exception, it should use
+        #pragma warning disable CA1305 with a clear justification comment.
     -->
 
     <PropertyGroup>
         <!--
-            CA1305: "Specify IFormatProvider"
-            The rule warns whenever an IFormattable value (int, enum, decimal,
-            DateTime, etc.) is formatted without an explicit IFormatProvider.
-
-            Why disabled globally:
-              1. KernelR is a library, not a user-facing app. All error
-                 messages (Error.Message, exception messages) are
-                 developer-facing, not localized.
-              2. CA1305 produces false positives for int/enum values,
-                 which render identically in every culture (e.g., "5" is
-                 "5" in en-US, fa-IR, de-DE, ar-SA).
-              3. Major .NET libraries (MediatR, FluentValidation,
-                 AutoMapper, Polly) suppress this rule for the same reason.
-
-            If a specific file genuinely needs culture-sensitive formatting
-            (e.g., displaying a number to end users), that file should
-            explicitly use CultureInfo.InvariantCulture or CultureInfo.CurrentCulture,
-            and CA1305 should be re-enabled locally for that file with:
-                #pragma warning restore CA1305
-        -->
-
-
-        <!--
             CA1711: "Identifiers should not have incorrect suffix"
+            ------------------------------------------------------
             The rule warns when a type name ends with a "reserved" suffix
             such as Handler, Collection, Delegate, etc. It expects these
             suffixes to be used only for Microsoft-defined base types.
 
             Why disabled globally:
-              1. In DDD and CQRS, "Handler" is a standard terminology
+              1. In DDD and CQRS, "Handler" is standard terminology
                  (e.g., IDomainEventHandler, ICommandHandler).
               2. ASP.NET Core's built-in types (IHttpHandler) are unrelated.
               3. The rule produces false positives for every domain handler.
@@ -158,22 +74,7 @@
     <!-- Documentation                              -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <!--
-            GenerateDocumentationFile = true
-            Generates an XML documentation file (.xml) alongside the compiled
-            .dll. This file is consumed by:
-              - IntelliSense in Visual Studio / VS Code
-              - NuGet.org to display API docs
-              - DocFX/Sandcastle for generating HTML documentation
-        -->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-
-        <!--
-            WarningsAsErrors = CS1591
-            Promotes CS1591 ("Missing XML comment for publicly visible type
-            or member") to an error. This ensures every public API has
-            documentation — a hard requirement for a NuGet package.
-        -->
         <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
     </PropertyGroup>
 
@@ -181,88 +82,29 @@
     <!-- Symbols & Source Link                      -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <!--
-            IncludeSymbols = true
-            Produces a separate symbols package (.snupkg) alongside the .nupkg.
-            Consumers can configure Visual Studio to automatically download
-            source code when debugging into KernelR.
-        -->
         <IncludeSymbols>true</IncludeSymbols>
-
-        <!--
-            SymbolPackageFormat = snupkg
-            Uses the modern .snupkg format (instead of the legacy .symbols.nupkg).
-            NuGet.org has supported .snupkg since 2019.
-        -->
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-
-        <!--
-            PublishRepositoryUrl = true
-            Embeds the repository URL (from RepositoryUrl) into the NuGet
-            package metadata. Required for Source Link to work.
-        -->
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
-
-        <!--
-            EmbedUntrackedSources = true
-            Embeds source files that aren't tracked by Git (e.g., files
-            generated during build) into the PDB. This ensures debugging
-            works even for generated code.
-        -->
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
-
-        <!--
-            DebugType = portable
-            Uses the Portable PDB format (the .NET Core standard). Unlike the
-            legacy full/Windows-only PDB, portable PDBs work on Linux, macOS,
-            and Windows, and are required for .snupkg.
-        -->
         <DebugType>portable</DebugType>
     </PropertyGroup>
 
     <!--
         Note (SDK 10+):
-        Starting with the .NET 10 SDK, SourceLink is bundled into the SDK.
-        An explicit PackageReference to Microsoft.SourceLink.GitHub is
-        therefore no longer required and may interfere with the built-in
-        mechanism.
+        SourceLink is bundled into the SDK. An explicit PackageReference to
+        Microsoft.SourceLink.GitHub is therefore no longer required.
     -->
     <PropertyGroup>
-        <!--
-            EnableSourceLink = true
-            Enables Source Link, which embeds HTTP URLs to the source files
-            on GitHub (instead of file paths) into the PDB. When a developer
-            debugs into KernelR from another project, Visual Studio
-            downloads the exact source code from GitHub.
-        -->
-        <EnableSourceLink>true</EnableSourceLink>
-
-        <!--
-            SourceLinkGitHubHost = github.com
-            Tells Source Link the hosting provider. GitHub, GitLab, Bitbucket,
-            and Azure DevOps are supported. Only github.com is needed here.
-        -->
-        <SourceLinkGitHubHost>github.com</SourceLinkGitHubHost>
-    </PropertyGroup>
+        <EnableSourceLink>
+            true</EnableEnableSourceLink>
+            <SourceLinkGitHubHost>github.com</SourceLinkGitHubHost>
+        </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Deterministic Build                        -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <!--
-            Deterministic = true
-            Ensures that the same source code produces byte-for-byte identical
-            binaries regardless of when/where it's built. This is the SDK
-            default but explicitly stated for clarity. Required for reproducible
-            builds and reliable security audits.
-        -->
         <Deterministic>true</Deterministic>
-
-        <!--
-            ContinuousIntegrationBuild = true (only in GitHub Actions)
-            Normalizes file paths in the PDB (removes local machine paths).
-            Only enabled in CI to avoid making local debugging harder.
-        -->
         <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     </PropertyGroup>
 
@@ -270,45 +112,18 @@
     <!-- Repository & Author Metadata               -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <!-- Author name displayed on NuGet.org -->
         <Authors>HoseinTorkan</Authors>
-
-        <!-- Company shown in the package metadata (does not need to be a legal entity) -->
         <Company>KernelR</Company>
-
-        <!--
-            PackageLicenseExpression = MIT
-            Uses the SPDX license identifier for the MIT license. NuGet.org
-            displays the license text automatically. Required for any public
-            NuGet package.
-        -->
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-
-        <!-- Git is the only VCS supported by Source Link -->
         <RepositoryType>git</RepositoryType>
-
-        <!-- Public repository URL, embedded in the package metadata -->
         <RepositoryUrl>https://github.com/HoseinTorkan/KernelR</RepositoryUrl>
-
-        <!-- Project URL shown on the "Project Site" link on NuGet.org -->
         <PackageProjectUrl>https://github.com/HoseinTorkan/KernelR</PackageProjectUrl>
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Versioning (Centralized Default)           -->
     <!-- ═══════════════════════════════════════════ -->
-    <!--
-    Note: This value is only a fallback for local builds.
-    Each package must define its own Version in its .csproj.
-    CI can override this via -p:Version=x.y.z
-    -->
     <PropertyGroup>
-        <!--
-            Version = 0.0.0-local (default)
-            Marks local builds with a clearly recognizable version so they
-            can't be confused with released packages. CI replaces it via
-            -p:Version or -p:PackageVersion.
-        -->
         <Version Condition="'$(Version)' == ''">0.0.0-local</Version>
     </PropertyGroup>
 
@@ -316,37 +131,14 @@
     <!-- Test Project Settings                      -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests')) Or $(MSBuildProjectName.EndsWith('.UnitTests')) Or $(MSBuildProjectName.EndsWith('.E2ETests'))">
-        <!--
-            IsPackable = false
-            Test projects are never published to NuGet.
-        -->
         <IsPackable>false</IsPackable>
-
-        <!--
-            IsTestProject = true
-            Marks the project as a test project so the SDK knows to
-            instrument it for code coverage and skip it from NuGet packing.
-        -->
         <IsTestProject>true</IsTestProject>
-
-        <!--
-            NoWarn = CS1591
-            Suppresses "missing XML comment" warnings for test projects.
-            Test code does not need documentation.
-        -->
         <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Automatic Nesting for Partial Files        -->
-    <!-- (x.y.cs → nested under x.cs)               -->
+    <!-- (moved to Directory.Build.targets)         -->
     <!-- ═══════════════════════════════════════════ -->
-    <!--
-    Note: This ItemGroup must live in Directory.Build.targets, not .props.
-    Reason: at .props evaluation time, the Compile items populated by the
-    SDK's implicit glob have not yet been added, so Update= would be a no-op.
-    At .targets evaluation time, the items exist and metadata is applied.
-    -->
-    <!-- This block has been moved to Directory.Build.targets -->
 
 </Project>
