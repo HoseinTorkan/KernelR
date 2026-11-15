@@ -317,7 +317,7 @@ public readonly record struct PhysicalSize :
                 PhysicalSizeUnit.Yard => FromYards(amount),
                 _ => new Error(
                     "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
-                    $"Physical size unit '{(int)unit}' is not defined.",
+                    string.Format(CultureInfo.InvariantCulture, "Physical size unit '{0}' is not defined.", (int)unit),
                     ErrorType.ValidationError),
             };
     }
@@ -370,7 +370,7 @@ public readonly record struct PhysicalSize :
             : !TryParseUnitFactor(parts[1], out long factor)
             ? new Error(
                 "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
-                $"Physical size unit '{parts[1]}' is not recognized.",
+                string.Format(CultureInfo.InvariantCulture, "Physical size unit '{0}' is not recognized.", parts[1]),
                 ErrorType.ValidationError)
 
             : FromDecimal(amount, factor);
@@ -431,13 +431,13 @@ public readonly record struct PhysicalSize :
         if (!TryGetMicrometerFactor(fromUnit, out long fromFactor))
             return new Error(
                 "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
-                $"Source unit '{(int)fromUnit}' is not defined.",
+                string.Format(CultureInfo.InvariantCulture, "Source unit '{0}' is not defined.", (int)fromUnit),
                 ErrorType.ValidationError);
 
         if (!TryGetMicrometerFactor(toUnit, out long toFactor))
             return new Error(
                 "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
-                $"Target unit '{(int)toUnit}' is not defined.",
+                string.Format(CultureInfo.InvariantCulture, "Target unit '{0}' is not defined.", (int)toUnit),
                 ErrorType.ValidationError);
 
         try
@@ -522,7 +522,9 @@ public readonly record struct PhysicalSize :
             PhysicalSizeUnit.Inch => ToInches(),
             PhysicalSizeUnit.Foot => ToFeet(),
             PhysicalSizeUnit.Yard => ToYards(),
-            _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, $"Unsupported physical size unit: '{(int)unit}'.")
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(unit),
+                string.Format(CultureInfo.InvariantCulture, "Unsupported physical size unit: '{0}'.", (int)unit))
         };
     }
 
@@ -755,7 +757,9 @@ public readonly record struct PhysicalSize :
         {
             null => 1,
             PhysicalSize other => CompareTo(other),
-            _ => throw new ArgumentException($"Object must be of type {nameof(PhysicalSize)}.", nameof(obj))
+            _ => throw new ArgumentException(
+                string.Format(CultureInfo.InvariantCulture, "Object must be of type {0}.", nameof(PhysicalSize)),
+                nameof(obj))
         };
     }
 
@@ -825,7 +829,9 @@ public readonly record struct PhysicalSize :
             PhysicalSizeUnit.Inch => string.Format(culture, "{0:0.##} in", value),
             PhysicalSizeUnit.Foot => string.Format(culture, "{0:0.##} ft", value),
             PhysicalSizeUnit.Yard => string.Format(culture, "{0:0.##} yd", value),
-            _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, $"Unsupported physical size unit: '{(int)unit}'.")
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(unit),
+                string.Format(CultureInfo.InvariantCulture, "Unsupported physical size unit: '{0}'.", (int)unit))
         };
     }
 
@@ -877,7 +883,7 @@ public readonly record struct PhysicalSize :
     /// <summary>Explicitly converts a <see cref="PhysicalSize"/> to its human-readable string representation.</summary>
     /// <param name="size">The physical size to convert.</param>
     /// <returns>The string representation of the physical size.</returns>
-    public static explicit operator string(PhysicalSize size) => size.ToString();
+    public static explicit operator string(PhysicalSize size) => size.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
     /// Creates a <see cref="PhysicalSize"/> from a decimal value multiplied by a micrometer factor.
@@ -987,19 +993,24 @@ public readonly record struct PhysicalSize :
     /// </remarks>
     private string FormatAutoSelected(string numericFormat, IFormatProvider culture)
     {
+        string meterFormat = string.Concat("{0:", numericFormat, "} m");
+        string centimeterFormat = string.Concat("{0:", numericFormat, "} cm");
+        string millimeterFormat = string.Concat("{0:", numericFormat, "} mm");
+        string micrometerFormat = string.Concat("{0:", numericFormat, "} μm");
+
         if (Micrometers >= MicrometersPerMeter)
-            return string.Format(culture, $"{{0:{numericFormat}}} m", ToMeters());
+            return string.Format(culture, meterFormat, ToMeters());
 
         if (Micrometers >= MicrometersPerCentimeter)
         {
             decimal cm = ToCentimeters();
             return Math.Round(cm, 2, MidpointRounding.AwayFromZero) >= 100m
-                ? string.Format(culture, $"{{0:{numericFormat}}} m", ToMeters())
-                : string.Format(culture, $"{{0:{numericFormat}}} cm", cm);
+                ? string.Format(culture, meterFormat, ToMeters())
+                : string.Format(culture, centimeterFormat, cm);
         }
 
         return Micrometers >= MicrometersPerMillimeter
-            ? string.Format(culture, $"{{0:{numericFormat}}} mm", ToMillimeters())
-            : string.Format(culture, $"{{0:{numericFormat}}} μm", Micrometers);
+            ? string.Format(culture, millimeterFormat, ToMillimeters())
+            : string.Format(culture, micrometerFormat, Micrometers);
     }
 }
