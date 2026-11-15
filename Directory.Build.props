@@ -137,7 +137,7 @@
             and CA1305 should be re-enabled locally for that file with:
                 #pragma warning restore CA1305
         -->
-        <NoWarn>$(NoWarn);CA1305</NoWarn>
+
 
         <!--
             CA1711: "Identifiers should not have incorrect suffix"

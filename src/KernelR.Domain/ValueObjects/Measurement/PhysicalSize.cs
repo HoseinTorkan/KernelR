@@ -877,7 +877,7 @@ public readonly record struct PhysicalSize :
     /// <summary>Explicitly converts a <see cref="PhysicalSize"/> to its human-readable string representation.</summary>
     /// <param name="size">The physical size to convert.</param>
     /// <returns>The string representation of the physical size.</returns>
-    public static explicit operator string(PhysicalSize size) => size.ToString();
+    public static explicit operator string(PhysicalSize size) => size.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
     /// Creates a <see cref="PhysicalSize"/> from a decimal value multiplied by a micrometer factor.
