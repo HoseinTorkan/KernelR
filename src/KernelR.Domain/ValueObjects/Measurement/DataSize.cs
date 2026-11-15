@@ -36,6 +36,15 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// with different units, the operation is performed directly on the canonical byte counts,
 /// so no unit conversion or precision loss is ever needed.
 /// </para>
+/// <para>
+/// <b>Format specifiers (IFormattable):</b> The format string passed to
+/// <see cref="ToString(string?, IFormatProvider?)"/> may be one of:
+/// </para>
+/// <list type="bullet">
+///   <item><description><c>null</c> or <c>""</c>: auto-select the largest applicable binary unit.</description></item>
+///   <item><description>A unit specifier (case-insensitive): <c>"B"</c>, <c>"KB"</c>, <c>"MB"</c>, <c>"GB"</c>, <c>"TB"</c>.</description></item>
+///   <item><description>A .NET numeric format string (e.g., <c>"N2"</c>, <c>"F3"</c>): auto-select the unit, then apply the numeric format.</description></item>
+/// </list>
 /// </remarks>
 /// <example>
 /// <code>
@@ -44,6 +53,8 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// {
 ///     Console.WriteLine(result.Value.ToMegabytes()); // Outputs: 1536
 ///     Console.WriteLine(result.Value);               // Outputs: 1.5 GB
+///     Console.WriteLine($"{result.Value:MB}");        // Outputs: 1536 MB
+///     Console.WriteLine($"{result.Value:N0}");        // Outputs: 2 GB
 /// }
 /// </code>
 /// </example>
@@ -51,26 +62,19 @@ public readonly record struct DataSize :
     IValueObject,
     IParsable<DataSize>,
     IComparable<DataSize>,
-    IComparable
+    IComparable,
+    IFormattable
 {
-    /// <summary>
-    /// The number of bytes in one kilobyte (1024).
-    /// </summary>
+    /// <summary>The number of bytes in one kilobyte (1024).</summary>
     public const long BytesPerKilobyte = 1024L;
 
-    /// <summary>
-    /// The number of bytes in one megabyte (1024²).
-    /// </summary>
+    /// <summary>The number of bytes in one megabyte (1024²).</summary>
     public const long BytesPerMegabyte = BytesPerKilobyte * 1024L;
 
-    /// <summary>
-    /// The number of bytes in one gigabyte (1024³).
-    /// </summary>
+    /// <summary>The number of bytes in one gigabyte (1024³).</summary>
     public const long BytesPerGigabyte = BytesPerMegabyte * 1024L;
 
-    /// <summary>
-    /// The number of bytes in one terabyte (1024⁴).
-    /// </summary>
+    /// <summary>The number of bytes in one terabyte (1024⁴).</summary>
     public const long BytesPerTerabyte = BytesPerGigabyte * 1024L;
 
     /// <summary>
@@ -236,7 +240,7 @@ public readonly record struct DataSize :
                 DataSizeUnit.Terabyte => FromTerabytes(amount),
                 _ => new Error(
                     "KernelR.ValueObjects.DataSize.INVALID_UNIT",
-                    $"Data size unit '{(int)unit}' is not defined.",
+                    string.Format(CultureInfo.InvariantCulture, "Data size unit '{0}' is not defined.", (int)unit),
                     ErrorType.ValidationError),
             };
     }
@@ -259,10 +263,11 @@ public readonly record struct DataSize :
     /// </returns>
     /// <example>
     /// <code>
-    /// DataSize.Create("1.5 GB");     // → DataSize(1.5 GB)
-    /// DataSize.Create("500 MB");     // → DataSize(500 MB)
-    /// DataSize.Create("0 Byte");     // → DataSize(0 B)
-    /// DataSize.Create("1610612736"); // → DataSize(1.5 GB)
+    /// DataSize.Create("1.5 GB");      // → DataSize(1.5 GB)
+    /// DataSize.Create("500 MB");      // → DataSize(500 MB)
+    /// DataSize.Create("0 Byte");      // → DataSize(0 B)
+    /// DataSize.Create("1610612736");  // → DataSize(1.5 GB)
+    /// DataSize.Create("2 gigabytes"); // → DataSize(2 GB)
     /// </code>
     /// </example>
     public static Result<DataSize> Create(string value)
@@ -292,7 +297,7 @@ public readonly record struct DataSize :
             : !TryParseUnitFactor(parts[1], out long factor)
             ? new Error(
                 "KernelR.ValueObjects.DataSize.INVALID_UNIT",
-                $"Data size unit '{parts[1]}' is not recognized.",
+                string.Format(CultureInfo.InvariantCulture, "Data size unit '{0}' is not recognized.", parts[1]),
                 ErrorType.ValidationError)
 
             : FromDecimal(amount, factor);
@@ -321,40 +326,128 @@ public readonly record struct DataSize :
         => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
-    /// Converts this data size to bits.
+    /// Converts a raw decimal value from one unit to another, without creating a <see cref="DataSize"/>.
     /// </summary>
+    /// <param name="value">The raw value to convert.</param>
+    /// <param name="fromUnit">The source unit of <paramref name="value"/>.</param>
+    /// <param name="toUnit">The target unit for the result.</param>
+    /// <returns>
+    /// A successful result carrying the converted value, or a failure with one of the following error codes:
+    /// <list type="bullet">
+    ///   <item><description><c>KernelR.ValueObjects.DataSize.INVALID_UNIT</c> when either unit is not defined.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.DataSize.OVERFLOW</c> when the intermediate calculation exceeds <see cref="decimal.MaxValue"/>.</description></item>
+    /// </list>
+    /// </returns>
+    /// <remarks>
+    /// This method is intended for callers who only need the numeric conversion and do not
+    /// want to instantiate a <see cref="DataSize"/>. The conversion is performed in
+    /// canonical bytes, so it is exact for all supported units.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// decimal megabytes = 1536m;
+    /// decimal gigabytes = DataSize.Convert(megabytes, DataSizeUnit.Megabyte, DataSizeUnit.Gigabyte).OrThrow();
+    /// // gigabytes = 1.5
+    /// </code>
+    /// </example>
+    public static Result<decimal> Convert(decimal value, DataSizeUnit fromUnit, DataSizeUnit toUnit)
+    {
+        if (fromUnit == toUnit)
+            return Result<decimal>.Success(value);
+
+        if (!TryGetByteFactor(fromUnit, out long fromFactor))
+            return new Error(
+                "KernelR.ValueObjects.DataSize.INVALID_UNIT",
+                string.Format(CultureInfo.InvariantCulture, "Source unit '{0}' is not defined.", (int)fromUnit),
+                ErrorType.ValidationError);
+
+        if (!TryGetByteFactor(toUnit, out long toFactor))
+            return new Error(
+                "KernelR.ValueObjects.DataSize.INVALID_UNIT",
+                string.Format(CultureInfo.InvariantCulture, "Target unit '{0}' is not defined.", (int)toUnit),
+                ErrorType.ValidationError);
+
+        try
+        {
+            return Result<decimal>.Success(value * fromFactor / toFactor);
+        }
+        catch (OverflowException)
+        {
+            return new Error(
+                "KernelR.ValueObjects.DataSize.OVERFLOW",
+                "The conversion resulted in a value that is too large.",
+                ErrorType.ValidationError);
+        }
+    }
+
+    /// <summary>
+    /// Attempts to convert a raw decimal value from one unit to another.
+    /// </summary>
+    /// <param name="value">The raw value to convert.</param>
+    /// <param name="fromUnit">The source unit of <paramref name="value"/>.</param>
+    /// <param name="toUnit">The target unit for the result.</param>
+    /// <param name="result">When this method returns, contains the converted value on success, or <c>0</c> on failure.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
+    public static bool TryConvert(decimal value, DataSizeUnit fromUnit, DataSizeUnit toUnit, out decimal result)
+    {
+        result = default;
+        return Convert(value, fromUnit, toUnit).TryGetValue(out result);
+    }
+
+    /// <summary>Converts this data size to bits.</summary>
     /// <returns>The size in bits (exact for sizes up to <c>long.MaxValue / 8</c>).</returns>
     public decimal ToBits() => Bytes * 8m;
 
-    /// <summary>
-    /// Converts this data size to bytes.
-    /// </summary>
+    /// <summary>Converts this data size to bytes.</summary>
     /// <returns>The canonical size in bytes.</returns>
     public long ToBytes() => Bytes;
 
-    /// <summary>
-    /// Converts this data size to kilobytes.
-    /// </summary>
+    /// <summary>Converts this data size to kilobytes.</summary>
     /// <returns>The size in kilobytes (may have a fractional part).</returns>
     public decimal ToKilobytes() => Bytes / (decimal)BytesPerKilobyte;
 
-    /// <summary>
-    /// Converts this data size to megabytes.
-    /// </summary>
+    /// <summary>Converts this data size to megabytes.</summary>
     /// <returns>The size in megabytes (may have a fractional part).</returns>
     public decimal ToMegabytes() => Bytes / (decimal)BytesPerMegabyte;
 
-    /// <summary>
-    /// Converts this data size to gigabytes.
-    /// </summary>
+    /// <summary>Converts this data size to gigabytes.</summary>
     /// <returns>The size in gigabytes (may have a fractional part).</returns>
     public decimal ToGigabytes() => Bytes / (decimal)BytesPerGigabyte;
 
-    /// <summary>
-    /// Converts this data size to terabytes.
-    /// </summary>
+    /// <summary>Converts this data size to terabytes.</summary>
     /// <returns>The size in terabytes (may have a fractional part).</returns>
     public decimal ToTerabytes() => Bytes / (decimal)BytesPerTerabyte;
+
+    /// <summary>
+    /// Converts this size to the specified unit.
+    /// </summary>
+    /// <param name="unit">The target unit.</param>
+    /// <returns>The size expressed in <paramref name="unit"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="unit"/> is not a defined <see cref="DataSizeUnit"/>.</exception>
+    /// <remarks>
+    /// This method is a convenience wrapper around the individual <c>ToXxx</c> methods,
+    /// useful when the target unit is determined at runtime.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// DataSizeUnit target = (DataSizeUnit)request.TargetUnit;
+    /// decimal value = size.ToUnit(target);
+    /// </code>
+    /// </example>
+    public decimal ToUnit(DataSizeUnit unit)
+    {
+        return unit switch
+        {
+            DataSizeUnit.Byte => ToBytes(),
+            DataSizeUnit.Kilobyte => ToKilobytes(),
+            DataSizeUnit.Megabyte => ToMegabytes(),
+            DataSizeUnit.Gigabyte => ToGigabytes(),
+            DataSizeUnit.Terabyte => ToTerabytes(),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(unit),
+                string.Format(CultureInfo.InvariantCulture, "Unsupported data size unit: '{0}'.", (int)unit))
+        };
+    }
 
     /// <summary>
     /// Adds the specified data size to the current data size, returning a <see cref="Result{T}"/>.
@@ -420,6 +513,7 @@ public readonly record struct DataSize :
                 "KernelR.ValueObjects.DataSize.NEGATIVE_MULTIPLIER",
                 "Multiplier cannot be negative.",
                 ErrorType.ValidationError);
+
         try
         {
             decimal bytesDecimal = Bytes * multiplier;
@@ -504,19 +598,15 @@ public readonly record struct DataSize :
                 "KernelR.ValueObjects.DataSize.DIVIDE_BY_ZERO",
                 "Cannot compute ratio against zero.",
                 ErrorType.ValidationError)
-            : Bytes / (decimal)other.Bytes;
+            : Result<decimal>.Success(Bytes / (decimal)other.Bytes);
     }
 
-    /// <summary>
-    /// Returns the smaller of two sizes.
-    /// </summary>
+    /// <summary>Returns the smaller of two sizes.</summary>
     /// <param name="other">The other size.</param>
     /// <returns>The size with the smaller <see cref="Bytes"/> value.</returns>
     public DataSize Min(DataSize other) => Bytes <= other.Bytes ? this : other;
 
-    /// <summary>
-    /// Returns the larger of two sizes.
-    /// </summary>
+    /// <summary>Returns the larger of two sizes.</summary>
     /// <param name="other">The other size.</param>
     /// <returns>The size with the larger <see cref="Bytes"/> value.</returns>
     public DataSize Max(DataSize other) => Bytes >= other.Bytes ? this : other;
@@ -617,7 +707,9 @@ public readonly record struct DataSize :
         {
             null => 1,
             DataSize other => CompareTo(other),
-            _ => throw new ArgumentException($"Object must be of type {nameof(DataSize)}.", nameof(obj))
+            _ => throw new ArgumentException(
+                string.Format(CultureInfo.InvariantCulture, "Object must be of type {0}.", nameof(DataSize)),
+                nameof(obj))
         };
     }
 
@@ -626,16 +718,104 @@ public readonly record struct DataSize :
     /// the largest applicable binary unit (B, KB, MB, GB, or TB).
     /// </summary>
     /// <returns>A culture-invariant string (e.g., <c>"1.5 GB"</c>, <c>"512 B"</c>).</returns>
-    public override string ToString()
+    /// <remarks>
+    /// The threshold check is rounding-aware: if rounding to two decimals would produce
+    /// <c>1024</c> or more of the current unit, the next larger unit is used instead
+    /// (e.g., <c>1,048,575 B</c> is shown as <c>"1 MB"</c>, not <c>"1024 KB"</c>).
+    /// </remarks>
+    public override string ToString() => FormatAutoSelected("0.##", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Returns a human-readable representation of the size, using the specified culture.
+    /// </summary>
+    /// <param name="provider">
+    /// An object that supplies culture-specific formatting information, or
+    /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
+    /// </param>
+    /// <returns>A string such as <c>"1.5 GB"</c> or <c>"512 B"</c>.</returns>
+    /// <remarks>
+    /// The unit is chosen automatically (B, KB, MB, GB, or TB). The threshold check is
+    /// rounding-aware (see <see cref="ToString()"/> for details).
+    /// </remarks>
+    public string ToString(IFormatProvider? provider)
+        => FormatAutoSelected("0.##", provider ?? CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Returns a representation of the size in the specified unit.
+    /// </summary>
+    /// <param name="unit">The unit to express the size in.</param>
+    /// <param name="provider">
+    /// An object that supplies culture-specific formatting information, or
+    /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
+    /// </param>
+    /// <returns>A string such as <c>"1536 MB"</c> or <c>"1.5 GB"</c>.</returns>
+    /// <remarks>
+    /// This overload allows the caller to choose the unit explicitly. Use this when you need
+    /// to force a specific unit (e.g., for API responses that always use a fixed unit).
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// DataSize size = DataSize.FromGigabytes(1.5m).OrThrow();
+    /// Console.WriteLine(size.ToString(DataSizeUnit.Megabyte)); // "1536 MB"
+    /// Console.WriteLine(size.ToString(DataSizeUnit.Byte));     // "1610612736 B"
+    /// </code>
+    /// </example>
+    public string ToString(DataSizeUnit unit, IFormatProvider? provider = null)
     {
-        return Bytes switch
+        IFormatProvider culture = provider ?? CultureInfo.InvariantCulture;
+        decimal value = ToUnit(unit);
+
+        return unit switch
         {
-            >= BytesPerTerabyte => string.Format(CultureInfo.InvariantCulture, "{0:0.##} TB", ToTerabytes()),
-            >= BytesPerGigabyte => string.Format(CultureInfo.InvariantCulture, "{0:0.##} GB", ToGigabytes()),
-            >= BytesPerMegabyte => string.Format(CultureInfo.InvariantCulture, "{0:0.##} MB", ToMegabytes()),
-            >= BytesPerKilobyte => string.Format(CultureInfo.InvariantCulture, "{0:0.##} KB", ToKilobytes()),
-            _ => string.Format(CultureInfo.InvariantCulture, "{0} B", Bytes)
+            DataSizeUnit.Byte => string.Format(culture, "{0} B", value),
+            DataSizeUnit.Kilobyte => string.Format(culture, "{0:0.##} KB", value),
+            DataSizeUnit.Megabyte => string.Format(culture, "{0:0.##} MB", value),
+            DataSizeUnit.Gigabyte => string.Format(culture, "{0:0.##} GB", value),
+            DataSizeUnit.Terabyte => string.Format(culture, "{0:0.##} TB", value),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(unit),
+                string.Format(CultureInfo.InvariantCulture, "Unsupported data size unit: '{0}'.", (int)unit))
         };
+    }
+
+    /// <summary>
+    /// Formats the size using the specified format string and culture.
+    /// </summary>
+    /// <param name="format">
+    /// The format string. May be:
+    /// <list type="bullet">
+    ///   <item><description><c>null</c> or <c>""</c> to auto-select the unit.</description></item>
+    ///   <item><description>A unit specifier (case-insensitive): <c>"B"</c>, <c>"KB"</c>, <c>"MB"</c>, <c>"GB"</c>, <c>"TB"</c>, or their full forms (e.g., <c>"kilobyte"</c>).</description></item>
+    ///   <item><description>A .NET numeric format string (e.g., <c>"N2"</c>, <c>"F3"</c>) to apply to the auto-selected unit.</description></item>
+    /// </list>
+    /// </param>
+    /// <param name="formatProvider">
+    /// An object that supplies culture-specific formatting information, or
+    /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
+    /// </param>
+    /// <returns>The formatted string.</returns>
+    /// <remarks>
+    /// This method implements <see cref="IFormattable"/>, so it is invoked by
+    /// string interpolation (e.g., <c>$"{size:MB}"</c>) and by <see cref="string.Format(IFormatProvider, string, object[])"/>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// DataSize size = DataSize.FromGigabytes(1.5m).OrThrow();
+    /// string a = $"{size}";      // "1.5 GB"    (auto-select)
+    /// string b = $"{size:MB}";   // "1536 MB"   (unit specifier)
+    /// string c = $"{size:N0}";   // "2 GB"      (numeric format, auto-select)
+    /// </code>
+    /// </example>
+    public string ToString(string? format, IFormatProvider? formatProvider)
+    {
+        IFormatProvider culture = formatProvider ?? CultureInfo.InvariantCulture;
+
+        if (string.IsNullOrEmpty(format))
+            return FormatAutoSelected("0.##", culture);
+
+        return TryParseUnit(format, out DataSizeUnit unit)
+            ? ToString(unit, culture)
+            : FormatAutoSelected(format, culture);
     }
 
     /// <summary>Explicitly converts a <see cref="DataSize"/> to its underlying byte count.</summary>
@@ -682,22 +862,103 @@ public readonly record struct DataSize :
     }
 
     /// <summary>
-    /// Parses a unit name, accepting both full names and short forms, and returns
-    /// the number of bytes per unit.
+    /// Gets the byte factor for a given unit.
+    /// </summary>
+    /// <param name="unit">The unit to look up.</param>
+    /// <param name="factor">When this method returns, contains the number of bytes per unit.</param>
+    /// <returns><see langword="true"/> if the unit is defined; otherwise, <see langword="false"/>.</returns>
+    private static bool TryGetByteFactor(DataSizeUnit unit, out long factor)
+    {
+        switch (unit)
+        {
+            case DataSizeUnit.Byte: factor = 1L; return true;
+            case DataSizeUnit.Kilobyte: factor = BytesPerKilobyte; return true;
+            case DataSizeUnit.Megabyte: factor = BytesPerMegabyte; return true;
+            case DataSizeUnit.Gigabyte: factor = BytesPerGigabyte; return true;
+            case DataSizeUnit.Terabyte: factor = BytesPerTerabyte; return true;
+            default: factor = 0L; return false;
+        }
+    }
+
+    /// <summary>
+    /// Parses a unit name from a string, accepting both full names and short forms.
+    /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <param name="unit">When this method returns, contains the parsed unit.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    private static bool TryParseUnit(string text, out DataSizeUnit unit)
+    {
+        switch (text.ToUpperInvariant())
+        {
+            case "B" or "BYTE" or "BYTES": unit = DataSizeUnit.Byte; return true;
+            case "KB" or "KILOBYTE" or "KILOBYTES": unit = DataSizeUnit.Kilobyte; return true;
+            case "MB" or "MEGABYTE" or "MEGABYTES": unit = DataSizeUnit.Megabyte; return true;
+            case "GB" or "GIGABYTE" or "GIGABYTES": unit = DataSizeUnit.Gigabyte; return true;
+            case "TB" or "TERABYTE" or "TERABYTES": unit = DataSizeUnit.Terabyte; return true;
+            default: unit = default; return false;
+        }
+    }
+
+    /// <summary>
+    /// Parses a unit name from a string and returns its byte factor.
     /// </summary>
     /// <param name="text">The text to parse.</param>
     /// <param name="factor">When this method returns, contains the number of bytes per unit.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     private static bool TryParseUnitFactor(string text, out long factor)
     {
-        switch (text.ToUpperInvariant())
+        factor = 0L;
+        return TryParseUnit(text, out DataSizeUnit unit) && TryGetByteFactor(unit, out factor);
+    }
+
+    /// <summary>
+    /// Formats the size using the auto-selected binary unit (B, KB, MB, GB, or TB) with the
+    /// specified numeric format string.
+    /// </summary>
+    /// <param name="numericFormat">The .NET numeric format string (e.g., "0.##", "N2", "F3").</param>
+    /// <param name="culture">The culture to use for formatting.</param>
+    /// <returns>A formatted string such as <c>"1.5 GB"</c>.</returns>
+    /// <remarks>
+    /// <para>
+    /// The unit is chosen by comparing the rounded value in each unit against the threshold
+    /// for the next larger unit. This avoids the <c>"1024 KB"</c> vs <c>"1 MB"</c> ambiguity
+    /// that would occur if the raw (unrounded) value were compared directly.
+    /// </para>
+    /// <para>
+    /// Specifically, <c>1,048,575 B</c> (one byte less than 1 MB) is displayed as
+    /// <c>"1024 KB"</c> if rounding KB to two decimals yields 1024 KB. The implementation
+    /// prefers the higher unit in that case for readability.
+    /// </para>
+    /// </remarks>
+    private string FormatAutoSelected(string numericFormat, IFormatProvider culture)
+    {
+        if (Bytes < BytesPerKilobyte)
+            return string.Format(culture, "{0:" + numericFormat + "} B", Bytes);
+
+        if (Bytes < BytesPerMegabyte)
         {
-            case "B": factor = 1L; return true;
-            case "KB": factor = BytesPerKilobyte; return true;
-            case "MB": factor = BytesPerMegabyte; return true;
-            case "GB": factor = BytesPerGigabyte; return true;
-            case "TB": factor = BytesPerTerabyte; return true;
-            default: factor = 0L; return false;
+            decimal kb = ToKilobytes();
+            return Math.Round(kb, 2, MidpointRounding.AwayFromZero) >= 1024m
+                ? string.Format(culture, "{0:" + numericFormat + "} MB", ToMegabytes())
+                : string.Format(culture, "{0:" + numericFormat + "} KB", kb);
         }
+
+        if (Bytes < BytesPerGigabyte)
+        {
+            decimal mb = ToMegabytes();
+            return Math.Round(mb, 2, MidpointRounding.AwayFromZero) >= 1024m
+                ? string.Format(culture, "{0:" + numericFormat + "} GB", ToGigabytes())
+                : string.Format(culture, "{0:" + numericFormat + "} MB", mb);
+        }
+
+        if (Bytes < BytesPerTerabyte)
+        {
+            decimal gb = ToGigabytes();
+            return Math.Round(gb, 2, MidpointRounding.AwayFromZero) >= 1024m
+                ? string.Format(culture, "{0:" + numericFormat + "} TB", ToTerabytes())
+                : string.Format(culture, "{0:" + numericFormat + "} GB", gb);
+        }
+
+        return string.Format(culture, "{0:" + numericFormat + "} TB", ToTerabytes());
     }
 }

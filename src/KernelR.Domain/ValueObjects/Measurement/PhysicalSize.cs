@@ -22,20 +22,29 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 ///     JSON serialization can use a single column/property.
 ///   </description></item>
 ///   <item><description>
-///     Fractional sizes supplied via <c>FromInches</c>, <c>FromFeet</c>, etc. are
+///     Fractional sizes supplied via <c>FromInches</c>, <c>FromFeet</c>, <c>FromYards</c>, etc. are
 ///     rounded to the nearest micrometer using <see cref="MidpointRounding.AwayFromZero"/>.
 ///   </description></item>
 /// </list>
 /// <para>
 /// <b>No precision loss:</b> Unlike weight (where 1 oz has a fractional microgram part),
 /// all supported size conversions are exact integers in micrometers:
-/// <c>1 in = 25,400 μm</c>, <c>1 ft = 304,800 μm</c>, <c>1 m = 1,000,000 μm</c>.
+/// <c>1 in = 25,400 μm</c>, <c>1 ft = 304,800 μm</c>, <c>1 yd = 914,400 μm</c>, <c>1 m = 1,000,000 μm</c>.
 /// </para>
 /// <para>
 /// <b>Mathematical Operations:</b> When adding or subtracting two <see cref="PhysicalSize"/> instances
 /// with different units, the operation is performed directly on the canonical micrometer counts,
 /// so no unit conversion or precision loss is ever needed.
 /// </para>
+/// <para>
+/// <b>Format specifiers (IFormattable):</b> The format string passed to
+/// <see cref="ToString(string?, IFormatProvider?)"/> may be one of:
+/// </para>
+/// <list type="bullet">
+///   <item><description><c>null</c> or <c>""</c>: auto-select the largest applicable metric unit.</description></item>
+///   <item><description>A unit specifier (case-insensitive): <c>"μm"</c>, <c>"um"</c>, <c>"mm"</c>, <c>"cm"</c>, <c>"m"</c>, <c>"in"</c>, <c>"ft"</c>, <c>"yd"</c>.</description></item>
+///   <item><description>A .NET numeric format string (e.g., <c>"N2"</c>, <c>"F3"</c>): auto-select the unit, then apply the numeric format.</description></item>
+/// </list>
 /// </remarks>
 /// <example>
 /// <code>
@@ -44,6 +53,8 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// {
 ///     Console.WriteLine(result.Value.ToCentimeters()); // Outputs: 6.35
 ///     Console.WriteLine(result.Value);                  // Outputs: 6.35 cm
+///     Console.WriteLine($"{result.Value:in}");          // Outputs: 2.5 in
+///     Console.WriteLine($"{result.Value:N2}");          // Outputs: 6.35 cm
 /// }
 /// </code>
 /// </example>
@@ -51,32 +62,71 @@ public readonly record struct PhysicalSize :
     IValueObject,
     IParsable<PhysicalSize>,
     IComparable<PhysicalSize>,
-    IComparable
+    IComparable,
+    IFormattable
 {
-    /// <summary>
-    /// The number of micrometers in one millimeter (1,000).
-    /// </summary>
+    /// <summary>The number of micrometers in one millimeter (1,000).</summary>
     public const long MicrometersPerMillimeter = 1_000L;
 
-    /// <summary>
-    /// The number of micrometers in one centimeter (10,000).
-    /// </summary>
+    /// <summary>The number of micrometers in one centimeter (10,000).</summary>
     public const long MicrometersPerCentimeter = 10_000L;
 
-    /// <summary>
-    /// The number of micrometers in one meter (1,000,000).
-    /// </summary>
+    /// <summary>The number of micrometers in one meter (1,000,000).</summary>
     public const long MicrometersPerMeter = 1_000_000L;
 
-    /// <summary>
-    /// The number of micrometers in one inch (25,400), exact by the international definition (1 in = 2.54 cm).
-    /// </summary>
+    /// <summary>The number of micrometers in one inch (25,400), exact by the international definition (1 in = 2.54 cm).</summary>
     public const long MicrometersPerInch = 25_400L;
 
-    /// <summary>
-    /// The number of micrometers in one foot (304,800), exact by the international definition (1 ft = 12 in).
-    /// </summary>
+    /// <summary>The number of micrometers in one foot (304,800), exact by the international definition (1 ft = 12 in).</summary>
     public const long MicrometersPerFoot = 304_800L;
+
+    /// <summary>The number of micrometers in one yard (914,400), exact by the international definition (1 yd = 3 ft = 36 in).</summary>
+    public const long MicrometersPerYard = 914_400L;
+
+    /// <summary>The number of millimeters in one centimeter (10).</summary>
+    public const long MillimetersPerCentimeter = 10L;
+
+    /// <summary>The number of millimeters in one meter (1,000).</summary>
+    public const long MillimetersPerMeter = 1_000L;
+
+    /// <summary>The number of centimeters in one meter (100).</summary>
+    public const long CentimetersPerMeter = 100L;
+
+    /// <summary>The number of inches in one foot (12).</summary>
+    public const long InchesPerFoot = 12L;
+
+    /// <summary>The number of inches in one yard (36).</summary>
+    public const long InchesPerYard = 36L;
+
+    /// <summary>The number of feet in one yard (3).</summary>
+    public const long FeetPerYard = 3L;
+
+    /// <summary>The number of millimeters in one inch (25.4), exact by the international definition.</summary>
+    public const decimal MillimetersPerInch = 25.4m;
+
+    /// <summary>The number of millimeters in one foot (304.8), exact by the international definition.</summary>
+    public const decimal MillimetersPerFoot = 304.8m;
+
+    /// <summary>The number of millimeters in one yard (914.4), exact by the international definition.</summary>
+    public const decimal MillimetersPerYard = 914.4m;
+
+    /// <summary>The number of centimeters in one inch (2.54), exact by the international definition.</summary>
+    public const decimal CentimetersPerInch = 2.54m;
+
+    /// <summary>The number of centimeters in one foot (30.48), exact by the international definition.</summary>
+    public const decimal CentimetersPerFoot = 30.48m;
+
+    /// <summary>The number of centimeters in one yard (91.44), exact by the international definition.</summary>
+    public const decimal CentimetersPerYard = 91.44m;
+
+    /// <summary>The number of meters in one inch (0.0254), exact by the international definition.</summary>
+    public const decimal MetersPerInch = 0.0254m;
+
+    /// <summary>The number of meters in one foot (0.3048), exact by the international definition.</summary>
+    public const decimal MetersPerFoot = 0.3048m;
+
+    /// <summary>The number of meters in one yard (0.9144), exact by the international definition.</summary>
+    public const decimal MetersPerYard = 0.9144m;
 
     /// <summary>
     /// Gets the canonical size, in micrometers (μm).
@@ -84,7 +134,7 @@ public readonly record struct PhysicalSize :
     /// <value>A non-negative number of micrometers.</value>
     /// <remarks>
     /// This is the single source of truth for the value object. All conversions
-    /// (to mm, cm, m, in, ft) are derived from this value.
+    /// (to mm, cm, m, in, ft, yd) are derived from this value.
     /// </remarks>
     public long Micrometers { get; }
 
@@ -204,6 +254,28 @@ public readonly record struct PhysicalSize :
     public static Result<PhysicalSize> FromFeet(decimal feet) => FromDecimal(feet, MicrometersPerFoot);
 
     /// <summary>
+    /// Creates a <see cref="PhysicalSize"/> from a number of yards.
+    /// </summary>
+    /// <param name="yards">The number of yards. Must be non-negative.</param>
+    /// <returns>
+    /// A successful result carrying the new <see cref="PhysicalSize"/>, or a failure with one of the following error codes:
+    /// <list type="bullet">
+    ///   <item><description><c>KernelR.ValueObjects.PhysicalSize.NEGATIVE</c> when <paramref name="yards"/> is negative.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.PhysicalSize.OVERFLOW</c> when the result exceeds <see cref="long.MaxValue"/>.</description></item>
+    /// </list>
+    /// </returns>
+    /// <remarks>
+    /// 1 yard = 914,400 micrometers (exact by the international definition: 1 yd = 3 ft = 36 in).
+    /// There is no precision loss.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// PhysicalSize.FromYards(1m); // → 0.9144 m (exact, no rounding error)
+    /// </code>
+    /// </example>
+    public static Result<PhysicalSize> FromYards(decimal yards) => FromDecimal(yards, MicrometersPerYard);
+
+    /// <summary>
     /// Creates a <see cref="PhysicalSize"/> from a numeric value and a unit.
     /// </summary>
     /// <param name="amount">The numeric value. Must be non-negative.</param>
@@ -242,6 +314,7 @@ public readonly record struct PhysicalSize :
                 PhysicalSizeUnit.Meter => FromMeters(amount),
                 PhysicalSizeUnit.Inch => FromInches(amount),
                 PhysicalSizeUnit.Foot => FromFeet(amount),
+                PhysicalSizeUnit.Yard => FromYards(amount),
                 _ => new Error(
                     "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
                     $"Physical size unit '{(int)unit}' is not defined.",
@@ -269,6 +342,7 @@ public readonly record struct PhysicalSize :
     /// <code>
     /// PhysicalSize.Create("5 cm");    // → PhysicalSize(5 cm)
     /// PhysicalSize.Create("2.5 ft");  // → PhysicalSize(2.5 ft)
+    /// PhysicalSize.Create("3 yd");    // → PhysicalSize(3 yd)
     /// PhysicalSize.Create("0 μm");    // → PhysicalSize(0 μm)
     /// </code>
     /// </example>
@@ -325,40 +399,132 @@ public readonly record struct PhysicalSize :
         => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
-    /// Converts this size to micrometers.
+    /// Converts a raw decimal value from one unit to another, without creating a <see cref="PhysicalSize"/>.
     /// </summary>
+    /// <param name="value">The raw value to convert.</param>
+    /// <param name="fromUnit">The source unit of <paramref name="value"/>.</param>
+    /// <param name="toUnit">The target unit for the result.</param>
+    /// <returns>
+    /// A successful result carrying the converted value, or a failure with one of the following error codes:
+    /// <list type="bullet">
+    ///   <item><description><c>KernelR.ValueObjects.PhysicalSize.INVALID_UNIT</c> when either unit is not defined.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.PhysicalSize.OVERFLOW</c> when the intermediate calculation exceeds <see cref="decimal.MaxValue"/>.</description></item>
+    /// </list>
+    /// </returns>
+    /// <remarks>
+    /// This method is intended for callers who only need the numeric conversion and do not
+    /// want to instantiate a <see cref="PhysicalSize"/>. The conversion is performed in
+    /// canonical micrometers, so it is exact for all supported units.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// decimal inches = 100m;
+    /// decimal millimeters = PhysicalSize.Convert(inches, PhysicalSizeUnit.Inch, PhysicalSizeUnit.Millimeter).OrThrow();
+    /// // millimeters = 2540
+    /// </code>
+    /// </example>
+    public static Result<decimal> Convert(decimal value, PhysicalSizeUnit fromUnit, PhysicalSizeUnit toUnit)
+    {
+        if (fromUnit == toUnit)
+            return Result<decimal>.Success(value);
+
+        if (!TryGetMicrometerFactor(fromUnit, out long fromFactor))
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
+                $"Source unit '{(int)fromUnit}' is not defined.",
+                ErrorType.ValidationError);
+
+        if (!TryGetMicrometerFactor(toUnit, out long toFactor))
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
+                $"Target unit '{(int)toUnit}' is not defined.",
+                ErrorType.ValidationError);
+
+        try
+        {
+            return Result<decimal>.Success(value * fromFactor / toFactor);
+        }
+        catch (OverflowException)
+        {
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.OVERFLOW",
+                "The conversion resulted in a value that is too large.",
+                ErrorType.ValidationError);
+        }
+    }
+
+    /// <summary>
+    /// Attempts to convert a raw decimal value from one unit to another.
+    /// </summary>
+    /// <param name="value">The raw value to convert.</param>
+    /// <param name="fromUnit">The source unit of <paramref name="value"/>.</param>
+    /// <param name="toUnit">The target unit for the result.</param>
+    /// <param name="result">When this method returns, contains the converted value on success, or <c>0</c> on failure.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
+    public static bool TryConvert(decimal value, PhysicalSizeUnit fromUnit, PhysicalSizeUnit toUnit, out decimal result)
+    {
+        result = default;
+        return Convert(value, fromUnit, toUnit).TryGetValue(out result);
+    }
+
+    /// <summary>Converts this size to micrometers.</summary>
     /// <returns>The canonical size in micrometers.</returns>
     public long ToMicrometers() => Micrometers;
 
-    /// <summary>
-    /// Converts this size to millimeters.
-    /// </summary>
+    /// <summary>Converts this size to millimeters.</summary>
     /// <returns>The size in millimeters (may have a fractional part).</returns>
     public decimal ToMillimeters() => Micrometers / (decimal)MicrometersPerMillimeter;
 
-    /// <summary>
-    /// Converts this size to centimeters.
-    /// </summary>
+    /// <summary>Converts this size to centimeters.</summary>
     /// <returns>The size in centimeters (may have a fractional part).</returns>
     public decimal ToCentimeters() => Micrometers / (decimal)MicrometersPerCentimeter;
 
-    /// <summary>
-    /// Converts this size to meters.
-    /// </summary>
+    /// <summary>Converts this size to meters.</summary>
     /// <returns>The size in meters (may have a fractional part).</returns>
     public decimal ToMeters() => Micrometers / (decimal)MicrometersPerMeter;
 
-    /// <summary>
-    /// Converts this size to inches.
-    /// </summary>
+    /// <summary>Converts this size to inches.</summary>
     /// <returns>The size in inches (may have a fractional part).</returns>
     public decimal ToInches() => Micrometers / (decimal)MicrometersPerInch;
 
-    /// <summary>
-    /// Converts this size to feet.
-    /// </summary>
+    /// <summary>Converts this size to feet.</summary>
     /// <returns>The size in feet (may have a fractional part).</returns>
     public decimal ToFeet() => Micrometers / (decimal)MicrometersPerFoot;
+
+    /// <summary>Converts this size to yards.</summary>
+    /// <returns>The size in yards (may have a fractional part).</returns>
+    public decimal ToYards() => Micrometers / (decimal)MicrometersPerYard;
+
+    /// <summary>
+    /// Converts this size to the specified unit.
+    /// </summary>
+    /// <param name="unit">The target unit.</param>
+    /// <returns>The size expressed in <paramref name="unit"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="unit"/> is not a defined <see cref="PhysicalSizeUnit"/>.</exception>
+    /// <remarks>
+    /// This method is a convenience wrapper around the individual <c>ToXxx</c> methods,
+    /// useful when the target unit is determined at runtime.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// PhysicalSizeUnit target = (PhysicalSizeUnit)request.TargetUnit;
+    /// decimal value = size.ToUnit(target);
+    /// </code>
+    /// </example>
+    public decimal ToUnit(PhysicalSizeUnit unit)
+    {
+        return unit switch
+        {
+            PhysicalSizeUnit.Micrometer => ToMicrometers(),
+            PhysicalSizeUnit.Millimeter => ToMillimeters(),
+            PhysicalSizeUnit.Centimeter => ToCentimeters(),
+            PhysicalSizeUnit.Meter => ToMeters(),
+            PhysicalSizeUnit.Inch => ToInches(),
+            PhysicalSizeUnit.Foot => ToFeet(),
+            PhysicalSizeUnit.Yard => ToYards(),
+            _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, $"Unsupported physical size unit: '{(int)unit}'.")
+        };
+    }
 
     /// <summary>
     /// Adds the specified physical size to the current size, returning a <see cref="Result{T}"/>.
@@ -483,16 +649,12 @@ public readonly record struct PhysicalSize :
             : Result<decimal>.Success(Micrometers / (decimal)other.Micrometers);
     }
 
-    /// <summary>
-    /// Returns the smaller of two sizes.
-    /// </summary>
+    /// <summary>Returns the smaller of two sizes.</summary>
     /// <param name="other">The other size.</param>
     /// <returns>The size with the smaller <see cref="Micrometers"/> value.</returns>
     public PhysicalSize Min(PhysicalSize other) => Micrometers <= other.Micrometers ? this : other;
 
-    /// <summary>
-    /// Returns the larger of two sizes.
-    /// </summary>
+    /// <summary>Returns the larger of two sizes.</summary>
     /// <param name="other">The other size.</param>
     /// <returns>The size with the larger <see cref="Micrometers"/> value.</returns>
     public PhysicalSize Max(PhysicalSize other) => Micrometers >= other.Micrometers ? this : other;
@@ -601,21 +763,110 @@ public readonly record struct PhysicalSize :
     /// Returns a human-readable representation of the size, automatically selecting
     /// the largest applicable metric unit (μm, mm, cm, or m).
     /// </summary>
-    /// <returns>A culture-invariant string (e.g., <c>"6.35 cm"</c>, <c>"500 μm"</c>).</returns>
+    /// <returns>
+    /// A culture-invariant string (e.g., <c>"6.35 cm"</c>, <c>"500 μm"</c>).
+    /// </returns>
     /// <remarks>
-    /// Imperial units (inches, feet) are not used by <see cref="ToString"/> because
-    /// the canonical representation is metric. Use <see cref="ToInches"/> or
-    /// <see cref="ToFeet"/> for explicit imperial conversion.
+    /// Imperial units (inches, feet, yards) are not used by this overload because
+    /// the canonical representation is metric. Use <see cref="ToString(PhysicalSizeUnit, IFormatProvider?)"/>
+    /// or the format specifier <c>"in"</c> / <c>"ft"</c> / <c>"yd"</c> to display in imperial units.
     /// </remarks>
-    public override string ToString()
+    public override string ToString() => FormatAutoSelected("0.##", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Returns a human-readable representation of the size, using the specified culture.
+    /// </summary>
+    /// <param name="provider">
+    /// An object that supplies culture-specific formatting information, or
+    /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
+    /// </param>
+    /// <returns>A string such as <c>"6.35 cm"</c> or <c>"500 μm"</c>.</returns>
+    /// <remarks>
+    /// The unit is chosen automatically (μm, mm, cm, or m). The threshold check is
+    /// rounding-aware: if rounding to two decimals would produce <c>100</c> or more of
+    /// the current unit, the next larger unit is used instead (e.g., <c>999,999 μm</c>
+    /// is shown as <c>"1 m"</c>, not <c>"100 cm"</c>).
+    /// </remarks>
+    public string ToString(IFormatProvider? provider)
+        => FormatAutoSelected("0.##", provider ?? CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Returns a representation of the size in the specified unit.
+    /// </summary>
+    /// <param name="unit">The unit to express the size in.</param>
+    /// <param name="provider">
+    /// An object that supplies culture-specific formatting information, or
+    /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
+    /// </param>
+    /// <returns>A string such as <c>"2.5 in"</c> or <c>"1500 mm"</c>.</returns>
+    /// <remarks>
+    /// This overload allows the caller to choose the unit explicitly. It supports both
+    /// metric and imperial units. Use this when you need to force a specific unit
+    /// (e.g., for user-facing display in a region that uses imperial units).
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// PhysicalSize size = PhysicalSize.FromInches(2.5m).OrThrow();
+    /// Console.WriteLine(size.ToString(PhysicalSizeUnit.Millimeter)); // "63.5 mm"
+    /// Console.WriteLine(size.ToString(PhysicalSizeUnit.Inch));       // "2.5 in"
+    /// </code>
+    /// </example>
+    public string ToString(PhysicalSizeUnit unit, IFormatProvider? provider = null)
     {
-        return Micrometers switch
+        IFormatProvider culture = provider ?? CultureInfo.InvariantCulture;
+        decimal value = ToUnit(unit);
+
+        return unit switch
         {
-            >= MicrometersPerMeter => string.Format(CultureInfo.InvariantCulture, "{0:0.##} m", ToMeters()),
-            >= MicrometersPerCentimeter => string.Format(CultureInfo.InvariantCulture, "{0:0.##} cm", ToCentimeters()),
-            >= MicrometersPerMillimeter => string.Format(CultureInfo.InvariantCulture, "{0:0.##} mm", ToMillimeters()),
-            _ => string.Format(CultureInfo.InvariantCulture, "{0} μm", Micrometers)
+            PhysicalSizeUnit.Micrometer => string.Format(culture, "{0} μm", value),
+            PhysicalSizeUnit.Millimeter => string.Format(culture, "{0:0.##} mm", value),
+            PhysicalSizeUnit.Centimeter => string.Format(culture, "{0:0.##} cm", value),
+            PhysicalSizeUnit.Meter => string.Format(culture, "{0:0.##} m", value),
+            PhysicalSizeUnit.Inch => string.Format(culture, "{0:0.##} in", value),
+            PhysicalSizeUnit.Foot => string.Format(culture, "{0:0.##} ft", value),
+            PhysicalSizeUnit.Yard => string.Format(culture, "{0:0.##} yd", value),
+            _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, $"Unsupported physical size unit: '{(int)unit}'.")
         };
+    }
+
+    /// <summary>
+    /// Formats the size using the specified format string and culture.
+    /// </summary>
+    /// <param name="format">
+    /// The format string. May be:
+    /// <list type="bullet">
+    ///   <item><description><c>null</c> or <c>""</c> to auto-select the unit.</description></item>
+    ///   <item><description>A unit specifier (case-insensitive): <c>"μm"</c>, <c>"um"</c>, <c>"mm"</c>, <c>"cm"</c>, <c>"m"</c>, <c>"in"</c>, <c>"ft"</c>, <c>"yd"</c>.</description></item>
+    ///   <item><description>A .NET numeric format string (e.g., <c>"N2"</c>, <c>"F3"</c>) to apply to the auto-selected unit.</description></item>
+    /// </list>
+    /// </param>
+    /// <param name="formatProvider">
+    /// An object that supplies culture-specific formatting information, or
+    /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
+    /// </param>
+    /// <returns>The formatted string.</returns>
+    /// <remarks>
+    /// This method implements <see cref="IFormattable"/>, so it is invoked by
+    /// string interpolation (e.g., <c>$"{size:in}"</c>) and by <see cref="string.Format(IFormatProvider, string, object[])"/>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// PhysicalSize size = PhysicalSize.FromInches(2.5m).OrThrow();
+    /// string a = $"{size}";      // "6.35 cm"   (auto-select)
+    /// string b = $"{size:in}";   // "2.5 in"    (unit specifier)
+    /// string c = $"{size:N2}";   // "6.35 cm"   (numeric format, auto-select)
+    /// </code>
+    /// </example>
+    public string ToString(string? format, IFormatProvider? formatProvider)
+    {
+        IFormatProvider culture = formatProvider ?? CultureInfo.InvariantCulture;
+
+        if (string.IsNullOrEmpty(format))
+            return FormatAutoSelected("0.##", culture);
+
+        return TryParseUnit(format, out PhysicalSizeUnit unit)
+            ? ToString(unit, culture)
+            : FormatAutoSelected(format, culture);
     }
 
     /// <summary>Explicitly converts a <see cref="PhysicalSize"/> to its underlying micrometer count.</summary>
@@ -662,23 +913,93 @@ public readonly record struct PhysicalSize :
     }
 
     /// <summary>
-    /// Parses a unit name, accepting both full names and short forms, and returns
-    /// the number of micrometers per unit.
+    /// Gets the micrometer factor for a given unit.
+    /// </summary>
+    /// <param name="unit">The unit to look up.</param>
+    /// <param name="factor">When this method returns, contains the number of micrometers per unit.</param>
+    /// <returns><see langword="true"/> if the unit is defined; otherwise, <see langword="false"/>.</returns>
+    private static bool TryGetMicrometerFactor(PhysicalSizeUnit unit, out long factor)
+    {
+        switch (unit)
+        {
+            case PhysicalSizeUnit.Micrometer: factor = 1L; return true;
+            case PhysicalSizeUnit.Millimeter: factor = MicrometersPerMillimeter; return true;
+            case PhysicalSizeUnit.Centimeter: factor = MicrometersPerCentimeter; return true;
+            case PhysicalSizeUnit.Meter: factor = MicrometersPerMeter; return true;
+            case PhysicalSizeUnit.Inch: factor = MicrometersPerInch; return true;
+            case PhysicalSizeUnit.Foot: factor = MicrometersPerFoot; return true;
+            case PhysicalSizeUnit.Yard: factor = MicrometersPerYard; return true;
+            default: factor = 0L; return false;
+        }
+    }
+
+    /// <summary>
+    /// Parses a unit name from a string, accepting both full names and short forms.
+    /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <param name="unit">When this method returns, contains the parsed unit.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    private static bool TryParseUnit(string text, out PhysicalSizeUnit unit)
+    {
+        switch (text.ToLowerInvariant())
+        {
+            case "μm" or "um" or "micrometer" or "micrometers": unit = PhysicalSizeUnit.Micrometer; return true;
+            case "mm" or "millimeter" or "millimeters": unit = PhysicalSizeUnit.Millimeter; return true;
+            case "cm" or "centimeter" or "centimeters": unit = PhysicalSizeUnit.Centimeter; return true;
+            case "m" or "meter" or "meters": unit = PhysicalSizeUnit.Meter; return true;
+            case "in" or "inch" or "inches": unit = PhysicalSizeUnit.Inch; return true;
+            case "ft" or "foot" or "feet": unit = PhysicalSizeUnit.Foot; return true;
+            case "yd" or "yard" or "yards": unit = PhysicalSizeUnit.Yard; return true;
+            default: unit = default; return false;
+        }
+    }
+
+    /// <summary>
+    /// Parses a unit name from a string and returns its micrometer factor.
     /// </summary>
     /// <param name="text">The text to parse.</param>
     /// <param name="factor">When this method returns, contains the number of micrometers per unit.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     private static bool TryParseUnitFactor(string text, out long factor)
     {
-        switch (text.ToLowerInvariant())
+        factor = 0L;
+        return TryParseUnit(text, out PhysicalSizeUnit unit) && TryGetMicrometerFactor(unit, out factor);
+    }
+
+    /// <summary>
+    /// Formats the size using the auto-selected metric unit (μm, mm, cm, or m) with the
+    /// specified numeric format string.
+    /// </summary>
+    /// <param name="numericFormat">The .NET numeric format string (e.g., "0.##", "N2", "F3").</param>
+    /// <param name="culture">The culture to use for formatting.</param>
+    /// <returns>A formatted string such as <c>"6.35 cm"</c>.</returns>
+    /// <remarks>
+    /// <para>
+    /// The unit is chosen by comparing the rounded value in each unit against the threshold
+    /// for the next larger unit. This avoids the <c>"100 cm"</c> vs <c>"1 m"</c> ambiguity
+    /// that would occur if the raw (unrounded) value were compared directly.
+    /// </para>
+    /// <para>
+    /// Specifically, <c>999,999 μm</c> is displayed as <c>"1 m"</c>, not <c>"100 cm"</c>,
+    /// because rounding 99.9999 cm to two decimals yields 100 cm, which is the threshold
+    /// for one meter.
+    /// </para>
+    /// </remarks>
+    private string FormatAutoSelected(string numericFormat, IFormatProvider culture)
+    {
+        if (Micrometers >= MicrometersPerMeter)
+            return string.Format(culture, $"{{0:{numericFormat}}} m", ToMeters());
+
+        if (Micrometers >= MicrometersPerCentimeter)
         {
-            case "μm" or "um" or "micrometer" or "micrometers": factor = 1L; return true;
-            case "mm" or "millimeter" or "millimeters": factor = MicrometersPerMillimeter; return true;
-            case "cm" or "centimeter" or "centimeters": factor = MicrometersPerCentimeter; return true;
-            case "m" or "meter" or "meters": factor = MicrometersPerMeter; return true;
-            case "in" or "inch" or "inches": factor = MicrometersPerInch; return true;
-            case "ft" or "foot" or "feet": factor = MicrometersPerFoot; return true;
-            default: factor = 0L; return false;
+            decimal cm = ToCentimeters();
+            return Math.Round(cm, 2, MidpointRounding.AwayFromZero) >= 100m
+                ? string.Format(culture, $"{{0:{numericFormat}}} m", ToMeters())
+                : string.Format(culture, $"{{0:{numericFormat}}} cm", cm);
         }
+
+        return Micrometers >= MicrometersPerMillimeter
+            ? string.Format(culture, $"{{0:{numericFormat}}} mm", ToMillimeters())
+            : string.Format(culture, $"{{0:{numericFormat}}} μm", Micrometers);
     }
 }
