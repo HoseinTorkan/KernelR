@@ -66,27 +66,24 @@ public readonly record struct HslColor : IValueObject, IParsable<HslColor>
     /// <c>KernelR.ValueObjects.HslColor.INVALID_COMPONENTS</c> if any value is out of range.
     /// </returns>
     public static Result<HslColor> Create(double h, double s, double l)
-    {
-        if (h is < 0 or > 360)
-            return new Error(
+        => h is < 0 or > 360
+            ? new Error(
                 "KernelR.ValueObjects.HslColor.INVALID_COMPONENTS",
                 "Hue must be between 0 and 360.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        if (s is < 0 or > 100)
-            return new Error(
+            : s is < 0 or > 100
+            ? new Error(
                 "KernelR.ValueObjects.HslColor.INVALID_COMPONENTS",
                 "Saturation must be between 0 and 100.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        if (l is < 0 or > 100)
-            return new Error(
+            : l is < 0 or > 100
+            ? new Error(
                 "KernelR.ValueObjects.HslColor.INVALID_COMPONENTS",
                 "Lightness must be between 0 and 100.",
-                ErrorType.ValidationError);
-
-        return new HslColor(h, s, l);
-    }
+                ErrorType.ValidationError)
+            : new HslColor(h, s, l);
 
     /// <summary>
     /// Creates a new <see cref="HslColor"/> from a string in the format <c>"H,S,L"</c> or <c>"H, S, L"</c>.
@@ -110,21 +107,21 @@ public readonly record struct HslColor : IValueObject, IParsable<HslColor>
 
         string[] parts = value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        if (parts.Length != 3)
-            return new Error(
+        return parts.Length != 3
+            ? new Error(
                 "KernelR.ValueObjects.HslColor.INVALID_FORMAT",
                 "HSL string must be formatted as 'H, S, L'.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        if (!double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double h) ||
+            :
+            !double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double h) ||
             !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double s) ||
-            !double.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out double l))
-            return new Error(
+            !double.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out double l)
+            ? new Error(
                 "KernelR.ValueObjects.HslColor.INVALID_FORMAT",
                 "HSL components must be valid numbers.",
-                ErrorType.ValidationError);
-
-        return Create(h, s, l);
+                ErrorType.ValidationError)
+            : Create(h, s, l);
     }
 
     /// <summary>

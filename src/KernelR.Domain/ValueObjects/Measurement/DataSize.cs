@@ -56,22 +56,22 @@ public readonly record struct DataSize :
     /// <summary>
     /// The number of bytes in one kilobyte (1024).
     /// </summary>
-    private const long BytesPerKilobyte = 1024L;
+    public const long BytesPerKilobyte = 1024L;
 
     /// <summary>
     /// The number of bytes in one megabyte (1024²).
     /// </summary>
-    private const long BytesPerMegabyte = BytesPerKilobyte * 1024L;
+    public const long BytesPerMegabyte = BytesPerKilobyte * 1024L;
 
     /// <summary>
     /// The number of bytes in one gigabyte (1024³).
     /// </summary>
-    private const long BytesPerGigabyte = BytesPerMegabyte * 1024L;
+    public const long BytesPerGigabyte = BytesPerMegabyte * 1024L;
 
     /// <summary>
     /// The number of bytes in one terabyte (1024⁴).
     /// </summary>
-    private const long BytesPerTerabyte = BytesPerGigabyte * 1024L;
+    public const long BytesPerTerabyte = BytesPerGigabyte * 1024L;
 
     /// <summary>
     /// Gets the canonical size, in bytes.
@@ -226,6 +226,7 @@ public readonly record struct DataSize :
                 "KernelR.ValueObjects.DataSize.NEGATIVE",
                 "Data size cannot be negative.",
                 ErrorType.ValidationError)
+
             : unit switch
             {
                 DataSizeUnit.Byte => FromDecimal(amount, 1L),
@@ -276,23 +277,24 @@ public readonly record struct DataSize :
             return FromBytes(rawBytes);
 
         string[] parts = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length != 2)
-            return new Error(
+        return parts.Length != 2
+            ? new Error(
                 "KernelR.ValueObjects.DataSize.INVALID_FORMAT",
                 "Data size must be formatted as '<value> <unit>' or a raw byte count.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        if (!decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount))
-            return new Error(
+            : !decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount)
+            ? new Error(
                 "KernelR.ValueObjects.DataSize.INVALID_AMOUNT",
                 "Data size value is not a valid number.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        return !TryParseUnitFactor(parts[1], out long factor)
+            : !TryParseUnitFactor(parts[1], out long factor)
             ? new Error(
                 "KernelR.ValueObjects.DataSize.INVALID_UNIT",
                 $"Data size unit '{parts[1]}' is not recognized.",
                 ErrorType.ValidationError)
+
             : FromDecimal(amount, factor);
     }
 
@@ -373,7 +375,10 @@ public readonly record struct DataSize :
         }
         catch (OverflowException)
         {
-            return new Error("KernelR.ValueObjects.DataSize.OVERFLOW", "The addition resulted in a value that is too large.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.DataSize.OVERFLOW",
+                "The addition resulted in a value that is too large.",
+                ErrorType.ValidationError);
         }
     }
 
@@ -390,7 +395,10 @@ public readonly record struct DataSize :
     public Result<DataSize> Subtract(DataSize other)
     {
         return other.Bytes > Bytes
-            ? new Error("KernelR.ValueObjects.DataSize.NEGATIVE_RESULT", "Subtraction resulted in a negative data size.", ErrorType.ValidationError)
+            ? new Error(
+                "KernelR.ValueObjects.DataSize.NEGATIVE_RESULT",
+                "Subtraction resulted in a negative data size.",
+                ErrorType.ValidationError)
             : new DataSize(Bytes - other.Bytes);
     }
 
@@ -408,7 +416,10 @@ public readonly record struct DataSize :
     public Result<DataSize> Multiply(decimal multiplier)
     {
         if (multiplier < 0m)
-            return new Error("KernelR.ValueObjects.DataSize.NEGATIVE_MULTIPLIER", "Multiplier cannot be negative.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.DataSize.NEGATIVE_MULTIPLIER",
+                "Multiplier cannot be negative.",
+                ErrorType.ValidationError);
         try
         {
             decimal bytesDecimal = Bytes * multiplier;
@@ -462,10 +473,17 @@ public readonly record struct DataSize :
     public Result<DataSize> Percentage(decimal percent)
     {
         if (percent < 0m)
-            return new Error("KernelR.ValueObjects.DataSize.NEGATIVE_PERCENT", "Percentage cannot be negative.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.DataSize.NEGATIVE_PERCENT",
+                "Percentage cannot be negative.",
+                ErrorType.ValidationError);
+
         decimal bytesDecimal = Bytes * percent / 100m;
         return bytesDecimal > long.MaxValue
-            ? new Error("KernelR.ValueObjects.DataSize.OVERFLOW", "The percentage calculation resulted in a value that is too large.", ErrorType.ValidationError)
+            ? new Error(
+                "KernelR.ValueObjects.DataSize.OVERFLOW",
+                "The percentage calculation resulted in a value that is too large.",
+                ErrorType.ValidationError)
             : new DataSize((long)Math.Round(bytesDecimal, MidpointRounding.AwayFromZero));
     }
 
@@ -481,9 +499,12 @@ public readonly record struct DataSize :
     /// </returns>
     public Result<decimal> Ratio(DataSize other)
     {
-        if (other.Bytes == 0L)
-            return new Error("KernelR.ValueObjects.DataSize.DIVIDE_BY_ZERO", "Cannot compute ratio against zero.", ErrorType.ValidationError);
-        return Result<decimal>.Success(Bytes / (decimal)other.Bytes);
+        return other.Bytes == 0L
+            ? new Error(
+                "KernelR.ValueObjects.DataSize.DIVIDE_BY_ZERO",
+                "Cannot compute ratio against zero.",
+                ErrorType.ValidationError)
+            : Bytes / (decimal)other.Bytes;
     }
 
     /// <summary>

@@ -34,7 +34,9 @@ namespace KernelR.Domain.ValueObjects.Contact;
 /// </code>
 /// </example>
 /// <seealso cref="IValueObject"/>
-public readonly partial record struct Email : IValueObject, IParsable<Email>
+public readonly partial record struct Email :
+    IValueObject,
+    IParsable<Email>
 {
     /// <summary>
     /// The maximum allowed length for an email address according to RFC 5321.
@@ -85,19 +87,19 @@ public readonly partial record struct Email : IValueObject, IParsable<Email>
 
         string normalized = value.Trim().ToLowerInvariant();
 
-        if (normalized.Length > MaxLength)
-            return new Error(
+        return normalized.Length > MaxLength
+            ? new Error(
                 "KernelR.ValueObjects.Email.TOO_LONG",
                 "Email is too long.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        if (!AllowedPattern().IsMatch(normalized))
-            return new Error(
+            : !AllowedPattern().IsMatch(normalized)
+            ? new Error(
                 "KernelR.ValueObjects.Email.INVALID_FORMAT",
                 "Email format is invalid.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        return new Email(normalized);
+            : new Email(normalized);
     }
 
     /// <summary>

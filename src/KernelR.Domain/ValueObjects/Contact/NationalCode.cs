@@ -28,7 +28,9 @@ namespace KernelR.Domain.ValueObjects;
 /// </code>
 /// </example>
 /// <seealso cref="IValueObject"/>
-public readonly partial record struct NationalCode : IValueObject, IParsable<NationalCode>
+public readonly partial record struct NationalCode :
+    IValueObject,
+    IParsable<NationalCode>
 {
     /// <summary>
     /// The generated regex pattern used to validate the exact 10-digit format.

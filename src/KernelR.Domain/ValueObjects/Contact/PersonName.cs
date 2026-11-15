@@ -106,25 +106,25 @@ public readonly partial record struct PersonName : IValueObject, IParsable<Perso
 
         string normalized = WhitespaceCollapser().Replace(value.Trim(), " ");
 
-        if (normalized.Length < MinLength)
-            return new Error(
+        return normalized.Length < MinLength
+            ? new Error(
                 "KernelR.ValueObjects.PersonName.TOO_SHORT",
                 "Person name is too short.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        if (normalized.Length > MaxLength)
-            return new Error(
+            : normalized.Length > MaxLength
+            ? new Error(
                 "KernelR.ValueObjects.PersonName.TOO_LONG",
                 "Person name is too long.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        if (!AllowedPattern().IsMatch(normalized))
-            return new Error(
+            : !AllowedPattern().IsMatch(normalized)
+            ? new Error(
                 "KernelR.ValueObjects.PersonName.INVALID_CHARACTERS",
                 "Person name contains invalid characters.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        return new PersonName(normalized);
+            : new PersonName(normalized);
     }
 
     /// <summary>

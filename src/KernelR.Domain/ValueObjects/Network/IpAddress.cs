@@ -99,19 +99,19 @@ public readonly record struct IpAddress : IValueObject, IParsable<IpAddress>, IC
     /// </returns>
     public static Result<IpAddress> Create(string value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return new Error(
+        return string.IsNullOrWhiteSpace(value)
+            ? new Error(
                 "KernelR.ValueObjects.IpAddress.EMPTY",
                 "IP address cannot be empty.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        if (!IPAddress.TryParse(value.Trim(), out IPAddress? parsedIp))
-            return new Error(
+            : !IPAddress.TryParse(value.Trim(), out IPAddress? parsedIp)
+            ? new Error(
                 "KernelR.ValueObjects.IpAddress.INVALID_FORMAT",
                 "IP address is not a valid IPv4 or IPv6 format.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        return Create(parsedIp);
+            : Create(parsedIp);
     }
 
     /// <summary>

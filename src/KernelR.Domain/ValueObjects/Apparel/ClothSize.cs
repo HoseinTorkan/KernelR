@@ -32,7 +32,11 @@ namespace KernelR.Domain.ValueObjects.Apparel;
 /// </example>
 /// <seealso cref="ClothSizeType"/>
 /// <seealso cref="IValueObject"/>
-public readonly record struct ClothSize : IValueObject, IParsable<ClothSize>, IComparable<ClothSize>, IComparable
+public readonly record struct ClothSize :
+    IValueObject,
+    IParsable<ClothSize>,
+    IComparable<ClothSize>,
+    IComparable
 {
     /// <summary>
     /// Gets the underlying enum value representing the clothing size.

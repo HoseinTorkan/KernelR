@@ -56,27 +56,27 @@ public readonly record struct PhysicalSize :
     /// <summary>
     /// The number of micrometers in one millimeter (1,000).
     /// </summary>
-    private const long MicrometersPerMillimeter = 1_000L;
+    public const long MicrometersPerMillimeter = 1_000L;
 
     /// <summary>
     /// The number of micrometers in one centimeter (10,000).
     /// </summary>
-    private const long MicrometersPerCentimeter = 10_000L;
+    public const long MicrometersPerCentimeter = 10_000L;
 
     /// <summary>
     /// The number of micrometers in one meter (1,000,000).
     /// </summary>
-    private const long MicrometersPerMeter = 1_000_000L;
+    public const long MicrometersPerMeter = 1_000_000L;
 
     /// <summary>
     /// The number of micrometers in one inch (25,400), exact by the international definition (1 in = 2.54 cm).
     /// </summary>
-    private const long MicrometersPerInch = 25_400L;
+    public const long MicrometersPerInch = 25_400L;
 
     /// <summary>
     /// The number of micrometers in one foot (304,800), exact by the international definition (1 ft = 12 in).
     /// </summary>
-    private const long MicrometersPerFoot = 304_800L;
+    public const long MicrometersPerFoot = 304_800L;
 
     /// <summary>
     /// Gets the canonical size, in micrometers (μm).
@@ -292,12 +292,13 @@ public readonly record struct PhysicalSize :
                 "KernelR.ValueObjects.PhysicalSize.INVALID_AMOUNT",
                 "Physical size value is not a valid number.",
                 ErrorType.ValidationError)
-            : !TryParseUnitFactor(parts[1], out long factor)
 
+            : !TryParseUnitFactor(parts[1], out long factor)
             ? new Error(
                 "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
                 $"Physical size unit '{parts[1]}' is not recognized.",
                 ErrorType.ValidationError)
+
             : FromDecimal(amount, factor);
     }
 
@@ -419,7 +420,10 @@ public readonly record struct PhysicalSize :
     public Result<PhysicalSize> Multiply(decimal multiplier)
     {
         if (multiplier < 0m)
-            return new Error("KernelR.ValueObjects.PhysicalSize.NEGATIVE_MULTIPLIER", "Multiplier cannot be negative.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.NEGATIVE_MULTIPLIER",
+                "Multiplier cannot be negative.",
+                ErrorType.ValidationError);
         try
         {
             decimal result = Micrometers * multiplier;
@@ -452,7 +456,10 @@ public readonly record struct PhysicalSize :
     public Result<PhysicalSize> Divide(decimal divisor)
     {
         return divisor <= 0m
-            ? new Error("KernelR.ValueObjects.PhysicalSize.DIVIDE_BY_ZERO", "Cannot divide by zero or a negative number.", ErrorType.ValidationError)
+            ? new Error(
+                "KernelR.ValueObjects.PhysicalSize.DIVIDE_BY_ZERO",
+                "Cannot divide by zero or a negative number.",
+                ErrorType.ValidationError)
             : new PhysicalSize((long)Math.Round(Micrometers / divisor, MidpointRounding.AwayFromZero));
     }
 
@@ -630,18 +637,27 @@ public readonly record struct PhysicalSize :
     private static Result<PhysicalSize> FromDecimal(decimal value, long factor)
     {
         if (value < 0m)
-            return new Error("KernelR.ValueObjects.PhysicalSize.NEGATIVE", "Physical size cannot be negative.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.NEGATIVE",
+                "Physical size cannot be negative.",
+                ErrorType.ValidationError);
 
         try
         {
             decimal micrometersDecimal = value * factor;
             return micrometersDecimal > long.MaxValue
-                ? new Error("KernelR.ValueObjects.PhysicalSize.OVERFLOW", "Physical size is too large.", ErrorType.ValidationError)
+                ? new Error(
+                    "KernelR.ValueObjects.PhysicalSize.OVERFLOW",
+                    "Physical size is too large.",
+                    ErrorType.ValidationError)
                 : new PhysicalSize((long)Math.Round(micrometersDecimal, MidpointRounding.AwayFromZero));
         }
         catch (OverflowException)
         {
-            return new Error("KernelR.ValueObjects.PhysicalSize.OVERFLOW", "Physical size is too large.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.PhysicalSize.OVERFLOW",
+                "Physical size is too large.",
+                ErrorType.ValidationError);
         }
     }
 

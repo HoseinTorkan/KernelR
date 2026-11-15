@@ -88,17 +88,18 @@ public readonly record struct Url : IValueObject, IParsable<Url>
     /// </returns>
     public static Result<Url> Create(string value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return new Error(
+        return string.IsNullOrWhiteSpace(value)
+            ? new Error(
                 "KernelR.ValueObjects.Url.EMPTY",
                 "URL cannot be empty.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        return !Uri.TryCreate(value.Trim(), UriKind.Absolute, out Uri? uri)
+            : !Uri.TryCreate(value.Trim(), UriKind.Absolute, out Uri? uri)
             ? new Error(
                 "KernelR.ValueObjects.Url.INVALID_FORMAT",
                 "URL is not a valid absolute URI.",
                 ErrorType.ValidationError)
+
             : Create(uri);
     }
 
@@ -116,25 +117,23 @@ public readonly record struct Url : IValueObject, IParsable<Url>
     /// </returns>
     public static Result<Url> Create(Uri uri)
     {
-        if (uri is null)
-            return new Error(
+        return uri is null
+            ? new Error(
                 "KernelR.ValueObjects.Url.NULL",
                 "URL cannot be null.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        if (!uri.IsAbsoluteUri)
-            return new Error(
+            : !uri.IsAbsoluteUri
+            ? new Error(
                 "KernelR.ValueObjects.Url.INVALID_FORMAT",
                 "URL is not a valid absolute URI.",
-                ErrorType.ValidationError);
-
-        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
-            return new Error(
+                ErrorType.ValidationError)
+            : uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps
+            ? (Result<Url>)new Error(
                 "KernelR.ValueObjects.Url.INVALID_SCHEME",
                 "URL must use http or https.",
-                ErrorType.ValidationError);
-
-        return new Url(uri.AbsoluteUri, uri);
+                ErrorType.ValidationError)
+            : (Result<Url>)new Url(uri.AbsoluteUri, uri);
     }
 
     /// <summary>

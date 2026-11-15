@@ -125,19 +125,19 @@ public readonly record struct Money : IValueObject, IParsable<Money>, IComparabl
 
         string[] parts = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 
-        if (parts.Length != 2)
-            return new Error(
+        return parts.Length != 2
+            ? new Error(
                 "KernelR.ValueObjects.Money.INVALID_FORMAT",
                 "Money must be formatted as '<amount> <currency>', for example '100 IRR'.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        if (!decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount))
-            return new Error(
+            : !decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount)
+            ? new Error(
                 "KernelR.ValueObjects.Money.INVALID_VALUE",
                 "Money amount is not a valid number.",
-                ErrorType.ValidationError);
+                ErrorType.ValidationError)
 
-        return Create(amount, parts[1]);
+            : Create(amount, parts[1]);
     }
 
     /// <summary>

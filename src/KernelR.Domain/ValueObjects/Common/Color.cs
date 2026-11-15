@@ -33,7 +33,9 @@ namespace KernelR.Domain.ValueObjects.Common;
 /// </example>
 /// <seealso cref="IValueObject"/>
 /// <seealso cref="HslColor"/>
-public readonly partial record struct Color : IValueObject, IParsable<Color>
+public readonly partial record struct Color :
+    IValueObject,
+    IParsable<Color>
 {
     /// <summary>
     /// The regex pattern used to validate standard 6-digit (RGB) and 8-digit (ARGB) hex colors.
@@ -193,33 +195,25 @@ public readonly partial record struct Color : IValueObject, IParsable<Color>
     /// <param name="amount">The amount to lighten (0.0 to 1.0).</param>
     /// <returns>A new, lighter <see cref="Color"/>.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="amount"/> is outside 0.0 to 1.0.</exception>
-    public Color Lighten(double amount)
-    {
-        if (amount is < 0 or > 1)
-            throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be between 0.0 and 1.0.");
-
-        return new Color(
-            A,
-            (byte)Math.Clamp(R + (255 - R) * amount, 0, 255),
-            (byte)Math.Clamp(G + (255 - G) * amount, 0, 255),
-            (byte)Math.Clamp(B + (255 - B) * amount, 0, 255));
-    }
+    public Color Lighten(double amount) => amount is < 0 or > 1
+            ? throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be between 0.0 and 1.0.")
+            : new Color(
+                A,
+                (byte)Math.Clamp(R + (255 - R) * amount, 0, 255),
+                (byte)Math.Clamp(G + (255 - G) * amount, 0, 255),
+                (byte)Math.Clamp(B + (255 - B) * amount, 0, 255));
 
     /// <summary>Returns a darker version of the current color.</summary>
     /// <param name="amount">The amount to darken (0.0 to 1.0).</param>
     /// <returns>A new, darker <see cref="Color"/>.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="amount"/> is outside 0.0 to 1.0.</exception>
-    public Color Darken(double amount)
-    {
-        if (amount is < 0 or > 1)
-            throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be between 0.0 and 1.0.");
-
-        return new Color(
-            A,
-            (byte)Math.Clamp(R * (1 - amount), 0, 255),
-            (byte)Math.Clamp(G * (1 - amount), 0, 255),
-            (byte)Math.Clamp(B * (1 - amount), 0, 255));
-    }
+    public Color Darken(double amount) => amount is < 0 or > 1
+            ? throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be between 0.0 and 1.0.")
+            : new Color(
+                A,
+                (byte)Math.Clamp(R * (1 - amount), 0, 255),
+                (byte)Math.Clamp(G * (1 - amount), 0, 255),
+                (byte)Math.Clamp(B * (1 - amount), 0, 255));
 
     /// <summary>Returns the inverted version of the current color.</summary>
     /// <returns>A new <see cref="Color"/> with inverted RGB values.</returns>
@@ -265,7 +259,11 @@ public readonly partial record struct Color : IValueObject, IParsable<Color>
         {
             s = l > 0.5 ? delta / (2.0 - max - min) : delta / (max + min);
 
-            h = max == r ? (g - b) / delta + (g < b ? 6 : 0) : max == g ? (b - r) / delta + 2 : (r - g) / delta + 4;
+            h = max == r
+                ? (g - b) / delta + (g < b ? 6 : 0)
+                : max == g
+                    ? (b - r) / delta + 2
+                    : (r - g) / delta + 4;
 
             h /= 6;
         }

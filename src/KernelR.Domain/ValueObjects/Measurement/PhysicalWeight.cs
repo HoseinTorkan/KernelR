@@ -50,7 +50,11 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// }
 /// </code>
 /// </example>
-public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalWeight>, IComparable<PhysicalWeight>, IComparable
+public readonly record struct PhysicalWeight :
+    IValueObject,
+    IParsable<PhysicalWeight>,
+    IComparable<PhysicalWeight>,
+    IComparable
 {
     /// <summary>
     /// The number of micrograms in one milligram (1,000).
@@ -250,20 +254,25 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
     /// </example>
     public static Result<PhysicalWeight> Create(decimal amount, PhysicalWeightUnit unit)
     {
-        if (amount < 0m)
-            return new Error("KernelR.ValueObjects.PhysicalWeight.NEGATIVE", "Physical weight cannot be negative.", ErrorType.ValidationError);
-
-        return unit switch
-        {
-            PhysicalWeightUnit.Microgram => FromMicrograms(amount),
-            PhysicalWeightUnit.Milligram => FromMilligrams(amount),
-            PhysicalWeightUnit.Gram => FromGrams(amount),
-            PhysicalWeightUnit.Kilogram => FromKilograms(amount),
-            PhysicalWeightUnit.Ton => FromTons(amount),
-            PhysicalWeightUnit.Pound => FromPounds(amount),
-            PhysicalWeightUnit.Ounce => FromOunces(amount),
-            _ => new Error("KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT", $"Physical weight unit '{(int)unit}' is not defined.", ErrorType.ValidationError),
-        };
+        return amount < 0m
+            ? new Error(
+                "KernelR.ValueObjects.PhysicalWeight.NEGATIVE",
+                "Physical weight cannot be negative.",
+                ErrorType.ValidationError)
+            : unit switch
+            {
+                PhysicalWeightUnit.Microgram => FromMicrograms(amount),
+                PhysicalWeightUnit.Milligram => FromMilligrams(amount),
+                PhysicalWeightUnit.Gram => FromGrams(amount),
+                PhysicalWeightUnit.Kilogram => FromKilograms(amount),
+                PhysicalWeightUnit.Ton => FromTons(amount),
+                PhysicalWeightUnit.Pound => FromPounds(amount),
+                PhysicalWeightUnit.Ounce => FromOunces(amount),
+                _ => new Error(
+                    "KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT",
+                    $"Physical weight unit '{(int)unit}' is not defined.",
+                    ErrorType.ValidationError),
+            };
     }
 
     /// <summary>
@@ -292,19 +301,31 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
     public static Result<PhysicalWeight> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-            return new Error("KernelR.ValueObjects.PhysicalWeight.EMPTY", "Physical weight cannot be empty.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.EMPTY",
+                "Physical weight cannot be empty.",
+                ErrorType.ValidationError);
 
         string[] parts = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length != 2)
-            return new Error("KernelR.ValueObjects.PhysicalWeight.INVALID_FORMAT", "Physical weight must be formatted as '<value> <unit>', for example '2.5 kg'.", ErrorType.ValidationError);
+        return parts.Length != 2
+            ? new Error(
+                "KernelR.ValueObjects.PhysicalWeight.INVALID_FORMAT",
+                "Physical weight must be formatted as '<value> <unit>', for example '2.5 kg'.",
+                ErrorType.ValidationError)
 
-        if (!decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount))
-            return new Error("KernelR.ValueObjects.PhysicalWeight.INVALID_AMOUNT", "Physical weight value is not a valid number.", ErrorType.ValidationError);
+            : !decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount)
+            ? new Error(
+                "KernelR.ValueObjects.PhysicalWeight.INVALID_AMOUNT",
+                "Physical weight value is not a valid number.",
+                ErrorType.ValidationError)
 
-        if (!TryParseUnitFactor(parts[1], out long factor))
-            return new Error("KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT", $"Physical weight unit '{parts[1]}' is not recognized.", ErrorType.ValidationError);
+            : !TryParseUnitFactor(parts[1], out long factor)
+            ? new Error(
+                "KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT",
+                $"Physical weight unit '{parts[1]}' is not recognized.",
+                ErrorType.ValidationError)
 
-        return FromDecimal(amount, factor);
+            : FromDecimal(amount, factor);
     }
 
     /// <summary>
@@ -395,7 +416,10 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
         }
         catch (OverflowException)
         {
-            return new Error("KernelR.ValueObjects.PhysicalWeight.OVERFLOW", "The addition resulted in a value that is too large.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.OVERFLOW",
+                "The addition resulted in a value that is too large.",
+                ErrorType.ValidationError);
         }
     }
 
@@ -411,9 +435,12 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
     /// </returns>
     public Result<PhysicalWeight> Subtract(PhysicalWeight other)
     {
-        if (other.Micrograms > Micrograms)
-            return new Error("KernelR.ValueObjects.PhysicalWeight.NEGATIVE_RESULT", "Subtraction resulted in a negative weight.", ErrorType.ValidationError);
-        return new PhysicalWeight(Micrograms - other.Micrograms);
+        return other.Micrograms > Micrograms
+            ? new Error(
+                "KernelR.ValueObjects.PhysicalWeight.NEGATIVE_RESULT",
+                "Subtraction resulted in a negative weight.",
+                ErrorType.ValidationError)
+            : new PhysicalWeight(Micrograms - other.Micrograms);
     }
 
     /// <summary>
@@ -430,17 +457,26 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
     public Result<PhysicalWeight> Multiply(decimal multiplier)
     {
         if (multiplier < 0m)
-            return new Error("KernelR.ValueObjects.PhysicalWeight.NEGATIVE_MULTIPLIER", "Multiplier cannot be negative.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.NEGATIVE_MULTIPLIER",
+                "Multiplier cannot be negative.",
+                ErrorType.ValidationError);
         try
         {
             decimal result = Micrograms * multiplier;
-            if (result > long.MaxValue)
-                return new Error("KernelR.ValueObjects.PhysicalWeight.OVERFLOW", "The multiplication resulted in a value that is too large.", ErrorType.ValidationError);
-            return new PhysicalWeight((long)Math.Round(result, MidpointRounding.AwayFromZero));
+            return result > long.MaxValue
+                ? new Error(
+                    "KernelR.ValueObjects.PhysicalWeight.OVERFLOW",
+                    "The multiplication resulted in a value that is too large.",
+                    ErrorType.ValidationError)
+                : new PhysicalWeight((long)Math.Round(result, MidpointRounding.AwayFromZero));
         }
         catch (OverflowException)
         {
-            return new Error("KernelR.ValueObjects.PhysicalWeight.OVERFLOW", "The multiplication resulted in a value that is too large.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.OVERFLOW",
+                "The multiplication resulted in a value that is too large.",
+                ErrorType.ValidationError);
         }
     }
 
@@ -455,11 +491,12 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
     /// </list>
     /// </returns>
     public Result<PhysicalWeight> Divide(decimal divisor)
-    {
-        if (divisor <= 0m)
-            return new Error("KernelR.ValueObjects.PhysicalWeight.DIVIDE_BY_ZERO", "Cannot divide by zero or a negative number.", ErrorType.ValidationError);
-        return new PhysicalWeight((long)Math.Round(Micrograms / divisor, MidpointRounding.AwayFromZero));
-    }
+        => divisor <= 0m
+            ? new Error(
+                "KernelR.ValueObjects.PhysicalWeight.DIVIDE_BY_ZERO",
+                "Cannot divide by zero or a negative number.",
+                ErrorType.ValidationError)
+            : new PhysicalWeight((long)Math.Round(Micrograms / divisor, MidpointRounding.AwayFromZero));
 
     /// <summary>
     /// Returns the ratio of this weight to another weight.
@@ -472,11 +509,12 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
     /// </list>
     /// </returns>
     public Result<decimal> Ratio(PhysicalWeight other)
-    {
-        if (other.Micrograms == 0L)
-            return new Error("KernelR.ValueObjects.PhysicalWeight.DIVIDE_BY_ZERO", "Cannot compute ratio against zero.", ErrorType.ValidationError);
-        return Result<decimal>.Success(Micrograms / (decimal)other.Micrograms);
-    }
+        => other.Micrograms == 0L
+            ? new Error(
+                "KernelR.ValueObjects.PhysicalWeight.DIVIDE_BY_ZERO",
+                "Cannot compute ratio against zero.",
+                ErrorType.ValidationError)
+            : Micrograms / (decimal)other.Micrograms;
 
     /// <summary>
     /// Returns the smaller of two weights.
@@ -604,15 +642,14 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
     /// </remarks>
     public override string ToString()
     {
-        if (Micrograms >= MicrogramsPerTon)
-            return string.Format(CultureInfo.InvariantCulture, "{0:0.##} t", ToTons());
-        if (Micrograms >= MicrogramsPerKilogram)
-            return string.Format(CultureInfo.InvariantCulture, "{0:0.##} kg", ToKilograms());
-        if (Micrograms >= MicrogramsPerGram)
-            return string.Format(CultureInfo.InvariantCulture, "{0:0.##} g", ToGrams());
-        if (Micrograms >= MicrogramsPerMilligram)
-            return string.Format(CultureInfo.InvariantCulture, "{0:0.##} mg", ToMilligrams());
-        return string.Format(CultureInfo.InvariantCulture, "{0} μg", Micrograms);
+        return Micrograms switch
+        {
+            >= MicrogramsPerTon => string.Format(CultureInfo.InvariantCulture, "{0:0.##} t", ToTons()),
+            >= MicrogramsPerKilogram => string.Format(CultureInfo.InvariantCulture, "{0:0.##} kg", ToKilograms()),
+            >= MicrogramsPerGram => string.Format(CultureInfo.InvariantCulture, "{0:0.##} g", ToGrams()),
+            >= MicrogramsPerMilligram => string.Format(CultureInfo.InvariantCulture, "{0:0.##} mg", ToMilligrams()),
+            _ => string.Format(CultureInfo.InvariantCulture, "{0} μg", Micrograms)
+        };
     }
 
     /// <summary>Explicitly converts a <see cref="PhysicalWeight"/> to its underlying microgram count.</summary>
@@ -634,18 +671,27 @@ public readonly record struct PhysicalWeight : IValueObject, IParsable<PhysicalW
     private static Result<PhysicalWeight> FromDecimal(decimal value, long factor)
     {
         if (value < 0m)
-            return new Error("KernelR.ValueObjects.PhysicalWeight.NEGATIVE", "Physical weight cannot be negative.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.NEGATIVE",
+                "Physical weight cannot be negative.",
+                ErrorType.ValidationError);
 
         try
         {
             decimal microgramsDecimal = value * factor;
-            if (microgramsDecimal > long.MaxValue)
-                return new Error("KernelR.ValueObjects.PhysicalWeight.OVERFLOW", "Physical weight is too large.", ErrorType.ValidationError);
-            return new PhysicalWeight((long)Math.Round(microgramsDecimal, MidpointRounding.AwayFromZero));
+            return microgramsDecimal > long.MaxValue
+                ? new Error(
+                    "KernelR.ValueObjects.PhysicalWeight.OVERFLOW",
+                    "Physical weight is too large.",
+                    ErrorType.ValidationError)
+                : new PhysicalWeight((long)Math.Round(microgramsDecimal, MidpointRounding.AwayFromZero));
         }
         catch (OverflowException)
         {
-            return new Error("KernelR.ValueObjects.PhysicalWeight.OVERFLOW", "Physical weight is too large.", ErrorType.ValidationError);
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.OVERFLOW",
+                "Physical weight is too large.",
+                ErrorType.ValidationError);
         }
     }
 
