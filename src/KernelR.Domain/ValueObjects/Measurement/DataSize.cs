@@ -32,9 +32,25 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// for the rationale.
 /// </para>
 /// <para>
-/// <b>Mathematical Operations:</b> When adding or subtracting two <see cref="DataSize"/> instances
-/// with different units, the operation is performed directly on the canonical byte counts,
-/// so no unit conversion or precision loss is ever needed.
+/// <b>Culture policy:</b> This value object is a domain primitive and a machine-to-machine contract.
+/// All internal parsing, error messages, and numeric conversion use
+/// <see cref="CultureInfo.InvariantCulture"/> explicitly, so the type behaves identically
+/// regardless of the host application's <see cref="CultureInfo.CurrentCulture"/>.
+/// </para>
+/// <para>
+/// <b>Display responsibility:</b> For display, the <c>ToString</c> overloads accept an optional
+/// <see cref="IFormatProvider"/>. Callers who want localized output (e.g., Persian digits)
+/// should pass the desired culture explicitly:
+/// <c>size.ToString(CultureInfo.GetCultureInfo("fa-IR"))</c>.
+/// This keeps the decision of "how to display" in the presentation layer, not in the library.
+/// </para>
+/// <para>
+/// <b>Mathematical operations:</b> Fallible operations (<c>Add</c>, <c>Subtract</c>, <c>Multiply</c>,
+/// <c>Divide</c>, <c>Percentage</c>, <c>Ratio</c>) return <see cref="Result{T}"/> and have
+/// corresponding operators that throw <see cref="InvalidOperationException"/> on failure.
+/// Comparison uses the standard operators (<c>&gt;</c>, <c>&lt;</c>, <c>&gt;=</c>, <c>&lt;=</c>)
+/// and <see cref="CompareTo"/> — no separate comparison methods exist, because comparing two
+/// <see cref="DataSize"/> instances cannot fail.
 /// </para>
 /// <para>
 /// <b>Format specifiers (IFormattable):</b> The format string passed to
@@ -55,6 +71,7 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 ///     Console.WriteLine(result.Value);               // Outputs: 1.5 GB
 ///     Console.WriteLine($"{result.Value:MB}");        // Outputs: 1536 MB
 ///     Console.WriteLine($"{result.Value:N0}");        // Outputs: 2 GB
+///     Console.WriteLine(result.Value > DataSize.Zero); // Outputs: True
 /// }
 /// </code>
 /// </example>
@@ -65,6 +82,9 @@ public readonly record struct DataSize :
     IComparable,
     IFormattable
 {
+    /// <summary>The number of bits in one byte (8).</summary>
+    public const long BitsPerByte = 8L;
+
     /// <summary>The number of bytes in one kilobyte (1024).</summary>
     public const long BytesPerKilobyte = 1024L;
 
@@ -76,6 +96,24 @@ public readonly record struct DataSize :
 
     /// <summary>The number of bytes in one terabyte (1024⁴).</summary>
     public const long BytesPerTerabyte = BytesPerGigabyte * 1024L;
+
+    /// <summary>The number of kilobytes in one megabyte (1024).</summary>
+    public const long KilobytesPerMegabyte = 1024L;
+
+    /// <summary>The number of kilobytes in one gigabyte (1024²).</summary>
+    public const long KilobytesPerGigabyte = KilobytesPerMegabyte * 1024L;
+
+    /// <summary>The number of kilobytes in one terabyte (1024³).</summary>
+    public const long KilobytesPerTerabyte = KilobytesPerGigabyte * 1024L;
+
+    /// <summary>The number of megabytes in one gigabyte (1024).</summary>
+    public const long MegabytesPerGigabyte = 1024L;
+
+    /// <summary>The number of megabytes in one terabyte (1024²).</summary>
+    public const long MegabytesPerTerabyte = MegabytesPerGigabyte * 1024L;
+
+    /// <summary>The number of gigabytes in one terabyte (1024).</summary>
+    public const long GigabytesPerTerabyte = 1024L;
 
     /// <summary>
     /// Gets the canonical size, in bytes.
@@ -123,7 +161,10 @@ public readonly record struct DataSize :
     /// </returns>
     public static Result<DataSize> FromBytes(long bytes)
         => bytes < 0L
-            ? new Error("KernelR.ValueObjects.DataSize.NEGATIVE", "Data size cannot be negative.", ErrorType.ValidationError)
+            ? new Error(
+                "KernelR.ValueObjects.DataSize.NEGATIVE",
+                "Data size cannot be negative.",
+                ErrorType.ValidationError)
             : new DataSize(bytes);
 
     /// <summary>
@@ -137,14 +178,18 @@ public readonly record struct DataSize :
     /// </list>
     /// </returns>
     /// <remarks>
-    /// The conversion divides <paramref name="bits"/> by 8 and rounds to the nearest byte
-    /// using <see cref="MidpointRounding.AwayFromZero"/>.
+    /// The conversion divides <paramref name="bits"/> by <see cref="BitsPerByte"/> and rounds
+    /// to the nearest byte using <see cref="MidpointRounding.AwayFromZero"/>. The division
+    /// uses <see cref="decimal"/> internally so that no precision is lost for any value of <see cref="long"/>.
     /// </remarks>
     public static Result<DataSize> FromBits(long bits)
     {
         return bits < 0L
-            ? new Error("KernelR.ValueObjects.DataSize.NEGATIVE", "Data size cannot be negative.", ErrorType.ValidationError)
-            : FromBytes((long)Math.Round(bits / 8.0, MidpointRounding.AwayFromZero));
+            ? new Error(
+                "KernelR.ValueObjects.DataSize.NEGATIVE",
+                "Data size cannot be negative.",
+                ErrorType.ValidationError)
+            : FromBytes((long)Math.Round(bits / (decimal)BitsPerByte, MidpointRounding.AwayFromZero));
     }
 
     /// <summary>
@@ -240,7 +285,7 @@ public readonly record struct DataSize :
                 DataSizeUnit.Terabyte => FromTerabytes(amount),
                 _ => new Error(
                     "KernelR.ValueObjects.DataSize.INVALID_UNIT",
-                    string.Format(CultureInfo.InvariantCulture, "Data size unit '{0}' is not defined.", (int)unit),
+                    FormattableString.Invariant($"Data size unit '{(int)unit}' is not defined."),
                     ErrorType.ValidationError),
             };
     }
@@ -297,7 +342,7 @@ public readonly record struct DataSize :
             : !TryParseUnitFactor(parts[1], out long factor)
             ? new Error(
                 "KernelR.ValueObjects.DataSize.INVALID_UNIT",
-                string.Format(CultureInfo.InvariantCulture, "Data size unit '{0}' is not recognized.", parts[1]),
+                FormattableString.Invariant($"Data size unit '{parts[1]}' is not recognized."),
                 ErrorType.ValidationError)
 
             : FromDecimal(amount, factor);
@@ -307,21 +352,60 @@ public readonly record struct DataSize :
     /// Parses the specified string into a <see cref="DataSize"/> instance.
     /// </summary>
     /// <param name="s">The string to parse.</param>
-    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <param name="provider">
+    /// An object that provides culture-specific formatting information.
+    /// <b>This parameter is intentionally ignored.</b>
+    /// </param>
     /// <returns>A <see cref="DataSize"/> instance representing the parsed value.</returns>
     /// <exception cref="FormatException">
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, not in the form <c>"&lt;value&gt; &lt;unit&gt;"</c>,
     /// or contains an invalid value or unit. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
+    /// <remarks>
+    /// <para>
+    /// This overload exists to satisfy the <see cref="IParsable{TSelf}"/> contract, which requires
+    /// an <see cref="IFormatProvider"/> parameter. Because <see cref="DataSize"/> is a
+    /// machine-to-machine contract, parsing is <b>always</b> performed using
+    /// <see cref="CultureInfo.InvariantCulture"/> regardless of the provider passed.
+    /// </para>
+    /// <para>
+    /// In other words: <c>DataSize.Parse("1.5 GB", CultureInfo.GetCultureInfo("de-DE"))</c>
+    /// and <c>DataSize.Parse("1.5 GB", null)</c> produce identical results. A German caller
+    /// that wants to accept the German decimal separator (<c>"1,5 GB"</c>) must normalize the
+    /// input to invariant form (<c>"1.5 GB"</c>) before calling this method.
+    /// </para>
+    /// <para>
+    /// For consistency, the same policy applies to
+    /// <see cref="TryParse(string?, IFormatProvider?, out DataSize)"/>.
+    /// </para>
+    /// </remarks>
     public static DataSize Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="DataSize"/> instance.
     /// </summary>
     /// <param name="s">The string to parse.</param>
-    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
-    /// <param name="result">When this method returns, contains the parsed <see cref="DataSize"/> instance, if the parsing succeeded, or the default value if it failed.</param>
+    /// <param name="provider">
+    /// An object that provides culture-specific formatting information.
+    /// <b>This parameter is intentionally ignored.</b>
+    /// </param>
+    /// <param name="result">
+    /// When this method returns, contains the parsed <see cref="DataSize"/> instance, if parsing
+    /// succeeded, or the default value if it failed.
+    /// </param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// This overload exists to satisfy the <see cref="IParsable{TSelf}"/> contract, which requires
+    /// an <see cref="IFormatProvider"/> parameter. Because <see cref="DataSize"/> is a
+    /// machine-to-machine contract, parsing is <b>always</b> performed using
+    /// <see cref="CultureInfo.InvariantCulture"/> regardless of the provider passed.
+    /// </para>
+    /// <para>
+    /// When only a validity check is needed and the resulting instance is not used, callers
+    /// can discard it via <c>TryParse(value, null, out _)</c>.
+    /// </para>
+    /// </remarks>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out DataSize result)
         => Create(s ?? string.Empty).TryGetValue(out result);
 
@@ -339,9 +423,27 @@ public readonly record struct DataSize :
     /// </list>
     /// </returns>
     /// <remarks>
+    /// <para>
     /// This method is intended for callers who only need the numeric conversion and do not
     /// want to instantiate a <see cref="DataSize"/>. The conversion is performed in
     /// canonical bytes, so it is exact for all supported units.
+    /// </para>
+    /// <para>
+    /// <b>Do not combine this with a <c>FromXxx</c> factory.</b> If the goal is to build a
+    /// <see cref="DataSize"/>, call <c>FromXxx</c> directly on the source value. For example,
+    /// <c>DataSize.FromMegabytes(1536m)</c> and
+    /// <c>DataSize.FromGigabytes(DataSize.Convert(1536m, DataSizeUnit.Megabyte, DataSizeUnit.Gigabyte).OrThrow())</c>
+    /// produce the same result — the former is shorter and avoids the extra round-trip.
+    /// </para>
+    /// <para>
+    /// <b>Why the return type is <see cref="decimal"/> and not <see cref="DataSize"/>:</b>
+    /// a conversion between units can produce a fractional value that is not representable
+    /// as whole bytes. For example, <c>1 MB</c> equals <c>0.00000095367431640625 TB</c>;
+    /// returning a <see cref="DataSize"/> would round this to <c>0 TB</c>, silently losing
+    /// the entire value. The <see cref="decimal"/> return type preserves the full precision.
+    /// If the goal is to obtain a precise numeric result, prefer this method (or
+    /// <see cref="ToUnit"/>) over converting to a <see cref="DataSize"/> first.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -353,23 +455,23 @@ public readonly record struct DataSize :
     public static Result<decimal> Convert(decimal value, DataSizeUnit fromUnit, DataSizeUnit toUnit)
     {
         if (fromUnit == toUnit)
-            return Result<decimal>.Success(value);
+            return value;
 
         if (!TryGetByteFactor(fromUnit, out long fromFactor))
             return new Error(
                 "KernelR.ValueObjects.DataSize.INVALID_UNIT",
-                string.Format(CultureInfo.InvariantCulture, "Source unit '{0}' is not defined.", (int)fromUnit),
+                FormattableString.Invariant($"Source unit '{(int)fromUnit}' is not defined."),
                 ErrorType.ValidationError);
 
         if (!TryGetByteFactor(toUnit, out long toFactor))
             return new Error(
                 "KernelR.ValueObjects.DataSize.INVALID_UNIT",
-                string.Format(CultureInfo.InvariantCulture, "Target unit '{0}' is not defined.", (int)toUnit),
+                FormattableString.Invariant($"Target unit '{(int)toUnit}' is not defined."),
                 ErrorType.ValidationError);
 
         try
         {
-            return Result<decimal>.Success(value * fromFactor / toFactor);
+            return value * fromFactor / toFactor;
         }
         catch (OverflowException)
         {
@@ -396,7 +498,7 @@ public readonly record struct DataSize :
 
     /// <summary>Converts this data size to bits.</summary>
     /// <returns>The size in bits (exact for sizes up to <c>long.MaxValue / 8</c>).</returns>
-    public decimal ToBits() => Bytes * 8m;
+    public decimal ToBits() => (decimal)Bytes * BitsPerByte;
 
     /// <summary>Converts this data size to bytes.</summary>
     /// <returns>The canonical size in bytes.</returns>
@@ -445,7 +547,7 @@ public readonly record struct DataSize :
             DataSizeUnit.Terabyte => ToTerabytes(),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(unit),
-                string.Format(CultureInfo.InvariantCulture, "Unsupported data size unit: '{0}'.", (int)unit))
+                FormattableString.Invariant($"Unsupported data size unit: '{(int)unit}'."))
         };
     }
 
@@ -518,11 +620,11 @@ public readonly record struct DataSize :
         {
             decimal bytesDecimal = Bytes * multiplier;
             return bytesDecimal > long.MaxValue
-                ? (Result<DataSize>)new Error(
+                ? new Error(
                     "KernelR.ValueObjects.DataSize.OVERFLOW",
                     "The multiplication resulted in a value that is too large.",
                     ErrorType.ValidationError)
-                : (Result<DataSize>)new DataSize((long)Math.Round(bytesDecimal, MidpointRounding.AwayFromZero));
+                : new DataSize((long)Math.Round(bytesDecimal, MidpointRounding.AwayFromZero));
         }
         catch (OverflowException)
         {
@@ -598,38 +700,8 @@ public readonly record struct DataSize :
                 "KernelR.ValueObjects.DataSize.DIVIDE_BY_ZERO",
                 "Cannot compute ratio against zero.",
                 ErrorType.ValidationError)
-            : Result<decimal>.Success(Bytes / (decimal)other.Bytes);
+            : Bytes / (decimal)other.Bytes;
     }
-
-    /// <summary>Returns the smaller of two sizes.</summary>
-    /// <param name="other">The other size.</param>
-    /// <returns>The size with the smaller <see cref="Bytes"/> value.</returns>
-    public DataSize Min(DataSize other) => Bytes <= other.Bytes ? this : other;
-
-    /// <summary>Returns the larger of two sizes.</summary>
-    /// <param name="other">The other size.</param>
-    /// <returns>The size with the larger <see cref="Bytes"/> value.</returns>
-    public DataSize Max(DataSize other) => Bytes >= other.Bytes ? this : other;
-
-    /// <summary>Determines whether the current data size is greater than the specified data size.</summary>
-    /// <param name="other">The data size to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> GreaterThan(DataSize other) => Result<bool>.Success(Bytes > other.Bytes);
-
-    /// <summary>Determines whether the current data size is less than the specified data size.</summary>
-    /// <param name="other">The data size to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> LessThan(DataSize other) => Result<bool>.Success(Bytes < other.Bytes);
-
-    /// <summary>Determines whether the current data size is greater than or equal to the specified data size.</summary>
-    /// <param name="other">The data size to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> GreaterThanOrEqual(DataSize other) => Result<bool>.Success(Bytes >= other.Bytes);
-
-    /// <summary>Determines whether the current data size is less than or equal to the specified data size.</summary>
-    /// <param name="other">The data size to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> LessThanOrEqual(DataSize other) => Result<bool>.Success(Bytes <= other.Bytes);
 
     /// <summary>Adds two data sizes.</summary>
     /// <param name="left">The first data size.</param>
@@ -677,24 +749,44 @@ public readonly record struct DataSize :
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="DataSize"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(DataSize)"/>.
+    /// </remarks>
     public static bool operator >(DataSize left, DataSize right) => left.Bytes > right.Bytes;
 
     /// <summary>Determines whether the left size is less than the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="DataSize"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(DataSize)"/>.
+    /// </remarks>
     public static bool operator <(DataSize left, DataSize right) => left.Bytes < right.Bytes;
 
     /// <summary>Determines whether the left size is greater than or equal to the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="DataSize"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(DataSize)"/>.
+    /// </remarks>
     public static bool operator >=(DataSize left, DataSize right) => left.Bytes >= right.Bytes;
 
     /// <summary>Determines whether the left size is less than or equal to the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="DataSize"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(DataSize)"/>.
+    /// </remarks>
     public static bool operator <=(DataSize left, DataSize right) => left.Bytes <= right.Bytes;
 
     /// <inheritdoc />
@@ -708,7 +800,7 @@ public readonly record struct DataSize :
             null => 1,
             DataSize other => CompareTo(other),
             _ => throw new ArgumentException(
-                string.Format(CultureInfo.InvariantCulture, "Object must be of type {0}.", nameof(DataSize)),
+                FormattableString.Invariant($"Object must be of type {nameof(DataSize)}."),
                 nameof(obj))
         };
     }
@@ -722,6 +814,10 @@ public readonly record struct DataSize :
     /// The threshold check is rounding-aware: if rounding to two decimals would produce
     /// <c>1024</c> or more of the current unit, the next larger unit is used instead
     /// (e.g., <c>1,048,575 B</c> is shown as <c>"1 MB"</c>, not <c>"1024 KB"</c>).
+    /// <para>
+    /// To produce localized output (e.g., Persian digits), call
+    /// <see cref="ToString(IFormatProvider?)"/> with the desired culture explicitly.
+    /// </para>
     /// </remarks>
     public override string ToString() => FormatAutoSelected("0.##", CultureInfo.InvariantCulture);
 
@@ -774,7 +870,7 @@ public readonly record struct DataSize :
             DataSizeUnit.Terabyte => string.Format(culture, "{0:0.##} TB", value),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(unit),
-                string.Format(CultureInfo.InvariantCulture, "Unsupported data size unit: '{0}'.", (int)unit))
+                FormattableString.Invariant($"Unsupported data size unit: '{(int)unit}'."))
         };
     }
 
@@ -794,27 +890,25 @@ public readonly record struct DataSize :
     /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
     /// </param>
     /// <returns>The formatted string.</returns>
+    /// <exception cref="FormatException">
+    /// Thrown when <paramref name="format"/> is neither a recognized unit specifier
+    /// nor a valid .NET numeric format string. This matches the <see cref="IFormattable"/>
+    /// contract and the behavior of built-in numeric types.
+    /// </exception>
     /// <remarks>
     /// This method implements <see cref="IFormattable"/>, so it is invoked by
     /// string interpolation (e.g., <c>$"{size:MB}"</c>) and by <see cref="string.Format(IFormatProvider, string, object[])"/>.
     /// </remarks>
-    /// <example>
-    /// <code>
-    /// DataSize size = DataSize.FromGigabytes(1.5m).OrThrow();
-    /// string a = $"{size}";      // "1.5 GB"    (auto-select)
-    /// string b = $"{size:MB}";   // "1536 MB"   (unit specifier)
-    /// string c = $"{size:N0}";   // "2 GB"      (numeric format, auto-select)
-    /// </code>
-    /// </example>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
         IFormatProvider culture = formatProvider ?? CultureInfo.InvariantCulture;
 
-        if (string.IsNullOrEmpty(format))
-            return FormatAutoSelected("0.##", culture);
+        return string.IsNullOrEmpty(format)
+            ? FormatAutoSelected("0.##", culture)
 
-        return TryParseUnit(format, out DataSizeUnit unit)
+            : TryParseUnit(format, out DataSizeUnit unit)
             ? ToString(unit, culture)
+
             : FormatAutoSelected(format, culture);
     }
 
@@ -825,8 +919,8 @@ public readonly record struct DataSize :
 
     /// <summary>Explicitly converts a <see cref="DataSize"/> to its human-readable string representation.</summary>
     /// <param name="size">The data size to convert.</param>
-    /// <returns>The string representation of the data size.</returns>
-    public static explicit operator string(DataSize size) => size.ToString();
+    /// <returns>The string representation of the data size, formatted using <see cref="CultureInfo.InvariantCulture"/>.</returns>
+    public static explicit operator string(DataSize size) => size.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
     /// Creates a <see cref="DataSize"/> from a decimal value multiplied by a byte factor.
@@ -886,6 +980,10 @@ public readonly record struct DataSize :
     /// <param name="text">The text to parse.</param>
     /// <param name="unit">When this method returns, contains the parsed unit.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// This method intentionally uses <see cref="string.ToUpperInvariant"/> so that unit parsing
+    /// is not affected by the current UI culture (e.g., the Turkish-I problem).
+    /// </remarks>
     private static bool TryParseUnit(string text, out DataSizeUnit unit)
     {
         switch (text.ToUpperInvariant())
@@ -926,39 +1024,42 @@ public readonly record struct DataSize :
     /// </para>
     /// <para>
     /// Specifically, <c>1,048,575 B</c> (one byte less than 1 MB) is displayed as
-    /// <c>"1024 KB"</c> if rounding KB to two decimals yields 1024 KB. The implementation
-    /// prefers the higher unit in that case for readability.
+    /// <c>"1 MB"</c>, not <c>"1024 KB"</c>, because rounding 1023.999 KB to two decimals
+    /// yields 1024 KB, which is the threshold for one megabyte.
     /// </para>
     /// </remarks>
     private string FormatAutoSelected(string numericFormat, IFormatProvider culture)
     {
-        if (Bytes < BytesPerKilobyte)
-            return string.Format(culture, "{0:" + numericFormat + "} B", Bytes);
-
-        if (Bytes < BytesPerMegabyte)
+        switch (Bytes)
         {
-            decimal kb = ToKilobytes();
-            return Math.Round(kb, 2, MidpointRounding.AwayFromZero) >= 1024m
-                ? string.Format(culture, "{0:" + numericFormat + "} MB", ToMegabytes())
-                : string.Format(culture, "{0:" + numericFormat + "} KB", kb);
-        }
+            case < BytesPerKilobyte:
+                return string.Format(culture, "{0:" + numericFormat + "} B", Bytes);
+            case < BytesPerMegabyte:
+                {
+                    decimal kb = ToKilobytes();
+                    return Math.Round(kb, 2, MidpointRounding.AwayFromZero) >= 1024m
+                        ? string.Format(culture, "{0:" + numericFormat + "} MB", ToMegabytes())
+                        : string.Format(culture, "{0:" + numericFormat + "} KB", kb);
+                }
 
-        if (Bytes < BytesPerGigabyte)
-        {
-            decimal mb = ToMegabytes();
-            return Math.Round(mb, 2, MidpointRounding.AwayFromZero) >= 1024m
-                ? string.Format(culture, "{0:" + numericFormat + "} GB", ToGigabytes())
-                : string.Format(culture, "{0:" + numericFormat + "} MB", mb);
-        }
+            case < BytesPerGigabyte:
+                {
+                    decimal mb = ToMegabytes();
+                    return Math.Round(mb, 2, MidpointRounding.AwayFromZero) >= 1024m
+                        ? string.Format(culture, "{0:" + numericFormat + "} GB", ToGigabytes())
+                        : string.Format(culture, "{0:" + numericFormat + "} MB", mb);
+                }
 
-        if (Bytes < BytesPerTerabyte)
-        {
-            decimal gb = ToGigabytes();
-            return Math.Round(gb, 2, MidpointRounding.AwayFromZero) >= 1024m
-                ? string.Format(culture, "{0:" + numericFormat + "} TB", ToTerabytes())
-                : string.Format(culture, "{0:" + numericFormat + "} GB", gb);
-        }
+            case < BytesPerTerabyte:
+                {
+                    decimal gb = ToGigabytes();
+                    return Math.Round(gb, 2, MidpointRounding.AwayFromZero) >= 1024m
+                        ? string.Format(culture, "{0:" + numericFormat + "} TB", ToTerabytes())
+                        : string.Format(culture, "{0:" + numericFormat + "} GB", gb);
+                }
 
-        return string.Format(culture, "{0:" + numericFormat + "} TB", ToTerabytes());
+            default:
+                return string.Format(culture, "{0:" + numericFormat + "} TB", ToTerabytes());
+        }
     }
 }

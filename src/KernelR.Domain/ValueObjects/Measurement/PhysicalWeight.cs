@@ -35,10 +35,35 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// for all practical applications.
 /// </para>
 /// <para>
-/// <b>Mathematical Operations:</b> When adding or subtracting two <see cref="PhysicalWeight"/> instances
-/// with different units, the operation is performed directly on the canonical microgram counts,
-/// so no unit conversion or precision loss is ever needed.
+/// <b>Culture policy:</b> This value object is a domain primitive and a machine-to-machine contract.
+/// All internal parsing, error messages, and numeric conversion use
+/// <see cref="CultureInfo.InvariantCulture"/> explicitly, so the type behaves identically
+/// regardless of the host application's <see cref="CultureInfo.CurrentCulture"/>.
 /// </para>
+/// <para>
+/// <b>Display responsibility:</b> For display, the <c>ToString</c> overloads accept an optional
+/// <see cref="IFormatProvider"/>. Callers who want localized output (e.g., Persian digits)
+/// should pass the desired culture explicitly:
+/// <c>weight.ToString(CultureInfo.GetCultureInfo("fa-IR"))</c>.
+/// This keeps the decision of "how to display" in the presentation layer, not in the library.
+/// </para>
+/// <para>
+/// <b>Mathematical operations:</b> Fallible operations (<c>Add</c>, <c>Subtract</c>, <c>Multiply</c>,
+/// <c>Divide</c>, <c>Ratio</c>) return <see cref="Result{T}"/> and have corresponding operators
+/// that throw <see cref="InvalidOperationException"/> on failure. Comparison uses the standard
+/// operators (<c>&gt;</c>, <c>&lt;</c>, <c>&gt;=</c>, <c>&lt;=</c>) and <see cref="CompareTo"/> —
+/// no separate comparison methods exist, because comparing two <see cref="PhysicalWeight"/>
+/// instances cannot fail.
+/// </para>
+/// <para>
+/// <b>Format specifiers (IFormattable):</b> The format string passed to
+/// <see cref="ToString(string?, IFormatProvider?)"/> may be one of:
+/// </para>
+/// <list type="bullet">
+///   <item><description><c>null</c> or <c>""</c>: auto-select the largest applicable metric unit (μg, mg, g, kg, or t).</description></item>
+///   <item><description>A unit specifier (case-insensitive): <c>"μg"</c>, <c>"ug"</c>, <c>"mg"</c>, <c>"g"</c>, <c>"kg"</c>, <c>"t"</c>, <c>"lb"</c>, <c>"oz"</c>.</description></item>
+///   <item><description>A .NET numeric format string (e.g., <c>"N2"</c>, <c>"F3"</c>): auto-select the unit, then apply the numeric format.</description></item>
+/// </list>
 /// </remarks>
 /// <example>
 /// <code>
@@ -47,6 +72,9 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// {
 ///     Console.WriteLine(result.Value.ToPounds()); // Outputs: 5.51
 ///     Console.WriteLine(result.Value);            // Outputs: 2.5 kg
+///     Console.WriteLine($"{result.Value:lb}");    // Outputs: 5.51 lb
+///     Console.WriteLine($"{result.Value:N3}");    // Outputs: 2.500 kg
+///     Console.WriteLine(result.Value > PhysicalWeight.Zero); // Outputs: True
 /// }
 /// </code>
 /// </example>
@@ -54,37 +82,59 @@ public readonly record struct PhysicalWeight :
     IValueObject,
     IParsable<PhysicalWeight>,
     IComparable<PhysicalWeight>,
-    IComparable
+    IComparable,
+    IFormattable
 {
-    /// <summary>
-    /// The number of micrograms in one milligram (1,000).
-    /// </summary>
-    private const long MicrogramsPerMilligram = 1_000L;
+    /// <summary>The number of micrograms in one milligram (1,000).</summary>
+    public const long MicrogramsPerMilligram = 1_000L;
+
+    /// <summary>The number of micrograms in one gram (1,000,000).</summary>
+    public const long MicrogramsPerGram = 1_000_000L;
+
+    /// <summary>The number of micrograms in one kilogram (1,000,000,000).</summary>
+    public const long MicrogramsPerKilogram = 1_000_000_000L;
+
+    /// <summary>The number of micrograms in one metric ton (1,000,000,000,000).</summary>
+    public const long MicrogramsPerTon = 1_000_000_000_000L;
+
+    /// <summary>The number of micrograms in one pound (453,592,370), exact by the international avoirdupois definition.</summary>
+    public const long MicrogramsPerPound = 453_592_370L;
 
     /// <summary>
-    /// The number of micrograms in one gram (1,000,000).
+    /// The number of micrograms in one ounce (28,349,523), rounded from the exact value
+    /// 28,349,523.125 μg. The rounding error is 0.125 μg per ounce (see class-level remarks).
     /// </summary>
-    private const long MicrogramsPerGram = 1_000_000L;
+    public const long MicrogramsPerOunce = 28_349_523L;
 
-    /// <summary>
-    /// The number of micrograms in one kilogram (1,000,000,000).
-    /// </summary>
-    private const long MicrogramsPerKilogram = 1_000_000_000L;
+    /// <summary>The number of milligrams in one gram (1,000).</summary>
+    public const long MilligramsPerGram = 1_000L;
 
-    /// <summary>
-    /// The number of micrograms in one metric ton (1,000,000,000,000).
-    /// </summary>
-    private const long MicrogramsPerTon = 1_000_000_000_000L;
+    /// <summary>The number of milligrams in one kilogram (1,000,000).</summary>
+    public const long MilligramsPerKilogram = 1_000_000L;
 
-    /// <summary>
-    /// The number of micrograms in one pound (453,592,370), exact by the international avoirdupois definition.
-    /// </summary>
-    private const long MicrogramsPerPound = 453_592_370L;
+    /// <summary>The number of milligrams in one metric ton (1,000,000,000).</summary>
+    public const long MilligramsPerTon = 1_000_000_000L;
 
-    /// <summary>
-    /// The number of micrograms in one ounce (28,349,523), rounded from 28,349,523.125 μg.
-    /// </summary>
-    private const long MicrogramsPerOunce = 28_349_523L;
+    /// <summary>The number of grams in one kilogram (1,000).</summary>
+    public const long GramsPerKilogram = 1_000L;
+
+    /// <summary>The number of grams in one metric ton (1,000,000).</summary>
+    public const long GramsPerTon = 1_000_000L;
+
+    /// <summary>The number of kilograms in one metric ton (1,000).</summary>
+    public const long KilogramsPerTon = 1_000L;
+
+    /// <summary>The number of ounces in one pound (16), exact by the international avoirdupois definition.</summary>
+    public const long OuncesPerPound = 16L;
+
+    /// <summary>The number of milligrams in one pound (453,592.37), exact by the international avoirdupois definition.</summary>
+    public const decimal MilligramsPerPound = 453_592.37m;
+
+    /// <summary>The number of grams in one pound (453.59237), exact by the international avoirdupois definition.</summary>
+    public const decimal GramsPerPound = 453.59237m;
+
+    /// <summary>The number of kilograms in one pound (0.45359237), exact by the international avoirdupois definition.</summary>
+    public const decimal KilogramsPerPound = 0.45359237m;
 
     /// <summary>
     /// Gets the canonical weight, in micrograms (μg).
@@ -270,7 +320,7 @@ public readonly record struct PhysicalWeight :
                 PhysicalWeightUnit.Ounce => FromOunces(amount),
                 _ => new Error(
                     "KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT",
-                    $"Physical weight unit '{(int)unit}' is not defined.",
+                    FormattableString.Invariant($"Physical weight unit '{(int)unit}' is not defined."),
                     ErrorType.ValidationError),
             };
     }
@@ -322,7 +372,7 @@ public readonly record struct PhysicalWeight :
             : !TryParseUnitFactor(parts[1], out long factor)
             ? new Error(
                 "KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT",
-                $"Physical weight unit '{parts[1]}' is not recognized.",
+                FormattableString.Invariant($"Physical weight unit '{parts[1]}' is not recognized."),
                 ErrorType.ValidationError)
 
             : FromDecimal(amount, factor);
@@ -332,63 +382,176 @@ public readonly record struct PhysicalWeight :
     /// Parses the specified string into a <see cref="PhysicalWeight"/> instance.
     /// </summary>
     /// <param name="s">The string to parse.</param>
-    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <param name="provider">
+    /// An object that provides culture-specific formatting information.
+    /// <b>This parameter is intentionally ignored.</b>
+    /// </param>
     /// <returns>A <see cref="PhysicalWeight"/> instance representing the parsed value.</returns>
     /// <exception cref="FormatException">
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, not in the form <c>"&lt;value&gt; &lt;unit&gt;"</c>,
     /// or contains an invalid value or unit. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
+    /// <remarks>
+    /// <para>
+    /// This overload exists to satisfy the <see cref="IParsable{TSelf}"/> contract, which requires
+    /// an <see cref="IFormatProvider"/> parameter. Because <see cref="PhysicalWeight"/> is a
+    /// machine-to-machine contract, parsing is <b>always</b> performed using
+    /// <see cref="CultureInfo.InvariantCulture"/> regardless of the provider passed.
+    /// </para>
+    /// <para>
+    /// In other words: <c>PhysicalWeight.Parse("2.5 kg", CultureInfo.GetCultureInfo("de-DE"))</c>
+    /// and <c>PhysicalWeight.Parse("2.5 kg", null)</c> produce identical results. A German caller
+    /// that wants to accept the German decimal separator (<c>"2,5 kg"</c>) must normalize the
+    /// input to invariant form (<c>"2.5 kg"</c>) before calling this method.
+    /// </para>
+    /// <para>
+    /// For consistency, the same policy applies to
+    /// <see cref="TryParse(string?, IFormatProvider?, out PhysicalWeight)"/>.
+    /// </para>
+    /// </remarks>
     public static PhysicalWeight Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="PhysicalWeight"/> instance.
     /// </summary>
     /// <param name="s">The string to parse.</param>
-    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
-    /// <param name="result">When this method returns, contains the parsed <see cref="PhysicalWeight"/> instance, if the parsing succeeded, or the default value if it failed.</param>
+    /// <param name="provider">
+    /// An object that provides culture-specific formatting information.
+    /// <b>This parameter is intentionally ignored.</b>
+    /// </param>
+    /// <param name="result">
+    /// When this method returns, contains the parsed <see cref="PhysicalWeight"/> instance, if parsing
+    /// succeeded, or the default value if it failed.
+    /// </param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// This overload exists to satisfy the <see cref="IParsable{TSelf}"/> contract, which requires
+    /// an <see cref="IFormatProvider"/> parameter. Because <see cref="PhysicalWeight"/> is a
+    /// machine-to-machine contract, parsing is <b>always</b> performed using
+    /// <see cref="CultureInfo.InvariantCulture"/> regardless of the provider passed.
+    /// </para>
+    /// <para>
+    /// When only a validity check is needed and the resulting instance is not used, callers
+    /// can discard it via <c>TryParse(value, null, out _)</c>.
+    /// </para>
+    /// </remarks>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out PhysicalWeight result)
         => Create(s ?? string.Empty).TryGetValue(out result);
 
     /// <summary>
-    /// Converts this weight to micrograms.
+    /// Converts a raw decimal value from one unit to another, without creating a <see cref="PhysicalWeight"/>.
     /// </summary>
+    /// <param name="value">The raw value to convert.</param>
+    /// <param name="fromUnit">The source unit of <paramref name="value"/>.</param>
+    /// <param name="toUnit">The target unit for the result.</param>
+    /// <returns>
+    /// A successful result carrying the converted value, or a failure with one of the following error codes:
+    /// <list type="bullet">
+    ///   <item><description><c>KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT</c> when either unit is not defined.</description></item>
+    ///   <item><description><c>KernelR.ValueObjects.PhysicalWeight.OVERFLOW</c> when the intermediate calculation exceeds <see cref="decimal.MaxValue"/>.</description></item>
+    /// </list>
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This method is intended for callers who only need the numeric conversion and do not
+    /// want to instantiate a <see cref="PhysicalWeight"/>. The conversion is performed in
+    /// canonical micrograms, so it is exact for all metric units and for pounds; conversions
+    /// involving ounces carry the same 0.125 μg per ounce rounding described on <see cref="FromOunces"/>.
+    /// </para>
+    /// <para>
+    /// <b>Do not combine this with a <c>FromXxx</c> factory.</b> If the goal is to build a
+    /// <see cref="PhysicalWeight"/>, call <c>FromXxx</c> directly on the source value. For example,
+    /// <c>PhysicalWeight.FromKilograms(2.5m)</c> and
+    /// <c>PhysicalWeight.FromPounds(PhysicalWeight.Convert(2.5m, PhysicalWeightUnit.Kilogram, PhysicalWeightUnit.Pound).OrThrow())</c>
+    /// produce the same result — the former is shorter and avoids the extra round-trip.
+    /// </para>
+    /// <para>
+    /// <b>Why the return type is <see cref="decimal"/> and not <see cref="PhysicalWeight"/>:</b>
+    /// a conversion between units can produce a fractional value that is not representable
+    /// as whole micrograms. For example, converting <c>1 μg</c> to pounds yields a value far
+    /// below <c>1 lb</c>, which rounds to <c>0 lb</c> if coerced into a <see cref="PhysicalWeight"/> —
+    /// silently losing the entire value. The <see cref="decimal"/> return type preserves the
+    /// full precision. If the goal is to obtain a precise numeric result, prefer this method
+    /// (or <see cref="ToUnit"/>) over converting to a <see cref="PhysicalWeight"/> first.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// decimal kilograms = 2.5m;
+    /// decimal pounds = PhysicalWeight.Convert(kilograms, PhysicalWeightUnit.Kilogram, PhysicalWeightUnit.Pound).OrThrow();
+    /// // pounds = 5.51155655462...
+    /// </code>
+    /// </example>
+    public static Result<decimal> Convert(decimal value, PhysicalWeightUnit fromUnit, PhysicalWeightUnit toUnit)
+    {
+        if (fromUnit == toUnit)
+            return value;
+
+        if (!TryGetMicrogramFactor(fromUnit, out long fromFactor))
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT",
+                FormattableString.Invariant($"Source unit '{(int)fromUnit}' is not defined."),
+                ErrorType.ValidationError);
+
+        if (!TryGetMicrogramFactor(toUnit, out long toFactor))
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.INVALID_UNIT",
+                FormattableString.Invariant($"Target unit '{(int)toUnit}' is not defined."),
+                ErrorType.ValidationError);
+
+        try
+        {
+            return value * fromFactor / toFactor;
+        }
+        catch (OverflowException)
+        {
+            return new Error(
+                "KernelR.ValueObjects.PhysicalWeight.OVERFLOW",
+                "The conversion resulted in a value that is too large.",
+                ErrorType.ValidationError);
+        }
+    }
+
+    /// <summary>
+    /// Attempts to convert a raw decimal value from one unit to another.
+    /// </summary>
+    /// <param name="value">The raw value to convert.</param>
+    /// <param name="fromUnit">The source unit of <paramref name="value"/>.</param>
+    /// <param name="toUnit">The target unit for the result.</param>
+    /// <param name="result">When this method returns, contains the converted value on success, or <c>0</c> on failure.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
+    public static bool TryConvert(decimal value, PhysicalWeightUnit fromUnit, PhysicalWeightUnit toUnit, out decimal result)
+    {
+        result = default;
+        return Convert(value, fromUnit, toUnit).TryGetValue(out result);
+    }
+
+    /// <summary>Converts this weight to micrograms.</summary>
     /// <returns>The canonical weight in micrograms.</returns>
     public long ToMicrograms() => Micrograms;
 
-    /// <summary>
-    /// Converts this weight to milligrams.
-    /// </summary>
+    /// <summary>Converts this weight to milligrams.</summary>
     /// <returns>The weight in milligrams (may have a fractional part).</returns>
     public decimal ToMilligrams() => Micrograms / (decimal)MicrogramsPerMilligram;
 
-    /// <summary>
-    /// Converts this weight to grams.
-    /// </summary>
+    /// <summary>Converts this weight to grams.</summary>
     /// <returns>The weight in grams (may have a fractional part).</returns>
     public decimal ToGrams() => Micrograms / (decimal)MicrogramsPerGram;
 
-    /// <summary>
-    /// Converts this weight to kilograms.
-    /// </summary>
+    /// <summary>Converts this weight to kilograms.</summary>
     /// <returns>The weight in kilograms (may have a fractional part).</returns>
     public decimal ToKilograms() => Micrograms / (decimal)MicrogramsPerKilogram;
 
-    /// <summary>
-    /// Converts this weight to metric tons.
-    /// </summary>
+    /// <summary>Converts this weight to metric tons.</summary>
     /// <returns>The weight in metric tons (may have a fractional part).</returns>
     public decimal ToTons() => Micrograms / (decimal)MicrogramsPerTon;
 
-    /// <summary>
-    /// Converts this weight to pounds.
-    /// </summary>
+    /// <summary>Converts this weight to pounds.</summary>
     /// <returns>The weight in pounds (may have a fractional part).</returns>
     public decimal ToPounds() => Micrograms / (decimal)MicrogramsPerPound;
 
-    /// <summary>
-    /// Converts this weight to ounces.
-    /// </summary>
+    /// <summary>Converts this weight to ounces.</summary>
     /// <returns>The weight in ounces (may have a fractional part).</returns>
     /// <remarks>
     /// The ounce conversion uses the exact definition (1 oz = 28,349,523.125 μg) conceptually,
@@ -396,6 +559,39 @@ public readonly record struct PhysicalWeight :
     /// may be present. See <see cref="FromOunces"/> for details.
     /// </remarks>
     public decimal ToOunces() => Micrograms / (decimal)MicrogramsPerOunce;
+
+    /// <summary>
+    /// Converts this weight to the specified unit.
+    /// </summary>
+    /// <param name="unit">The target unit.</param>
+    /// <returns>The weight expressed in <paramref name="unit"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="unit"/> is not a defined <see cref="PhysicalWeightUnit"/>.</exception>
+    /// <remarks>
+    /// This method is a convenience wrapper around the individual <c>ToXxx</c> methods,
+    /// useful when the target unit is determined at runtime.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// PhysicalWeightUnit target = (PhysicalWeightUnit)request.TargetUnit;
+    /// decimal value = weight.ToUnit(target);
+    /// </code>
+    /// </example>
+    public decimal ToUnit(PhysicalWeightUnit unit)
+    {
+        return unit switch
+        {
+            PhysicalWeightUnit.Microgram => ToMicrograms(),
+            PhysicalWeightUnit.Milligram => ToMilligrams(),
+            PhysicalWeightUnit.Gram => ToGrams(),
+            PhysicalWeightUnit.Kilogram => ToKilograms(),
+            PhysicalWeightUnit.Ton => ToTons(),
+            PhysicalWeightUnit.Pound => ToPounds(),
+            PhysicalWeightUnit.Ounce => ToOunces(),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(unit),
+                FormattableString.Invariant($"Unsupported physical weight unit: '{(int)unit}'."))
+        };
+    }
 
     /// <summary>
     /// Adds the specified physical weight to the current weight, returning a <see cref="Result{T}"/>.
@@ -461,6 +657,7 @@ public readonly record struct PhysicalWeight :
                 "KernelR.ValueObjects.PhysicalWeight.NEGATIVE_MULTIPLIER",
                 "Multiplier cannot be negative.",
                 ErrorType.ValidationError);
+
         try
         {
             decimal result = Micrograms * multiplier;
@@ -491,12 +688,14 @@ public readonly record struct PhysicalWeight :
     /// </list>
     /// </returns>
     public Result<PhysicalWeight> Divide(decimal divisor)
-        => divisor <= 0m
+    {
+        return divisor <= 0m
             ? new Error(
                 "KernelR.ValueObjects.PhysicalWeight.DIVIDE_BY_ZERO",
                 "Cannot divide by zero or a negative number.",
                 ErrorType.ValidationError)
             : new PhysicalWeight((long)Math.Round(Micrograms / divisor, MidpointRounding.AwayFromZero));
+    }
 
     /// <summary>
     /// Returns the ratio of this weight to another weight.
@@ -509,46 +708,14 @@ public readonly record struct PhysicalWeight :
     /// </list>
     /// </returns>
     public Result<decimal> Ratio(PhysicalWeight other)
-        => other.Micrograms == 0L
+    {
+        return other.Micrograms == 0L
             ? new Error(
                 "KernelR.ValueObjects.PhysicalWeight.DIVIDE_BY_ZERO",
                 "Cannot compute ratio against zero.",
                 ErrorType.ValidationError)
             : Micrograms / (decimal)other.Micrograms;
-
-    /// <summary>
-    /// Returns the smaller of two weights.
-    /// </summary>
-    /// <param name="other">The other weight.</param>
-    /// <returns>The weight with the smaller <see cref="Micrograms"/> value.</returns>
-    public PhysicalWeight Min(PhysicalWeight other) => Micrograms <= other.Micrograms ? this : other;
-
-    /// <summary>
-    /// Returns the larger of two weights.
-    /// </summary>
-    /// <param name="other">The other weight.</param>
-    /// <returns>The weight with the larger <see cref="Micrograms"/> value.</returns>
-    public PhysicalWeight Max(PhysicalWeight other) => Micrograms >= other.Micrograms ? this : other;
-
-    /// <summary>Determines whether the current weight is greater than the specified weight.</summary>
-    /// <param name="other">The physical weight to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> GreaterThan(PhysicalWeight other) => Result<bool>.Success(Micrograms > other.Micrograms);
-
-    /// <summary>Determines whether the current weight is less than the specified weight.</summary>
-    /// <param name="other">The physical weight to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> LessThan(PhysicalWeight other) => Result<bool>.Success(Micrograms < other.Micrograms);
-
-    /// <summary>Determines whether the current weight is greater than or equal to the specified weight.</summary>
-    /// <param name="other">The physical weight to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> GreaterThanOrEqual(PhysicalWeight other) => Result<bool>.Success(Micrograms >= other.Micrograms);
-
-    /// <summary>Determines whether the current weight is less than or equal to the specified weight.</summary>
-    /// <param name="other">The physical weight to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> LessThanOrEqual(PhysicalWeight other) => Result<bool>.Success(Micrograms <= other.Micrograms);
+    }
 
     /// <summary>Adds two physical weights.</summary>
     /// <param name="left">The first physical weight.</param>
@@ -596,24 +763,44 @@ public readonly record struct PhysicalWeight :
     /// <param name="left">The left weight.</param>
     /// <param name="right">The right weight.</param>
     /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="PhysicalWeight"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(PhysicalWeight)"/>.
+    /// </remarks>
     public static bool operator >(PhysicalWeight left, PhysicalWeight right) => left.Micrograms > right.Micrograms;
 
     /// <summary>Determines whether the left weight is less than the right weight.</summary>
     /// <param name="left">The left weight.</param>
     /// <param name="right">The right weight.</param>
     /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="PhysicalWeight"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(PhysicalWeight)"/>.
+    /// </remarks>
     public static bool operator <(PhysicalWeight left, PhysicalWeight right) => left.Micrograms < right.Micrograms;
 
     /// <summary>Determines whether the left weight is greater than or equal to the right weight.</summary>
     /// <param name="left">The left weight.</param>
     /// <param name="right">The right weight.</param>
     /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="PhysicalWeight"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(PhysicalWeight)"/>.
+    /// </remarks>
     public static bool operator >=(PhysicalWeight left, PhysicalWeight right) => left.Micrograms >= right.Micrograms;
 
     /// <summary>Determines whether the left weight is less than or equal to the right weight.</summary>
     /// <param name="left">The left weight.</param>
     /// <param name="right">The right weight.</param>
     /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="PhysicalWeight"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(PhysicalWeight)"/>.
+    /// </remarks>
     public static bool operator <=(PhysicalWeight left, PhysicalWeight right) => left.Micrograms <= right.Micrograms;
 
     /// <inheritdoc />
@@ -626,7 +813,9 @@ public readonly record struct PhysicalWeight :
         {
             null => 1,
             PhysicalWeight other => CompareTo(other),
-            _ => throw new ArgumentException($"Object must be of type {nameof(PhysicalWeight)}.", nameof(obj))
+            _ => throw new ArgumentException(
+                FormattableString.Invariant($"Object must be of type {nameof(PhysicalWeight)}."),
+                nameof(obj))
         };
     }
 
@@ -634,22 +823,122 @@ public readonly record struct PhysicalWeight :
     /// Returns a human-readable representation of the weight, automatically selecting
     /// the largest applicable metric unit (μg, mg, g, kg, or t).
     /// </summary>
-    /// <returns>A culture-invariant string (e.g., <c>"2.5 kg"</c>, <c>"500 mg"</c>).</returns>
+    /// <returns>
+    /// A culture-invariant string (e.g., <c>"2.5 kg"</c>, <c>"500 mg"</c>).
+    /// </returns>
     /// <remarks>
-    /// Imperial units (pounds, ounces) are not used by <see cref="ToString"/> because
-    /// the canonical representation is metric. Use <see cref="ToPounds"/> or
-    /// <see cref="ToOunces"/> for explicit imperial conversion.
+    /// Imperial units (pounds, ounces) are not used by this overload because the canonical
+    /// representation is metric. Use <see cref="ToString(PhysicalWeightUnit, IFormatProvider?)"/>
+    /// or the format specifier <c>"lb"</c> / <c>"oz"</c> to display in imperial units.
+    /// <para>
+    /// To produce localized output (e.g., Persian digits), call
+    /// <see cref="ToString(IFormatProvider?)"/> with the desired culture explicitly.
+    /// </para>
     /// </remarks>
-    public override string ToString()
+    public override string ToString() => FormatAutoSelected("0.##", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Returns a human-readable representation of the weight, using the specified culture.
+    /// </summary>
+    /// <param name="provider">
+    /// An object that supplies culture-specific formatting information, or
+    /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
+    /// </param>
+    /// <returns>A string such as <c>"2.5 kg"</c> or <c>"500 mg"</c>.</returns>
+    /// <remarks>
+    /// The unit is chosen automatically (μg, mg, g, kg, or t). The threshold check is
+    /// rounding-aware: if rounding to two decimals would produce <c>1000</c> or more of
+    /// the current unit, the next larger unit is used instead (e.g., <c>999,999 μg</c>
+    /// is shown as <c>"1 g"</c>, not <c>"1000 mg"</c>).
+    /// </remarks>
+    public string ToString(IFormatProvider? provider)
+        => FormatAutoSelected("0.##", provider ?? CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Returns a representation of the weight in the specified unit.
+    /// </summary>
+    /// <param name="unit">The unit to express the weight in.</param>
+    /// <param name="provider">
+    /// An object that supplies culture-specific formatting information, or
+    /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
+    /// </param>
+    /// <returns>A string such as <c>"5.51 lb"</c> or <c>"2500 mg"</c>.</returns>
+    /// <remarks>
+    /// This overload allows the caller to choose the unit explicitly. It supports both
+    /// metric and imperial units. Use this when you need to force a specific unit
+    /// (e.g., for user-facing display in a region that uses imperial units).
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// PhysicalWeight weight = PhysicalWeight.FromKilograms(2.5m).OrThrow();
+    /// Console.WriteLine(weight.ToString(PhysicalWeightUnit.Pound));  // "5.51 lb"
+    /// Console.WriteLine(weight.ToString(PhysicalWeightUnit.Gram));   // "2500 g"
+    /// </code>
+    /// </example>
+    public string ToString(PhysicalWeightUnit unit, IFormatProvider? provider = null)
     {
-        return Micrograms switch
+        IFormatProvider culture = provider ?? CultureInfo.InvariantCulture;
+        decimal value = ToUnit(unit);
+
+        return unit switch
         {
-            >= MicrogramsPerTon => string.Format(CultureInfo.InvariantCulture, "{0:0.##} t", ToTons()),
-            >= MicrogramsPerKilogram => string.Format(CultureInfo.InvariantCulture, "{0:0.##} kg", ToKilograms()),
-            >= MicrogramsPerGram => string.Format(CultureInfo.InvariantCulture, "{0:0.##} g", ToGrams()),
-            >= MicrogramsPerMilligram => string.Format(CultureInfo.InvariantCulture, "{0:0.##} mg", ToMilligrams()),
-            _ => string.Format(CultureInfo.InvariantCulture, "{0} μg", Micrograms)
+            PhysicalWeightUnit.Microgram => string.Format(culture, "{0} μg", value),
+            PhysicalWeightUnit.Milligram => string.Format(culture, "{0:0.##} mg", value),
+            PhysicalWeightUnit.Gram => string.Format(culture, "{0:0.##} g", value),
+            PhysicalWeightUnit.Kilogram => string.Format(culture, "{0:0.##} kg", value),
+            PhysicalWeightUnit.Ton => string.Format(culture, "{0:0.##} t", value),
+            PhysicalWeightUnit.Pound => string.Format(culture, "{0:0.##} lb", value),
+            PhysicalWeightUnit.Ounce => string.Format(culture, "{0:0.##} oz", value),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(unit),
+                FormattableString.Invariant($"Unsupported physical weight unit: '{(int)unit}'."))
         };
+    }
+
+    /// <summary>
+    /// Formats the weight using the specified format string and culture.
+    /// </summary>
+    /// <param name="format">
+    /// The format string. May be:
+    /// <list type="bullet">
+    ///   <item><description><c>null</c> or <c>""</c> to auto-select the unit.</description></item>
+    ///   <item><description>A unit specifier (case-insensitive): <c>"μg"</c>, <c>"ug"</c>, <c>"mg"</c>, <c>"g"</c>, <c>"kg"</c>, <c>"t"</c>, <c>"lb"</c>, <c>"oz"</c>.</description></item>
+    ///   <item><description>A .NET numeric format string (e.g., <c>"N2"</c>, <c>"F3"</c>) to apply to the auto-selected unit.</description></item>
+    /// </list>
+    /// </param>
+    /// <param name="formatProvider">
+    /// An object that supplies culture-specific formatting information, or
+    /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
+    /// </param>
+    /// <returns>The formatted string.</returns>
+    /// <exception cref="FormatException">
+    /// Thrown when <paramref name="format"/> is neither a recognized unit specifier
+    /// nor a valid .NET numeric format string. This matches the <see cref="IFormattable"/>
+    /// contract and the behavior of built-in numeric types.
+    /// </exception>
+    /// <remarks>
+    /// This method implements <see cref="IFormattable"/>, so it is invoked by
+    /// string interpolation (e.g., <c>$"{weight:lb}"</c>) and by <see cref="string.Format(IFormatProvider, string, object[])"/>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// PhysicalWeight weight = PhysicalWeight.FromKilograms(2.5m).OrThrow();
+    /// string a = $"{weight}";      // "2.5 kg"    (auto-select)
+    /// string b = $"{weight:lb}";   // "5.51 lb"   (unit specifier)
+    /// string c = $"{weight:N3}";   // "2.500 kg"  (numeric format, auto-select)
+    /// </code>
+    /// </example>
+    public string ToString(string? format, IFormatProvider? formatProvider)
+    {
+        IFormatProvider culture = formatProvider ?? CultureInfo.InvariantCulture;
+
+        return string.IsNullOrEmpty(format)
+            ? FormatAutoSelected("0.##", culture)
+
+            : TryParseUnit(format, out PhysicalWeightUnit unit)
+            ? ToString(unit, culture)
+
+            : FormatAutoSelected(format, culture);
     }
 
     /// <summary>Explicitly converts a <see cref="PhysicalWeight"/> to its underlying microgram count.</summary>
@@ -659,8 +948,8 @@ public readonly record struct PhysicalWeight :
 
     /// <summary>Explicitly converts a <see cref="PhysicalWeight"/> to its human-readable string representation.</summary>
     /// <param name="weight">The physical weight to convert.</param>
-    /// <returns>The string representation of the physical weight.</returns>
-    public static explicit operator string(PhysicalWeight weight) => weight.ToString();
+    /// <returns>The string representation of the physical weight, formatted using <see cref="CultureInfo.InvariantCulture"/>.</returns>
+    public static explicit operator string(PhysicalWeight weight) => weight.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
     /// Creates a <see cref="PhysicalWeight"/> from a decimal value multiplied by a microgram factor.
@@ -696,24 +985,114 @@ public readonly record struct PhysicalWeight :
     }
 
     /// <summary>
-    /// Parses a unit name, accepting both full names and short forms, and returns
-    /// the number of micrograms per unit.
+    /// Gets the microgram factor for a given unit.
+    /// </summary>
+    /// <param name="unit">The unit to look up.</param>
+    /// <param name="factor">When this method returns, contains the number of micrograms per unit.</param>
+    /// <returns><see langword="true"/> if the unit is defined; otherwise, <see langword="false"/>.</returns>
+    private static bool TryGetMicrogramFactor(PhysicalWeightUnit unit, out long factor)
+    {
+        switch (unit)
+        {
+            case PhysicalWeightUnit.Microgram: factor = 1L; return true;
+            case PhysicalWeightUnit.Milligram: factor = MicrogramsPerMilligram; return true;
+            case PhysicalWeightUnit.Gram: factor = MicrogramsPerGram; return true;
+            case PhysicalWeightUnit.Kilogram: factor = MicrogramsPerKilogram; return true;
+            case PhysicalWeightUnit.Ton: factor = MicrogramsPerTon; return true;
+            case PhysicalWeightUnit.Pound: factor = MicrogramsPerPound; return true;
+            case PhysicalWeightUnit.Ounce: factor = MicrogramsPerOunce; return true;
+            default: factor = 0L; return false;
+        }
+    }
+
+    /// <summary>
+    /// Parses a unit name from a string, accepting both full names and short forms.
+    /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <param name="unit">When this method returns, contains the parsed unit.</param>
+    /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// This method intentionally uses <see cref="string.ToLowerInvariant"/> so that unit parsing
+    /// is not affected by the current UI culture (e.g., the Turkish-I problem).
+    /// </remarks>
+    private static bool TryParseUnit(string text, out PhysicalWeightUnit unit)
+    {
+        switch (text.ToLowerInvariant())
+        {
+            case "μg" or "ug" or "microgram" or "micrograms": unit = PhysicalWeightUnit.Microgram; return true;
+            case "mg" or "milligram" or "milligrams": unit = PhysicalWeightUnit.Milligram; return true;
+            case "g" or "gram" or "grams": unit = PhysicalWeightUnit.Gram; return true;
+            case "kg" or "kilogram" or "kilograms": unit = PhysicalWeightUnit.Kilogram; return true;
+            case "t" or "ton" or "tons" or "tonne" or "tonnes": unit = PhysicalWeightUnit.Ton; return true;
+            case "lb" or "lbs" or "pound" or "pounds": unit = PhysicalWeightUnit.Pound; return true;
+            case "oz" or "ounce" or "ounces": unit = PhysicalWeightUnit.Ounce; return true;
+            default: unit = default; return false;
+        }
+    }
+
+    /// <summary>
+    /// Parses a unit name from a string and returns its microgram factor.
     /// </summary>
     /// <param name="text">The text to parse.</param>
     /// <param name="factor">When this method returns, contains the number of micrograms per unit.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
     private static bool TryParseUnitFactor(string text, out long factor)
     {
-        switch (text.ToLowerInvariant())
+        factor = 0L;
+        return TryParseUnit(text, out PhysicalWeightUnit unit) && TryGetMicrogramFactor(unit, out factor);
+    }
+
+    /// <summary>
+    /// Formats the weight using the auto-selected metric unit (μg, mg, g, kg, or t) with the
+    /// specified numeric format string.
+    /// </summary>
+    /// <param name="numericFormat">The .NET numeric format string (e.g., "0.##", "N2", "F3").</param>
+    /// <param name="culture">The culture to use for formatting.</param>
+    /// <returns>A formatted string such as <c>"2.5 kg"</c>.</returns>
+    /// <remarks>
+    /// <para>
+    /// The unit is chosen by comparing the rounded value in each unit against the threshold
+    /// for the next larger unit. This avoids the <c>"1000 mg"</c> vs <c>"1 g"</c> ambiguity
+    /// that would occur if the raw (unrounded) value were compared directly.
+    /// </para>
+    /// <para>
+    /// Specifically, <c>999,999 μg</c> is displayed as <c>"1 g"</c>, not <c>"1000 mg"</c>,
+    /// because rounding 999.999 mg to two decimals yields 1000 mg, which is the threshold
+    /// for one gram.
+    /// </para>
+    /// </remarks>
+    private string FormatAutoSelected(string numericFormat, IFormatProvider culture)
+    {
+        switch (Micrograms)
         {
-            case "μg" or "ug" or "microgram" or "micrograms": factor = 1L; return true;
-            case "mg" or "milligram" or "milligrams": factor = MicrogramsPerMilligram; return true;
-            case "g" or "gram" or "grams": factor = MicrogramsPerGram; return true;
-            case "kg" or "kilogram" or "kilograms": factor = MicrogramsPerKilogram; return true;
-            case "t" or "ton" or "tons" or "tonne" or "tonnes": factor = MicrogramsPerTon; return true;
-            case "lb" or "lbs" or "pound" or "pounds": factor = MicrogramsPerPound; return true;
-            case "oz" or "ounce" or "ounces": factor = MicrogramsPerOunce; return true;
-            default: factor = 0L; return false;
+            case >= MicrogramsPerTon:
+                return string.Format(culture, "{0:" + numericFormat + "} t", ToTons());
+            case >= MicrogramsPerKilogram:
+                {
+                    decimal kg = ToKilograms();
+                    return Math.Round(kg, 2, MidpointRounding.AwayFromZero) >= 1000m
+                        ? string.Format(culture, "{0:" + numericFormat + "} t", ToTons())
+                        : string.Format(culture, "{0:" + numericFormat + "} kg", kg);
+                }
+
+            case >= MicrogramsPerGram:
+                {
+                    decimal g = ToGrams();
+                    return Math.Round(g, 2, MidpointRounding.AwayFromZero) >= 1000m
+                        ? string.Format(culture, "{0:" + numericFormat + "} kg", ToKilograms())
+                        : string.Format(culture, "{0:" + numericFormat + "} g", g);
+                }
+
+            case >= MicrogramsPerMilligram:
+                {
+                    decimal mg = ToMilligrams();
+                    return Math.Round(mg, 2, MidpointRounding.AwayFromZero) >= 1000m
+                        ? string.Format(culture, "{0:" + numericFormat + "} g", ToGrams())
+                        : string.Format(culture, "{0:" + numericFormat + "} mg", mg);
+                }
+
+            default:
+                return string.Format(culture, "{0:" + numericFormat + "} μg", Micrograms);
         }
     }
 }

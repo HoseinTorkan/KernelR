@@ -32,9 +32,25 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 /// <c>1 in = 25,400 μm</c>, <c>1 ft = 304,800 μm</c>, <c>1 yd = 914,400 μm</c>, <c>1 m = 1,000,000 μm</c>.
 /// </para>
 /// <para>
-/// <b>Mathematical Operations:</b> When adding or subtracting two <see cref="PhysicalSize"/> instances
-/// with different units, the operation is performed directly on the canonical micrometer counts,
-/// so no unit conversion or precision loss is ever needed.
+/// <b>Culture policy:</b> This value object is a domain primitive and a machine-to-machine contract.
+/// All internal parsing, error messages, and numeric conversion use
+/// <see cref="CultureInfo.InvariantCulture"/> explicitly, so the type behaves identically
+/// regardless of the host application's <see cref="CultureInfo.CurrentCulture"/>.
+/// </para>
+/// <para>
+/// <b>Display responsibility:</b> For display, the <c>ToString</c> overloads accept an optional
+/// <see cref="IFormatProvider"/>. Callers who want localized output (e.g., Persian digits)
+/// should pass the desired culture explicitly:
+/// <c>size.ToString(CultureInfo.GetCultureInfo("fa-IR"))</c>.
+/// This keeps the decision of "how to display" in the presentation layer, not in the library.
+/// </para>
+/// <para>
+/// <b>Mathematical operations:</b> Fallible operations (<c>Add</c>, <c>Subtract</c>, <c>Multiply</c>,
+/// <c>Divide</c>, <c>Ratio</c>) return <see cref="Result{T}"/> and have corresponding operators
+/// that throw <see cref="InvalidOperationException"/> on failure. Comparison uses the standard
+/// operators (<c>&gt;</c>, <c>&lt;</c>, <c>&gt;=</c>, <c>&lt;=</c>) and <see cref="CompareTo"/> —
+/// no separate comparison methods exist, because comparing two <see cref="PhysicalSize"/>
+/// instances cannot fail.
 /// </para>
 /// <para>
 /// <b>Format specifiers (IFormattable):</b> The format string passed to
@@ -55,6 +71,7 @@ namespace KernelR.Domain.ValueObjects.Measurement;
 ///     Console.WriteLine(result.Value);                  // Outputs: 6.35 cm
 ///     Console.WriteLine($"{result.Value:in}");          // Outputs: 2.5 in
 ///     Console.WriteLine($"{result.Value:N2}");          // Outputs: 6.35 cm
+///     Console.WriteLine(result.Value > PhysicalSize.Zero); // Outputs: True
 /// }
 /// </code>
 /// </example>
@@ -317,7 +334,7 @@ public readonly record struct PhysicalSize :
                 PhysicalSizeUnit.Yard => FromYards(amount),
                 _ => new Error(
                     "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
-                    $"Physical size unit '{(int)unit}' is not defined.",
+                    FormattableString.Invariant($"Physical size unit '{(int)unit}' is not defined."),
                     ErrorType.ValidationError),
             };
     }
@@ -327,7 +344,8 @@ public readonly record struct PhysicalSize :
     /// </summary>
     /// <param name="value">
     /// The string representation, for example <c>"5 cm"</c>, <c>"2.5 ft"</c>, <c>"1000 μm"</c>.
-    /// The value uses invariant culture; the unit accepts both full names and short forms (case-insensitive).
+    /// The numeric value is parsed using <see cref="CultureInfo.InvariantCulture"/>; the unit accepts
+    /// both full names and short forms (case-insensitive).
     /// </param>
     /// <returns>
     /// A successful result carrying the new <see cref="PhysicalSize"/>, or a failure with one of the following error codes:
@@ -370,7 +388,7 @@ public readonly record struct PhysicalSize :
             : !TryParseUnitFactor(parts[1], out long factor)
             ? new Error(
                 "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
-                $"Physical size unit '{parts[1]}' is not recognized.",
+                FormattableString.Invariant($"Physical size unit '{parts[1]}' is not recognized."),
                 ErrorType.ValidationError)
 
             : FromDecimal(amount, factor);
@@ -380,21 +398,60 @@ public readonly record struct PhysicalSize :
     /// Parses the specified string into a <see cref="PhysicalSize"/> instance.
     /// </summary>
     /// <param name="s">The string to parse.</param>
-    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
+    /// <param name="provider">
+    /// An object that provides culture-specific formatting information.
+    /// <b>This parameter is intentionally ignored.</b>
+    /// </param>
     /// <returns>A <see cref="PhysicalSize"/> instance representing the parsed value.</returns>
     /// <exception cref="FormatException">
     /// Thrown when <paramref name="s"/> is null, empty, whitespace, not in the form <c>"&lt;value&gt; &lt;unit&gt;"</c>,
     /// or contains an invalid value or unit. The exception message contains the JSON-serialized domain <see cref="Error"/>.
     /// </exception>
+    /// <remarks>
+    /// <para>
+    /// This overload exists to satisfy the <see cref="IParsable{TSelf}"/> contract, which requires
+    /// an <see cref="IFormatProvider"/> parameter. Because <see cref="PhysicalSize"/> is a
+    /// machine-to-machine contract, parsing is <b>always</b> performed using
+    /// <see cref="CultureInfo.InvariantCulture"/> regardless of the provider passed.
+    /// </para>
+    /// <para>
+    /// In other words: <c>PhysicalSize.Parse("5.5 cm", CultureInfo.GetCultureInfo("de-DE"))</c>
+    /// and <c>PhysicalSize.Parse("5.5 cm", null)</c> produce identical results. A German caller
+    /// that wants to accept the German decimal separator (<c>"5,5 cm"</c>) must normalize the
+    /// input to invariant form (<c>"5.5 cm"</c>) before calling this method.
+    /// </para>
+    /// <para>
+    /// For consistency, the same policy applies to
+    /// <see cref="TryParse(string?, IFormatProvider?, out PhysicalSize)"/>.
+    /// </para>
+    /// </remarks>
     public static PhysicalSize Parse(string s, IFormatProvider? provider) => Create(s).OrThrowFormatException();
 
     /// <summary>
     /// Attempts to parse the specified string into a <see cref="PhysicalSize"/> instance.
     /// </summary>
     /// <param name="s">The string to parse.</param>
-    /// <param name="provider">An object that provides culture-specific formatting information. This parameter is ignored.</param>
-    /// <param name="result">When this method returns, contains the parsed <see cref="PhysicalSize"/> instance, if the parsing succeeded, or the default value if it failed.</param>
+    /// <param name="provider">
+    /// An object that provides culture-specific formatting information.
+    /// <b>This parameter is intentionally ignored.</b>
+    /// </param>
+    /// <param name="result">
+    /// When this method returns, contains the parsed <see cref="PhysicalSize"/> instance, if parsing
+    /// succeeded, or the default value if it failed.
+    /// </param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// This overload exists to satisfy the <see cref="IParsable{TSelf}"/> contract, which requires
+    /// an <see cref="IFormatProvider"/> parameter. Because <see cref="PhysicalSize"/> is a
+    /// machine-to-machine contract, parsing is <b>always</b> performed using
+    /// <see cref="CultureInfo.InvariantCulture"/> regardless of the provider passed.
+    /// </para>
+    /// <para>
+    /// When only a validity check is needed and the resulting instance is not used, callers
+    /// can discard it via <c>TryParse(value, null, out _)</c>.
+    /// </para>
+    /// </remarks>
     public static bool TryParse(string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out PhysicalSize result)
         => Create(s ?? string.Empty).TryGetValue(out result);
 
@@ -412,9 +469,28 @@ public readonly record struct PhysicalSize :
     /// </list>
     /// </returns>
     /// <remarks>
+    /// <para>
     /// This method is intended for callers who only need the numeric conversion and do not
     /// want to instantiate a <see cref="PhysicalSize"/>. The conversion is performed in
     /// canonical micrometers, so it is exact for all supported units.
+    /// </para>
+    /// <para>
+    /// <b>Do not combine this with a <c>FromXxx</c> factory.</b> If the goal is to build a
+    /// <see cref="PhysicalSize"/>, call <c>FromXxx</c> directly on the source value. For example,
+    /// <c>PhysicalSize.FromInches(2.5m)</c> and
+    /// <c>PhysicalSize.FromCentimeters(PhysicalSize.Convert(2.5m, PhysicalSizeUnit.Inch, PhysicalSizeUnit.Centimeter).OrThrow())</c>
+    /// produce the same result — the former is shorter and avoids the extra round-trip.
+    /// </para>
+    /// <para>
+    /// <b>Why the return type is <see cref="decimal"/> and not <see cref="PhysicalSize"/>:</b>
+    /// a conversion between units can produce a fractional value that is not representable
+    /// as whole micrometers. For example, converting <c>1 μm</c> to yards yields
+    /// <c>0.000001093613298... yd</c>, which rounds to <c>0 yd</c> if coerced into a
+    /// <see cref="PhysicalSize"/> — silently losing the entire value. The <see cref="decimal"/>
+    /// return type preserves the full precision. If the goal is to obtain a precise numeric
+    /// result, prefer this method (or <see cref="ToUnit"/>) over converting to a
+    /// <see cref="PhysicalSize"/> first.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -426,23 +502,23 @@ public readonly record struct PhysicalSize :
     public static Result<decimal> Convert(decimal value, PhysicalSizeUnit fromUnit, PhysicalSizeUnit toUnit)
     {
         if (fromUnit == toUnit)
-            return Result<decimal>.Success(value);
+            return value;
 
         if (!TryGetMicrometerFactor(fromUnit, out long fromFactor))
             return new Error(
                 "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
-                $"Source unit '{(int)fromUnit}' is not defined.",
+                FormattableString.Invariant($"Source unit '{(int)fromUnit}' is not defined."),
                 ErrorType.ValidationError);
 
         if (!TryGetMicrometerFactor(toUnit, out long toFactor))
             return new Error(
                 "KernelR.ValueObjects.PhysicalSize.INVALID_UNIT",
-                $"Target unit '{(int)toUnit}' is not defined.",
+                FormattableString.Invariant($"Target unit '{(int)toUnit}' is not defined."),
                 ErrorType.ValidationError);
 
         try
         {
-            return Result<decimal>.Success(value * fromFactor / toFactor);
+            return value * fromFactor / toFactor;
         }
         catch (OverflowException)
         {
@@ -522,7 +598,9 @@ public readonly record struct PhysicalSize :
             PhysicalSizeUnit.Inch => ToInches(),
             PhysicalSizeUnit.Foot => ToFeet(),
             PhysicalSizeUnit.Yard => ToYards(),
-            _ => throw new ArgumentOutOfRangeException(nameof(unit), $"Unsupported physical size unit: '{(int)unit}'.")
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(unit),
+                FormattableString.Invariant($"Unsupported physical size unit: '{(int)unit}'."))
         };
     }
 
@@ -563,14 +641,13 @@ public readonly record struct PhysicalSize :
     /// </list>
     /// </returns>
     public Result<PhysicalSize> Subtract(PhysicalSize other)
-    {
-        return other.Micrometers > Micrometers
+        => other.Micrometers > Micrometers
             ? new Error(
                 "KernelR.ValueObjects.PhysicalSize.NEGATIVE_RESULT",
                 "Subtraction resulted in a negative physical size.",
                 ErrorType.ValidationError)
             : new PhysicalSize(Micrometers - other.Micrometers);
-    }
+
 
     /// <summary>
     /// Multiplies the physical size by a scalar factor, returning a <see cref="Result{T}"/>.
@@ -646,38 +723,8 @@ public readonly record struct PhysicalSize :
                 "KernelR.ValueObjects.PhysicalSize.DIVIDE_BY_ZERO",
                 "Cannot compute ratio against zero.",
                 ErrorType.ValidationError)
-            : Result<decimal>.Success(Micrometers / (decimal)other.Micrometers);
+            : Micrometers / (decimal)other.Micrometers;
     }
-
-    /// <summary>Returns the smaller of two sizes.</summary>
-    /// <param name="other">The other size.</param>
-    /// <returns>The size with the smaller <see cref="Micrometers"/> value.</returns>
-    public PhysicalSize Min(PhysicalSize other) => Micrometers <= other.Micrometers ? this : other;
-
-    /// <summary>Returns the larger of two sizes.</summary>
-    /// <param name="other">The other size.</param>
-    /// <returns>The size with the larger <see cref="Micrometers"/> value.</returns>
-    public PhysicalSize Max(PhysicalSize other) => Micrometers >= other.Micrometers ? this : other;
-
-    /// <summary>Determines whether the current size is greater than the specified size.</summary>
-    /// <param name="other">The physical size to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> GreaterThan(PhysicalSize other) => Result<bool>.Success(Micrometers > other.Micrometers);
-
-    /// <summary>Determines whether the current size is less than the specified size.</summary>
-    /// <param name="other">The physical size to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> LessThan(PhysicalSize other) => Result<bool>.Success(Micrometers < other.Micrometers);
-
-    /// <summary>Determines whether the current size is greater than or equal to the specified size.</summary>
-    /// <param name="other">The physical size to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> GreaterThanOrEqual(PhysicalSize other) => Result<bool>.Success(Micrometers >= other.Micrometers);
-
-    /// <summary>Determines whether the current size is less than or equal to the specified size.</summary>
-    /// <param name="other">The physical size to compare.</param>
-    /// <returns>A successful result carrying the comparison result.</returns>
-    public Result<bool> LessThanOrEqual(PhysicalSize other) => Result<bool>.Success(Micrometers <= other.Micrometers);
 
     /// <summary>Adds two physical sizes.</summary>
     /// <param name="left">The first physical size.</param>
@@ -725,24 +772,44 @@ public readonly record struct PhysicalSize :
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is greater; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="PhysicalSize"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(PhysicalSize)"/>.
+    /// </remarks>
     public static bool operator >(PhysicalSize left, PhysicalSize right) => left.Micrometers > right.Micrometers;
 
     /// <summary>Determines whether the left size is less than the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is less; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="PhysicalSize"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(PhysicalSize)"/>.
+    /// </remarks>
     public static bool operator <(PhysicalSize left, PhysicalSize right) => left.Micrometers < right.Micrometers;
 
     /// <summary>Determines whether the left size is greater than or equal to the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is greater or equal; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="PhysicalSize"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(PhysicalSize)"/>.
+    /// </remarks>
     public static bool operator >=(PhysicalSize left, PhysicalSize right) => left.Micrometers >= right.Micrometers;
 
     /// <summary>Determines whether the left size is less than or equal to the right size.</summary>
     /// <param name="left">The left size.</param>
     /// <param name="right">The right size.</param>
     /// <returns><see langword="true"/> if left is less or equal; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Comparison operators are provided directly (not via a <see cref="Result{T}"/>-returning
+    /// method) because comparing two <see cref="PhysicalSize"/> instances is a total operation
+    /// that cannot fail. For sorting scenarios, use <see cref="CompareTo(PhysicalSize)"/>.
+    /// </remarks>
     public static bool operator <=(PhysicalSize left, PhysicalSize right) => left.Micrometers <= right.Micrometers;
 
     /// <inheritdoc />
@@ -755,7 +822,9 @@ public readonly record struct PhysicalSize :
         {
             null => 1,
             PhysicalSize other => CompareTo(other),
-            _ => throw new ArgumentException($"Object must be of type {nameof(PhysicalSize)}.", nameof(obj))
+            _ => throw new ArgumentException(
+                FormattableString.Invariant($"Object must be of type {nameof(PhysicalSize)}."),
+                nameof(obj))
         };
     }
 
@@ -770,6 +839,10 @@ public readonly record struct PhysicalSize :
     /// Imperial units (inches, feet, yards) are not used by this overload because
     /// the canonical representation is metric. Use <see cref="ToString(PhysicalSizeUnit, IFormatProvider?)"/>
     /// or the format specifier <c>"in"</c> / <c>"ft"</c> / <c>"yd"</c> to display in imperial units.
+    /// <para>
+    /// To produce localized output (e.g., Persian digits), call
+    /// <see cref="ToString(IFormatProvider?)"/> with the desired culture explicitly.
+    /// </para>
     /// </remarks>
     public override string ToString() => FormatAutoSelected("0.##", CultureInfo.InvariantCulture);
 
@@ -825,7 +898,9 @@ public readonly record struct PhysicalSize :
             PhysicalSizeUnit.Inch => string.Format(culture, "{0:0.##} in", value),
             PhysicalSizeUnit.Foot => string.Format(culture, "{0:0.##} ft", value),
             PhysicalSizeUnit.Yard => string.Format(culture, "{0:0.##} yd", value),
-            _ => throw new ArgumentOutOfRangeException(nameof(unit), $"Unsupported physical size unit: '{(int)unit}'.")
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(unit),
+                FormattableString.Invariant($"Unsupported physical size unit: '{(int)unit}'."))
         };
     }
 
@@ -845,6 +920,11 @@ public readonly record struct PhysicalSize :
     /// <see langword="null"/> to use <see cref="CultureInfo.InvariantCulture"/>.
     /// </param>
     /// <returns>The formatted string.</returns>
+    /// <exception cref="FormatException">
+    /// Thrown when <paramref name="format"/> is neither a recognized unit specifier
+    /// nor a valid .NET numeric format string. This matches the <see cref="IFormattable"/>
+    /// contract and the behavior of built-in numeric types.
+    /// </exception>
     /// <remarks>
     /// This method implements <see cref="IFormattable"/>, so it is invoked by
     /// string interpolation (e.g., <c>$"{size:in}"</c>) and by <see cref="string.Format(IFormatProvider, string, object[])"/>.
@@ -861,11 +941,12 @@ public readonly record struct PhysicalSize :
     {
         IFormatProvider culture = formatProvider ?? CultureInfo.InvariantCulture;
 
-        if (string.IsNullOrEmpty(format))
-            return FormatAutoSelected("0.##", culture);
+        return string.IsNullOrEmpty(format)
+            ? FormatAutoSelected("0.##", culture)
 
-        return TryParseUnit(format, out PhysicalSizeUnit unit)
+            : TryParseUnit(format, out PhysicalSizeUnit unit)
             ? ToString(unit, culture)
+
             : FormatAutoSelected(format, culture);
     }
 
@@ -876,7 +957,7 @@ public readonly record struct PhysicalSize :
 
     /// <summary>Explicitly converts a <see cref="PhysicalSize"/> to its human-readable string representation.</summary>
     /// <param name="size">The physical size to convert.</param>
-    /// <returns>The string representation of the physical size.</returns>
+    /// <returns>The string representation of the physical size, formatted using <see cref="CultureInfo.InvariantCulture"/>.</returns>
     public static explicit operator string(PhysicalSize size) => size.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
@@ -939,6 +1020,10 @@ public readonly record struct PhysicalSize :
     /// <param name="text">The text to parse.</param>
     /// <param name="unit">When this method returns, contains the parsed unit.</param>
     /// <returns><see langword="true"/> if the parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// This method intentionally uses <see cref="string.ToLowerInvariant"/> so that unit parsing
+    /// is not affected by the current UI culture (e.g., the Turkish-I problem).
+    /// </remarks>
     private static bool TryParseUnit(string text, out PhysicalSizeUnit unit)
     {
         switch (text.ToLowerInvariant())
@@ -976,30 +1061,43 @@ public readonly record struct PhysicalSize :
     /// <remarks>
     /// <para>
     /// The unit is chosen by comparing the rounded value in each unit against the threshold
-    /// for the next larger unit. This avoids the <c>"100 cm"</c> vs <c>"1 m"</c> ambiguity
-    /// that would occur if the raw (unrounded) value were compared directly.
+    /// for the next larger unit. This avoids ambiguities like <c>"100 cm"</c> vs <c>"1 m"</c>
+    /// or <c>"10 mm"</c> vs <c>"1 cm"</c> that would occur if the raw (unrounded) value were
+    /// compared directly.
     /// </para>
     /// <para>
-    /// Specifically, <c>999,999 μm</c> is displayed as <c>"1 m"</c>, not <c>"100 cm"</c>,
-    /// because rounding 99.9999 cm to two decimals yields 100 cm, which is the threshold
-    /// for one meter.
+    /// Examples of the rounding-aware threshold behavior:
     /// </para>
+    /// <list type="bullet">
+    ///   <item><description><c>999,999 μm</c> → <c>"1 m"</c> (not <c>"100 cm"</c>)</description></item>
+    ///   <item><description><c>9,999 μm</c> → <c>"1 cm"</c> (not <c>"10 mm"</c>)</description></item>
+    ///   <item><description><c>999,500 μm</c> → <c>"99.95 cm"</c> (not rounded to 100 cm)</description></item>
+    /// </list>
     /// </remarks>
     private string FormatAutoSelected(string numericFormat, IFormatProvider culture)
     {
-        if (Micrometers >= MicrometersPerMeter)
-            return string.Format(culture, $"{{0:{numericFormat}}} m", ToMeters());
-
-        if (Micrometers >= MicrometersPerCentimeter)
+        switch (Micrometers)
         {
-            decimal cm = ToCentimeters();
-            return Math.Round(cm, 2, MidpointRounding.AwayFromZero) >= 100m
-                ? string.Format(culture, $"{{0:{numericFormat}}} m", ToMeters())
-                : string.Format(culture, $"{{0:{numericFormat}}} cm", cm);
-        }
+            case >= MicrometersPerMeter:
+                return string.Format(culture, "{0:" + numericFormat + "} m", ToMeters());
+            case >= MicrometersPerCentimeter:
+                {
+                    decimal cm = ToCentimeters();
+                    return Math.Round(cm, 2, MidpointRounding.AwayFromZero) >= 100m
+                        ? string.Format(culture, "{0:" + numericFormat + "} m", ToMeters())
+                        : string.Format(culture, "{0:" + numericFormat + "} cm", cm);
+                }
 
-        return Micrometers >= MicrometersPerMillimeter
-            ? string.Format(culture, $"{{0:{numericFormat}}} mm", ToMillimeters())
-            : string.Format(culture, $"{{0:{numericFormat}}} μm", Micrometers);
+            case >= MicrometersPerMillimeter:
+                {
+                    decimal mm = ToMillimeters();
+                    return Math.Round(mm, 2, MidpointRounding.AwayFromZero) >= 10m
+                        ? string.Format(culture, "{0:" + numericFormat + "} cm", ToCentimeters())
+                        : string.Format(culture, "{0:" + numericFormat + "} mm", mm);
+                }
+
+            default:
+                return string.Format(culture, "{0:" + numericFormat + "} μm", Micrometers);
+        }
     }
 }

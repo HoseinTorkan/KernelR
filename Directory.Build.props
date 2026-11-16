@@ -56,7 +56,6 @@
     <PropertyGroup>
         <!--
             CA1711: "Identifiers should not have incorrect suffix"
-            ------------------------------------------------------
             The rule warns when a type name ends with a "reserved" suffix
             such as Handler, Collection, Delegate, etc. It expects these
             suffixes to be used only for Microsoft-defined base types.
@@ -95,13 +94,12 @@
         Microsoft.SourceLink.GitHub is therefore no longer required.
     -->
     <PropertyGroup>
-        <EnableSourceLink>
-            true</EnableEnableSourceLink>
+        <EnableSourceLink>true</EnableSourceLink>
             <SourceLinkGitHubHost>github.com</SourceLinkGitHubHost>
         </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- Deterministic Build                        -->
+    <!-- Deterministic Build                             -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
         <Deterministic>true</Deterministic>
@@ -109,7 +107,7 @@
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- Repository & Author Metadata               -->
+    <!-- Repository & Author Metadata                    -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
         <Authors>HoseinTorkan</Authors>
@@ -121,14 +119,14 @@
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- Versioning (Centralized Default)           -->
+    <!-- Versioning (Centralized Default)                -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
         <Version Condition="'$(Version)' == ''">0.0.0-local</Version>
     </PropertyGroup>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- Test Project Settings                      -->
+    <!-- Test Project Settings                           -->
     <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests')) Or $(MSBuildProjectName.EndsWith('.UnitTests')) Or $(MSBuildProjectName.EndsWith('.E2ETests'))">
         <IsPackable>false</IsPackable>
