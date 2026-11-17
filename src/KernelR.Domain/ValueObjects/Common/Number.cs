@@ -85,29 +85,6 @@ public readonly record struct Number :
     public bool IsEmpty => _value is null;
 
     /// <summary>
-    /// Gets a value indicating whether the instance contains only zero digits.
-    /// </summary>
-    /// <value>
-    /// <see langword="true"/> when the instance is non-empty and every digit is <c>0</c>;
-    /// otherwise, <see langword="false"/>.
-    /// </value>
-    /// <remarks>
-    /// An empty Number is not considered zero.
-    /// </remarks>
-    public bool IsZero
-    {
-        get
-        {
-            if (IsEmpty) return false;
-
-            foreach (char digit in Value)
-                if (digit != '0') return false;
-
-            return true;
-        }
-    }
-
-    /// <summary>
     /// Initializes a new instance of the <see cref="Number"/> structure.
     /// </summary>
     /// <param name="value">A non-empty string containing supported decimal digits.</param>
