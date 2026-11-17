@@ -1,62 +1,65 @@
 using System.Globalization;
-using System.Numerics;
 using System.Text;
 
 namespace KernelR.Domain.ValueObjects.Common;
 
 /// <summary>
-/// Represents a non-empty sequence of decimal digits.
+/// Represents a non-empty sequence of decimal digits, preserving leading zeros.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Number is a string-based value object, not a mathematical numeric type.
-/// It preserves leading zeros and supports ASCII, Persian, and Arabic-Indic digits.
-/// </para>
-/// <para>
-/// The stored representation always uses ASCII digits (0-9).
+/// <see cref="Number"/> is a string-based value object, not a mathematical numeric type.
+/// It preserves leading zeros and accepts ASCII, Persian, and Arabic-Indic digits.
+/// The stored representation always uses ASCII digits (<c>0</c> through <c>9</c>).
 /// </para>
 /// <para>
 /// The default value is empty. An explicitly constructed or parsed <see cref="Number"/>
 /// must contain at least one valid digit.
 /// </para>
 /// <para>
-/// This type does not provide arithmetic operations or numeric ordering. Equality is based
-/// on the normalized digit sequence, so leading zeros are significant.
+/// This type does not provide arithmetic operations, numeric ordering, or numeric
+/// formatting. Equality is based on the normalized digit sequence, so leading zeros
+/// are significant.
+/// </para>
+/// <para>
+/// The display digit set is controlled exclusively by the <see cref="IFormatProvider"/>.
+/// When the provider is <see langword="null"/>, <see cref="CultureInfo.CurrentCulture"/> is used.
+/// Persian cultures (<c>"fa"</c>) yield Persian digits, Arabic cultures (<c>"ar"</c>)
+/// yield Arabic-Indic digits, and all other cultures yield ASCII digits. To always obtain
+/// ASCII digits, pass <see cref="CultureInfo.InvariantCulture"/>.
+/// </para>
+/// <para>
+/// Only the general format specifier <c>"G"</c> is supported. Any other format string
+/// results in a <see cref="FormatException"/>.
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code language="csharp">
 /// Number identifier = new("۰۰۱۲۳");
 ///
-/// Console.WriteLine(identifier.Value); // 00123
-/// Console.WriteLine(identifier.Length); // 5
-/// Console.WriteLine(identifier == new Number("123")); // False
+/// Console.WriteLine(identifier.Value);                                           // 00123
+/// Console.WriteLine(identifier.Length);                                          // 5
+/// Console.WriteLine(identifier.ToString(CultureInfo.InvariantCulture));          // 00123
+/// Console.WriteLine(identifier.ToString(CultureInfo.GetCultureInfo("fa-IR")));   // ۰۰۱۲۳
+/// Console.WriteLine(identifier.ToString(CultureInfo.GetCultureInfo("ar-SA")));   // ٠٠١٢٣
+/// Console.WriteLine(identifier == new Number("123"));                            // False
 /// </code>
 /// </example>
+/// <seealso cref="IFormattable"/>
+/// <seealso cref="ISpanFormattable"/>
+/// <seealso cref="IUtf8SpanFormattable"/>
 public readonly record struct Number :
-    IValueObject,
     IParsable<Number>,
     ISpanParsable<Number>,
     IUtf8SpanParsable<Number>,
     IFormattable,
-    ISpanFormattable
+    ISpanFormattable,
+    IUtf8SpanFormattable
 {
+    private const char PersianZero = '\u06F0';
+    private const char ArabicIndicZero = '\u0660';
+
     private static readonly UTF8Encoding s_strictUtf8Encoding = new(false, true);
-
-    private static readonly string[] s_asciiDigits =
-    [
-        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
-    ];
-
-    private static readonly string[] s_persianDigits =
-    [
-        "۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"
-    ];
-
-    private static readonly string[] s_arabicIndicDigits =
-    [
-        "٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"
-    ];
 
     private readonly string? _value;
 
@@ -79,9 +82,9 @@ public readonly record struct Number :
     /// <summary>
     /// Gets a value indicating whether the instance is empty.
     /// </summary>
-    /// <remarks>
-    /// A default Number instance is empty. Explicitly constructed and parsed instances cannot be empty.
-    /// </remarks>
+    /// <value>
+    /// <see langword="true"/> if the instance is the default value; otherwise, <see langword="false"/>.
+    /// </value>
     public bool IsEmpty => _value is null;
 
     /// <summary>
@@ -95,18 +98,9 @@ public readonly record struct Number :
     /// <paramref name="value"/> is empty or contains a character other than an ASCII,
     /// Persian, or Arabic-Indic decimal digit.
     /// </exception>
-    /// <example>
-    /// <code>
-    /// Number first = new("00123");
-    /// Number second = new("۱۲۳");
-    ///
-    /// Console.WriteLine(first.Value);  // 00123
-    /// Console.WriteLine(second.Value); // 123
-    /// </code>
-    /// </example>
     public Number(string value)
     {
-        ArgumentNullException.ThrowIfNull(value);
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
 
         if (!TryNormalizeDigits(value.AsSpan(), out string normalizedValue) || normalizedValue.Length == 0)
             throw new ArgumentException("The value must contain one or more supported decimal digits.", nameof(value));
@@ -124,7 +118,7 @@ public readonly record struct Number :
     /// <summary>
     /// Returns the value as a read-only character span.
     /// </summary>
-    /// <returns>A read-only span over the stored value.</returns>
+    /// <returns>A read-only span over the stored ASCII digit sequence.</returns>
     public ReadOnlySpan<char> AsSpan() => Value.AsSpan();
 
     /// <summary>
@@ -153,7 +147,7 @@ public readonly record struct Number :
     /// <see langword="true"/> if the string is non-empty and contains only supported digits;
     /// otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool IsValid(string? value) => value is not null && IsValid(value.AsSpan());
+    public static bool IsValid(string value) => value is not null && IsValid(value.AsSpan());
 
     /// <summary>
     /// Determines whether the specified character span contains only supported decimal digits.
@@ -199,7 +193,7 @@ public readonly record struct Number :
     /// </exception>
     public static string NormalizeDigits(string value)
     {
-        ArgumentNullException.ThrowIfNull(value);
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
         return NormalizeDigits(value.AsSpan());
     }
 
@@ -241,7 +235,7 @@ public readonly record struct Number :
     /// <see langword="true"/> if the input could be normalized; otherwise, <see langword="false"/>.
     /// </returns>
     /// <remarks>
-    /// An empty string can be normalized successfully, but it is not a valid Number.
+    /// An empty string can be normalized successfully, but it is not a valid <see cref="Number"/>.
     /// </remarks>
     public static bool TryNormalizeDigits(string? value, out string normalizedValue)
     {
@@ -266,7 +260,7 @@ public readonly record struct Number :
     /// <see langword="true"/> if the input could be normalized; otherwise, <see langword="false"/>.
     /// </returns>
     /// <remarks>
-    /// An empty span can be normalized successfully, but it is not a valid Number.
+    /// An empty span can be normalized successfully, but it is not a valid <see cref="Number"/>.
     /// Unsupported characters are never removed or ignored.
     /// </remarks>
     public static bool TryNormalizeDigits(ReadOnlySpan<char> value, out string normalizedValue)
@@ -317,8 +311,8 @@ public readonly record struct Number :
     private static bool IsSupportedDigit(char value)
         => value
         is >= '0' and <= '9'
-        or >= '\u06F0' and <= '\u06F9'
-        or >= '\u0660' and <= '\u0669';
+        or >= PersianZero and <= '\u06F9'
+        or >= ArabicIndicZero and <= '\u0669';
 
     private static bool TryConvertDigit(char value, out char digit)
     {
@@ -328,15 +322,15 @@ public readonly record struct Number :
             return true;
         }
 
-        if (value is >= '\u06F0' and <= '\u06F9')
+        if (value is >= PersianZero and <= '\u06F9')
         {
-            digit = (char)('0' + value - '\u06F0');
+            digit = (char)('0' + value - PersianZero);
             return true;
         }
 
-        if (value is >= '\u0660' and <= '\u0669')
+        if (value is >= ArabicIndicZero and <= '\u0669')
         {
-            digit = (char)('0' + value - '\u0660');
+            digit = (char)('0' + value - ArabicIndicZero);
             return true;
         }
 
@@ -347,26 +341,23 @@ public readonly record struct Number :
     /// <summary>
     /// Converts the string representation of a number to its equivalent <see cref="Number"/>.
     /// </summary>
-    /// <param name="value">A string containing supported decimal digits.</param>
-    /// <returns>The parsed Number.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="value"/> is <see langword="null"/>.
-    /// </exception>
+    /// <param name="s">A string containing supported decimal digits.</param>
     /// <returns>A <see cref="Number"/> containing the normalized digit sequence.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="s"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="FormatException">
-    /// <paramref name="value"/> is empty or contains unsupported characters.
+    /// <paramref name="s"/> is empty or contains unsupported characters.
     /// </exception>
     /// <remarks>
     /// Parsing is culture-independent. The input must contain digits only; whitespace,
     /// signs, decimal separators, and group separators are not accepted.
     /// </remarks>
-    /// <example>
-    /// <code>
-    /// Number accountCode = Number.Parse("۰۰۱۲۳۴");
-    /// Console.WriteLine(accountCode.Value); // 001234
-    /// </code>
-    /// </example>
-    public static Number Parse(string value) => Parse(value, CultureInfo.InvariantCulture);
+    public static Number Parse(string s)
+    {
+        ArgumentNullException.ThrowIfNull(s);
+        return Parse(s.AsSpan(), CultureInfo.InvariantCulture);
+    }
 
     /// <summary>
     /// Converts the string representation of a number to its equivalent <see cref="Number"/>.
@@ -374,9 +365,9 @@ public readonly record struct Number :
     /// <param name="s">A string containing supported decimal digits.</param>
     /// <param name="provider">
     /// An object that supplies formatting information. This parameter is ignored because
-    /// Number parsing is independent of culture.
+    /// <see cref="Number"/> parsing is independent of culture.
     /// </param>
-    /// <returns>The parsed Number.</returns>
+    /// <returns>A <see cref="Number"/> containing the normalized digit sequence.</returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="s"/> is <see langword="null"/>.
     /// </exception>
@@ -387,17 +378,16 @@ public readonly record struct Number :
     {
         ArgumentNullException.ThrowIfNull(s);
 
-        if (!TryParse(s.AsSpan(), out Number result))
-            throw new FormatException("The input is not a valid Number.");
-
-        return result;
+        return !TryParse(s.AsSpan(), out Number result)
+            ? throw new FormatException("The input is not a valid Number.")
+            : result;
     }
 
     /// <summary>
     /// Converts the character representation of a number to its equivalent <see cref="Number"/>.
     /// </summary>
     /// <param name="value">A character span containing supported decimal digits.</param>
-    /// <returns>The parsed Number.</returns>
+    /// <returns>A <see cref="Number"/> containing the normalized digit sequence.</returns>
     /// <exception cref="FormatException">
     /// <paramref name="value"/> is empty or contains unsupported characters.
     /// </exception>
@@ -409,25 +399,22 @@ public readonly record struct Number :
     /// <param name="s">A character span containing supported decimal digits.</param>
     /// <param name="provider">
     /// An object that supplies formatting information. This parameter is ignored because
-    /// Number parsing is independent of culture.
+    /// <see cref="Number"/> parsing is independent of culture.
     /// </param>
-    /// <returns>The parsed Number.</returns>
+    /// <returns>A <see cref="Number"/> containing the normalized digit sequence.</returns>
     /// <exception cref="FormatException">
     /// <paramref name="s"/> is empty or contains unsupported characters.
     /// </exception>
     public static Number Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-    {
-        if (!TryParse(s, out Number result))
-            throw new FormatException("The input is not a valid Number.");
-
-        return result;
-    }
+        => !TryParse(s, out Number result)
+            ? throw new FormatException("The input is not a valid Number.")
+            : result;
 
     /// <summary>
     /// Converts the UTF-8 representation of a number to its equivalent <see cref="Number"/>.
     /// </summary>
     /// <param name="utf8Text">UTF-8 data containing supported decimal digits.</param>
-    /// <returns>The parsed Number.</returns>
+    /// <returns>A <see cref="Number"/> containing the normalized digit sequence.</returns>
     /// <exception cref="FormatException">
     /// The input is invalid UTF-8, empty, or contains unsupported characters.
     /// </exception>
@@ -439,9 +426,9 @@ public readonly record struct Number :
     /// <param name="utf8Text">UTF-8 data containing supported decimal digits.</param>
     /// <param name="provider">
     /// An object that supplies formatting information. This parameter is ignored because
-    /// Number parsing is independent of culture.
+    /// <see cref="Number"/> parsing is independent of culture.
     /// </param>
-    /// <returns>The parsed Number.</returns>
+    /// <returns>A <see cref="Number"/> containing the normalized digit sequence.</returns>
     /// <exception cref="FormatException">
     /// The input is invalid UTF-8, empty, or contains unsupported characters.
     /// </exception>
@@ -455,21 +442,12 @@ public readonly record struct Number :
     /// </summary>
     /// <param name="value">The string to parse.</param>
     /// <param name="result">
-    /// When this method returns, contains the parsed Number if successful; otherwise, the default value.
+    /// When this method returns, contains the parsed <see cref="Number"/> if successful;
+    /// otherwise, the default value.
     /// </param>
     /// <returns>
     /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    /// <remarks>
-    /// If parsing fails, <paramref name="result"/> is set to <see langword="default"/>.
-    /// Unlike <see cref="Parse(string)"/>, this method does not throw for invalid input.
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// if (Number.TryParse("۱۲۳۴۵", out Number parsed))
-    ///     Console.WriteLine(parsed.Value); // 12345
-    /// </code>
-    /// </example>
     public static bool TryParse(string? value, out Number result)
     {
         if (value is null)
@@ -487,10 +465,11 @@ public readonly record struct Number :
     /// <param name="s">The string to parse.</param>
     /// <param name="provider">
     /// An object that supplies formatting information. This parameter is ignored because
-    /// Number parsing is independent of culture.
+    /// <see cref="Number"/> parsing is independent of culture.
     /// </param>
     /// <param name="result">
-    /// When this method returns, contains the parsed Number if successful; otherwise, the default value.
+    /// When this method returns, contains the parsed <see cref="Number"/> if successful;
+    /// otherwise, the default value.
     /// </param>
     /// <returns>
     /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
@@ -503,7 +482,8 @@ public readonly record struct Number :
     /// </summary>
     /// <param name="value">The character span to parse.</param>
     /// <param name="result">
-    /// When this method returns, contains the parsed Number if successful; otherwise, the default value.
+    /// When this method returns, contains the parsed <see cref="Number"/> if successful;
+    /// otherwise, the default value.
     /// </param>
     /// <returns>
     /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
@@ -517,10 +497,11 @@ public readonly record struct Number :
     /// <param name="s">The character span to parse.</param>
     /// <param name="provider">
     /// An object that supplies formatting information. This parameter is ignored because
-    /// Number parsing is independent of culture.
+    /// <see cref="Number"/> parsing is independent of culture.
     /// </param>
     /// <param name="result">
-    /// When this method returns, contains the parsed Number if successful; otherwise, the default value.
+    /// When this method returns, contains the parsed <see cref="Number"/> if successful;
+    /// otherwise, the default value.
     /// </param>
     /// <returns>
     /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
@@ -541,12 +522,27 @@ public readonly record struct Number :
     /// Attempts to convert the UTF-8 representation of a number to its equivalent <see cref="Number"/>.
     /// </summary>
     /// <param name="utf8Text">The UTF-8 data to parse.</param>
+    /// <param name="result">
+    /// When this method returns, contains the parsed <see cref="Number"/> if successful;
+    /// otherwise, the default value.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Number result) =>
+        TryParse(utf8Text, CultureInfo.InvariantCulture, out result);
+
+    /// <summary>
+    /// Attempts to convert the UTF-8 representation of a number to its equivalent <see cref="Number"/>.
+    /// </summary>
+    /// <param name="utf8Text">The UTF-8 data to parse.</param>
     /// <param name="provider">
     /// An object that supplies formatting information. This parameter is ignored because
-    /// Number parsing is independent of culture.
+    /// <see cref="Number"/> parsing is independent of culture.
     /// </param>
     /// <param name="result">
-    /// When this method returns, contains the parsed Number if successful; otherwise, the default value.
+    /// When this method returns, contains the parsed <see cref="Number"/> if successful;
+    /// otherwise, the default value.
     /// </param>
     /// <returns>
     /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
@@ -564,73 +560,72 @@ public readonly record struct Number :
     }
 
     /// <summary>
-    /// Returns the normalized value without applying numeric formatting.
+    /// Returns the value using the digit set of the current culture, preserving leading zeros.
     /// </summary>
-    /// <returns>The stored ASCII digit sequence.</returns>
+    /// <returns>The stored digit sequence formatted with the current culture's digit set.</returns>
     /// <remarks>
-    /// This overload preserves leading zeros and returns an empty string for the default value.
+    /// This overload is equivalent to <c>ToString("G", null)</c> and uses
+    /// <see cref="CultureInfo.CurrentCulture"/>. To obtain ASCII digits regardless of the
+    /// current culture, use <c>ToString(CultureInfo.InvariantCulture)</c>.
     /// </remarks>
-    public override string ToString() => Value;
-
-    /// <summary>
-    /// Formats the value using the specified format.
-    /// </summary>
-    /// <param name="format">A standard or custom numeric format string.</param>
-    /// <returns>The formatted value.</returns>
-    public string ToString(string? format) => ToString(format, CultureInfo.InvariantCulture);
+    public override string ToString() => ToString("G", null);
 
     /// <summary>
     /// Formats the value using the specified format provider.
     /// </summary>
     /// <param name="formatProvider">
     /// An object that supplies culture-specific formatting information.
+    /// If <see langword="null"/>, <see cref="CultureInfo.CurrentCulture"/> is used.
     /// </param>
     /// <returns>The formatted value.</returns>
+    /// <remarks>
+    /// This overload is equivalent to <c>ToString("G", formatProvider)</c>. The provider
+    /// selects the digit set: Persian cultures yield Persian digits, Arabic cultures yield
+    /// Arabic-Indic digits, and all other cultures yield ASCII digits.
+    /// </remarks>
     public string ToString(IFormatProvider? formatProvider) => ToString("G", formatProvider);
 
     /// <summary>
     /// Formats the value using the specified format and format provider.
     /// </summary>
-    /// <param name="format">A standard or custom numeric format string.</param>
+    /// <param name="format">
+    /// The format string. Only the general format specifier <c>"G"</c> is supported.
+    /// A value of <see langword="null"/> or an empty string is treated as <c>"G"</c>.
+    /// </param>
     /// <param name="formatProvider">
     /// An object that supplies culture-specific formatting information.
-    /// If <see langword="null"/>, <see cref="CultureInfo.InvariantCulture"/> is used.
+    /// If <see langword="null"/>, <see cref="CultureInfo.CurrentCulture"/> is used.
     /// </param>
     /// <returns>The formatted value.</returns>
+    /// <exception cref="FormatException">
+    /// <paramref name="format"/> is not <see langword="null"/>, empty, or <c>"G"</c>.
+    /// </exception>
     /// <remarks>
     /// <para>
-    /// Formatting first interprets the stored digit sequence as a non-negative integer.
-    /// It is therefore intended for display, not for preserving identifier-like text.
+    /// Unlike numeric formatting, this method preserves leading zeros because it controls
+    /// only the display representation of the stored digit sequence, not its numeric value.
     /// </para>
     /// <para>
-    /// Numeric formatting interprets the digit sequence as a non-negative integer.
-    /// Consequently, numeric formats such as G, N, D, and X may remove leading zeros.
-    /// </para>
-    /// <para>
-    /// Use the parameterless <see cref="ToString()"/> overload to preserve the exact stored sequence.
-    /// </para>
-    /// <para>
-    /// Culture-specific separators and symbols are applied through the format provider.
-    /// Persian and Arabic cultures also use their corresponding digit characters when appropriate.
+    /// The parameterless <see cref="ToString()"/> overload is equivalent to <c>ToString("G", null)</c>.
     /// </para>
     /// </remarks>
     /// <example>
-    /// <code>
+    /// <code language="csharp">
     /// Number value = new("001234");
     ///
-    /// Console.WriteLine(value.ToString());       // 001234
-    /// Console.WriteLine(value.ToString("N0"));   // 1,234 (culture-dependent separators)
+    /// Console.WriteLine(value.ToString("G", CultureInfo.InvariantCulture));         // 001234
+    /// Console.WriteLine(value.ToString("G", CultureInfo.GetCultureInfo("fa-IR")));  // ۰۰۱۲۳۴
+    /// Console.WriteLine(value.ToString("G", CultureInfo.GetCultureInfo("ar-SA")));  // ٠٠١٢٣٤
     /// </code>
     /// </example>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
-        if (IsEmpty) return string.Empty;
+        if (format is not (null or "" or "G"))
+            throw new FormatException(
+                $"Format '{format}' is not supported. Only the general format specifier 'G' is valid.");
 
-        IFormatProvider provider = formatProvider ?? CultureInfo.InvariantCulture;
-        BigInteger numericValue = ToBigInteger();
-        string formattedValue = numericValue.ToString(format, provider);
-
-        return ConvertFormattedDigits(formattedValue, GetNativeDigits(provider));
+        char digitStart = GetDigitStartFromCulture(formatProvider ?? CultureInfo.CurrentCulture);
+        return ConvertDigits(Value, digitStart);
     }
 
     /// <summary>
@@ -640,332 +635,109 @@ public readonly record struct Number :
     /// <param name="charsWritten">
     /// When this method returns, contains the number of characters written.
     /// </param>
-    /// <param name="format">A standard or custom numeric format string.</param>
+    /// <param name="format">
+    /// The format string. Only the general format specifier <c>"G"</c> is supported.
+    /// </param>
     /// <param name="provider">
     /// An object that supplies culture-specific formatting information.
-    /// If <see langword="null"/>, <see cref="CultureInfo.InvariantCulture"/> is used.
+    /// If <see langword="null"/>, <see cref="CultureInfo.CurrentCulture"/> is used.
     /// </param>
     /// <returns>
     /// <see langword="true"/> if the value was formatted successfully; otherwise, <see langword="false"/>.
     /// </returns>
     public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
     {
-        charsWritten = 0;
-
-        if (IsEmpty) return true;
-
-        IFormatProvider effectiveProvider = provider ?? CultureInfo.InvariantCulture;
-        string[] nativeDigits = GetNativeDigits(effectiveProvider);
-
-        if (!AreSingleCharacterDigits(nativeDigits))
+        string formattedValue;
+        try
         {
-            string formattedValue = ToString(format.IsEmpty ? null : format.ToString(), effectiveProvider);
-
-            if (formattedValue.Length > destination.Length) return false;
-
-            formattedValue.AsSpan().CopyTo(destination);
-            charsWritten = formattedValue.Length;
-            return true;
+            formattedValue = ToString(format.IsEmpty ? null : format.ToString(), provider);
         }
-
-        if (!ToBigInteger().TryFormat(destination, out charsWritten, format, effectiveProvider))
+        catch (FormatException)
         {
             charsWritten = 0;
             return false;
         }
 
-        ApplyNativeDigits(destination[..charsWritten], nativeDigits);
+        if (formattedValue.Length > destination.Length)
+        {
+            charsWritten = 0;
+            return false;
+        }
+
+        formattedValue.AsSpan().CopyTo(destination);
+        charsWritten = formattedValue.Length;
         return true;
     }
 
-    private BigInteger ToBigInteger() =>
-        BigInteger.Parse(Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    private static string[] GetNativeDigits(IFormatProvider provider)
+    /// <summary>
+    /// Attempts to format the value as UTF-8 into the specified byte span.
+    /// </summary>
+    /// <param name="utf8Destination">The destination UTF-8 byte span.</param>
+    /// <param name="bytesWritten">
+    /// When this method returns, contains the number of bytes written.
+    /// </param>
+    /// <param name="format">
+    /// The format string. Only the general format specifier <c>"G"</c> is supported.
+    /// </param>
+    /// <param name="provider">
+    /// An object that supplies culture-specific formatting information.
+    /// If <see langword="null"/>, <see cref="CultureInfo.CurrentCulture"/> is used.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if the value was formatted successfully; otherwise, <see langword="false"/>.
+    /// </returns>
+    public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
     {
-        string[] nativeDigits = NumberFormatInfo.GetInstance(provider).NativeDigits;
+        string formattedValue;
+        try
+        {
+            formattedValue = ToString(format.IsEmpty ? null : format.ToString(), provider);
+        }
+        catch (FormatException)
+        {
+            bytesWritten = 0;
+            return false;
+        }
 
-        if (!AreAsciiDigits(nativeDigits)) return nativeDigits;
+        int byteCount = s_strictUtf8Encoding.GetByteCount(formattedValue);
+        if (byteCount > utf8Destination.Length)
+        {
+            bytesWritten = 0;
+            return false;
+        }
 
+        bytesWritten = s_strictUtf8Encoding.GetBytes(formattedValue, utf8Destination);
+        return true;
+    }
+
+    private static char GetDigitStartFromCulture(IFormatProvider provider)
+    {
         if (provider is CultureInfo culture)
         {
-            if (culture.TwoLetterISOLanguageName.Equals("fa", StringComparison.OrdinalIgnoreCase))
-                return s_persianDigits;
-
-            if (culture.TwoLetterISOLanguageName.Equals("ar", StringComparison.OrdinalIgnoreCase))
-                return s_arabicIndicDigits;
+            return culture.TwoLetterISOLanguageName switch
+            {
+                "fa" => PersianZero,
+                "ar" => ArabicIndicZero,
+                _ => '0'
+            };
         }
 
-        return s_asciiDigits;
+        return '0';
     }
 
-    private static bool AreAsciiDigits(string[] digits)
+    private static string ConvertDigits(string value, char digitStart)
     {
-        if (digits.Length != 10) return false;
+        if (digitStart == '0') return value;
 
-        for (int i = 0; i < digits.Length; i++)
-            if (digits[i] != s_asciiDigits[i]) return false;
-
-        return true;
-    }
-
-    private static bool AreSingleCharacterDigits(string[] digits)
-    {
-        if (digits.Length != 10) return false;
-
-        foreach (string digit in digits)
-            if (digit.Length != 1) return false;
-
-        return true;
-    }
-
-    private static string ConvertFormattedDigits(string value, string[] nativeDigits)
-    {
-        if (AreAsciiDigits(nativeDigits)) return value;
-
-        StringBuilder builder = new(value.Length);
-
-        foreach (char character in value)
+        return string.Create(value.Length, (value, digitStart), static (span, state) =>
         {
-            if (character is >= '0' and <= '9')
-                builder.Append(nativeDigits[character - '0']);
-            else
-                builder.Append(character);
-        }
-
-        return builder.ToString();
+            for (int i = 0; i < state.value.Length; i++)
+            {
+                char c = state.value[i];
+                span[i] = c is >= '0' and <= '9'
+                    ? (char)(state.digitStart + (c - '0'))
+                    : c;
+            }
+        });
     }
-
-    private static void ApplyNativeDigits(Span<char> value, string[] nativeDigits)
-    {
-        if (AreAsciiDigits(nativeDigits)) return;
-
-        for (int i = 0; i < value.Length; i++)
-            if (value[i] is >= '0' and <= '9')
-                value[i] = nativeDigits[value[i] - '0'][0];
-    }
-
-    /// <summary>
-    /// Converts an unsigned 8-bit integer to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The unsigned integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    public static implicit operator Number(byte value) =>
-        new(value.ToString(CultureInfo.InvariantCulture), true);
-
-    /// <summary>
-    /// Converts an unsigned 16-bit integer to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The unsigned integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    public static implicit operator Number(ushort value) =>
-        new(value.ToString(CultureInfo.InvariantCulture), true);
-
-    /// <summary>
-    /// Converts an unsigned 32-bit integer to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The unsigned integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    public static implicit operator Number(uint value) =>
-        new(value.ToString(CultureInfo.InvariantCulture), true);
-
-    /// <summary>
-    /// Converts an unsigned 64-bit integer to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The unsigned integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    public static implicit operator Number(ulong value) =>
-        new(value.ToString(CultureInfo.InvariantCulture), true);
-
-    /// <summary>
-    /// Converts an unsigned 128-bit integer to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The unsigned integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    public static implicit operator Number(UInt128 value) =>
-        new(value.ToString(CultureInfo.InvariantCulture), true);
-
-    /// <summary>
-    /// Converts a signed 8-bit integer to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The signed integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    /// <exception cref="OverflowException">
-    /// <paramref name="value"/> is negative.
-    /// </exception>
-    public static explicit operator Number(sbyte value) => FromSignedInteger(value);
-
-    /// <summary>
-    /// Converts a signed 16-bit integer to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The signed integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    /// <exception cref="OverflowException">
-    /// <paramref name="value"/> is negative.
-    /// </exception>
-    public static explicit operator Number(short value) => FromSignedInteger(value);
-
-    /// <summary>
-    /// Converts a signed 32-bit integer to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The signed integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    /// <exception cref="OverflowException">
-    /// <paramref name="value"/> is negative.
-    /// </exception>
-    public static explicit operator Number(int value) => FromSignedInteger(value);
-
-    /// <summary>
-    /// Converts a signed 64-bit integer to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The signed integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    /// <exception cref="OverflowException">
-    /// <paramref name="value"/> is negative.
-    /// </exception>
-    public static explicit operator Number(long value) => FromSignedInteger(value);
-
-    /// <summary>
-    /// Converts a signed 128-bit integer to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The signed integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    /// <exception cref="OverflowException">
-    /// <paramref name="value"/> is negative.
-    /// </exception>
-    public static explicit operator Number(Int128 value) => FromSignedInteger(value);
-
-    /// <summary>
-    /// Converts a <see cref="BigInteger"/> to a <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The integer to convert.</param>
-    /// <returns>A <see cref="Number"/> containing the invariant-culture decimal representation.</returns>
-    /// <exception cref="OverflowException">
-    /// The value is negative.
-    /// </exception>
-    public static explicit operator Number(BigInteger value)
-        => value.Sign < 0
-            ? throw new OverflowException("A negative integer cannot be represented by Number.")
-            : new Number(value.ToString(CultureInfo.InvariantCulture), true);
-
-    private static Number FromSignedInteger(long value)
-        => value < 0
-            ? throw new OverflowException("A negative integer cannot be represented by Number.")
-            : new Number(value.ToString(CultureInfo.InvariantCulture), true);
-
-    private static Number FromSignedInteger(Int128 value)
-        => value < 0
-            ? throw new OverflowException("A negative integer cannot be represented by Number.")
-            : new Number(value.ToString(CultureInfo.InvariantCulture), true);
-
-    /// <summary>
-    /// Converts a Number to an unsigned 8-bit integer.
-    /// </summary>
-    public static explicit operator byte(Number value) =>
-        byte.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Converts a <see cref="Number"/> to a signed 8-bit integer.
-    /// </summary>
-    /// <param name="value">The value to convert.</param>
-    /// <returns>The integer represented by the digit sequence.</returns>
-    /// <exception cref="FormatException">
-    /// The value is the default (empty) instance.
-    /// </exception>
-    /// <exception cref="OverflowException">
-    /// The represented integer is outside the range of sbyte.
-    /// </exception>
-    public static explicit operator sbyte(Number value) =>
-        sbyte.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Converts a Number to an unsigned 16-bit integer.
-    /// </summary>
-    public static explicit operator ushort(Number value) =>
-        ushort.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Converts a <see cref="Number"/> to a signed 16-bit integer.
-    /// </summary>
-    /// <param name="value">The value to convert.</param>
-    /// <returns>The integer represented by the digit sequence.</returns>
-    /// <exception cref="FormatException">
-    /// The value is the default (empty) instance.
-    /// </exception>
-    /// <exception cref="OverflowException">
-    /// The represented integer is outside the range of short.
-    /// </exception>
-    public static explicit operator short(Number value) =>
-        short.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Converts a Number to an unsigned 32-bit integer.
-    /// </summary>
-    public static explicit operator uint(Number value) =>
-        uint.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Converts a <see cref="Number"/> to a signed 32-bit integer.
-    /// </summary>
-    /// <param name="value">The value to convert.</param>
-    /// <returns>The integer represented by the digit sequence.</returns>
-    /// <exception cref="FormatException">
-    /// The value is the default (empty) instance.
-    /// </exception>
-    /// <exception cref="OverflowException">
-    /// The represented integer is outside the range of int.
-    /// </exception>
-    public static explicit operator int(Number value) =>
-        int.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Converts a Number to an unsigned 64-bit integer.
-    /// </summary>
-    public static explicit operator ulong(Number value) =>
-        ulong.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Converts a <see cref="Number"/> to a signed 64-bit integer.
-    /// </summary>
-    /// <param name="value">The value to convert.</param>
-    /// <returns>The integer represented by the digit sequence.</returns>
-    /// <exception cref="FormatException">
-    /// The value is the default (empty) instance.
-    /// </exception>
-    /// <exception cref="OverflowException">
-    /// The represented integer is outside the range of long.
-    /// </exception>
-    public static explicit operator long(Number value) =>
-        long.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Converts a Number to an unsigned 128-bit integer.
-    /// </summary>
-    public static explicit operator UInt128(Number value) =>
-        UInt128.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Converts a <see cref="Number"/> to a signed 128-bit integer.
-    /// </summary>
-    /// <param name="value">The value to convert.</param>
-    /// <returns>The integer represented by the digit sequence.</returns>
-    /// <exception cref="FormatException">
-    /// The value is the default (empty) instance.
-    /// </exception>
-    /// <exception cref="OverflowException">
-    /// The represented integer is outside the range of Int128.
-    /// </exception>
-    public static explicit operator Int128(Number value) =>
-        Int128.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Converts a <see cref="Number"/> to a <see cref="BigInteger"/>.
-    /// </summary>
-    /// <param name="value">The value to convert.</param>
-    /// <returns>The non-negative integer represented by the digit sequence.</returns>
-    /// <exception cref="FormatException">
-    /// The value is the default (empty) instance.
-    /// </exception>
-    public static explicit operator BigInteger(Number value) =>
-        BigInteger.Parse(value.Value, NumberStyles.None, CultureInfo.InvariantCulture);
 }
