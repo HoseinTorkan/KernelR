@@ -1,4 +1,5 @@
 <Project>
+    <!--Projects Settings-->
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>        
         <LangVersion>latest</LangVersion>
@@ -12,19 +13,11 @@
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-
         <NoWarn>
             $(NoWarn);
             CA1711; <!--Warning text: Identifiers should not have incorrect suffix-->
         </NoWarn>
 
-
-
-
-
-
-
-        
         <!--<IncludeSymbols>true</IncludeSymbols>-->
         <!--<SymbolPackageFormat>snupkg</SymbolPackageFormat>-->
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -40,9 +33,21 @@
         </ContinuousIntegrationBuild>
     </PropertyGroup>
 
-            <!--Deterministic Build-->
+    <!--Test Projects Settings-->
+    <PropertyGroup
+        Condition=
+        "$(MSBuildProjectName.EndsWith('.Tests'))
+        Or $(MSBuildProjectName.EndsWith('.UnitTests'))
+        Or $(MSBuildProjectName.EndsWith('.E2ETests'))">
 
-    <!--Repository & Author Metadata-->
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+        <IsTestProject>true</IsTestProject>
+        <IsPackable>false</IsPackable>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+
     <PropertyGroup>
         <Authors>HoseinTorkan</Authors>
         <Company>KernelR</Company>
@@ -55,17 +60,5 @@
     <!--Versioning (Centralized Default)-->
     <PropertyGroup>
         <Version Condition="'$(Version)' == ''">0.0.0-local</Version>
-    </PropertyGroup>
-
-    <!--Test Project Settings-->
-    <PropertyGroup
-        Condition=
-        "$(MSBuildProjectName.EndsWith('.Tests'))
-        Or $(MSBuildProjectName.EndsWith('.UnitTests'))
-        Or $(MSBuildProjectName.EndsWith('.E2ETests'))">
-        
-        <IsTestProject>true</IsTestProject>
-        <IsPackable>false</IsPackable>
-        <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 </Project>
