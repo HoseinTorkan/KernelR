@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace KernelR.Primitives.Serialization;
 
 /// <summary>
@@ -11,9 +9,9 @@ namespace KernelR.Primitives.Serialization;
 /// handled by their own converters in the outer layers (e.g., <c>KernelR.AspNetCore</c>),
 /// keeping the Primitives layer free of presentation concerns.
 /// </remarks>
-[JsonSourceGenerationOptions(
-    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    WriteIndented = false,
-    UseStringEnumConverter = false)]
-[JsonSerializable(typeof(Error))]
-internal partial class KernelRJsonContext : JsonSerializerContext;
+//[JsonSourceGenerationOptions(
+//    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+//    WriteIndented = false,
+//    UseStringEnumConverter = false)]
+//[JsonSerializable(typeof(Error))]
+//internal partial class KernelRJsonContext : JsonSerializerContext;

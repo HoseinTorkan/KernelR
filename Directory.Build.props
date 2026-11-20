@@ -2,58 +2,45 @@
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>        
         <LangVersion>latest</LangVersion>
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        
+        <!--<GenerateDocumentationFile>true</GenerateDocumentationFile>-->
+
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
 
-        <EnableNETAnalyzers>true</EnableNETAnalyzers>
         <AnalysisMode>Recommended</AnalysisMode>
         <AnalysisLevel>latest</AnalysisLevel>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
-        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>        
-    </PropertyGroup>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
-    <PropertyGroup>
-        <!--<TreatWarningsAsErrors>true</TreatWarningsAsErrors>--> <!--TODO::-->
+        <NoWarn>
+            $(NoWarn);
+            CA1711; <!--Warning text: Identifiers should not have incorrect suffix-->
+        </NoWarn>
 
-        <!--CA1711: "Identifiers should not have incorrect suffix"
-            The rule warns when a type name ends with a "reserved" suffix
-            such as Handler, Collection, Delegate, etc. It expects these
-            suffixes to be used only for Microsoft-defined base types.
 
-            Why disabled globally:
-              1. In DDD and CQRS, "Handler" is standard terminology
-                 (e.g., IDomainEventHandler, ICommandHandler).
-              2. ASP.NET Core's built-in types (IHttpHandler) are unrelated.
-              3. The rule produces false positives for every domain handler.-->
-        <NoWarn>$(NoWarn);CA1711</NoWarn>
-    </PropertyGroup>
-    
-    <!--Symbols & Source Link-->                      
-    <PropertyGroup>
-        <IncludeSymbols>true</IncludeSymbols>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+
+
+
+
+        
+        <!--<IncludeSymbols>true</IncludeSymbols>-->
+        <!--<SymbolPackageFormat>snupkg</SymbolPackageFormat>-->
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <DebugType>portable</DebugType>
-    </PropertyGroup>
+        <!--<DebugType>embedded</DebugType>-->
 
-    <!--
-        Note (SDK 10+):
-        SourceLink is bundled into the SDK. An explicit PackageReference to
-        Microsoft.SourceLink.GitHub is therefore no longer required.
-    -->
-    <PropertyGroup>
         <EnableSourceLink>true</EnableSourceLink>
-            <SourceLinkGitHubHost>github.com</SourceLinkGitHubHost>
+        <SourceLinkGitHubHost>github.com</SourceLinkGitHubHost>
+
+        <Deterministic>true</Deterministic>
+        <ContinuousIntegrationBuild Condition = "'$(GITHUB_ACTIONS)' == 'true'">
+            true
+        </ContinuousIntegrationBuild>
     </PropertyGroup>
 
-    <!--Deterministic Build-->
-    <PropertyGroup>
-        <Deterministic>true</Deterministic>
-        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
-    </PropertyGroup>
+            <!--Deterministic Build-->
 
     <!--Repository & Author Metadata-->
     <PropertyGroup>

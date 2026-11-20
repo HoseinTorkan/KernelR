@@ -17,28 +17,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Versioning (Internal Tracking)             -->
-    <!-- ═══════════════════════════════════════════ -->
-    <!--
-        This project is NOT packaged independently (IsPackable=false).
-        Its DLL is bundled into KernelR.Domain under "analyzers/dotnet/cs".
-        
-        The version here is for internal tracking only and matches the
-        KernelR.Domain package version. See docs/VERSIONING.md.
-    -->
+    <!--Roslyn Analyzer Configuration-->
     <PropertyGroup>
-        <Version>10.0.0</Version>
-    </PropertyGroup>
-
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Roslyn Analyzer Configuration              -->
-    <!-- ═══════════════════════════════════════════ -->
-    <PropertyGroup>
-        <!--
-            Tells the SDK this project is a Roslyn analyzer/generator.
-            Enables analyzer-specific SDK behavior (e.g., packing conventions).
-        -->
         <IsRoslynComponent>true</IsRoslynComponent>
 
         <!--
@@ -47,19 +27,11 @@
         -->
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 
-        <!--
-            This project should not be packaged independently.
-            Its DLL is packed into KernelR.Domain under "analyzers/dotnet/cs".
-        -->
         <IsPackable>false</IsPackable>
         <IncludeBuildOutput>false</IncludeBuildOutput>
     </PropertyGroup>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Documentation & Warnings                   -->
-    <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
-        <!-- Generate XML documentation for the generator's public API -->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
         <!-- 
