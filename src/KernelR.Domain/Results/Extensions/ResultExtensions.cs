@@ -1,6 +1,7 @@
+using KernelR.Domain.Results;
 using System.Diagnostics.CodeAnalysis;
 
-namespace KernelR.Primitives.Results.Extensions;
+namespace KernelR.Domain.Results.Extensions;
 
 /// <summary>
 /// Provides extension methods to extract values from <see cref="Result{T}"/> instances.

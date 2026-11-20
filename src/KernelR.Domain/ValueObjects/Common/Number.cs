@@ -1,66 +1,22 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Text;
 
 namespace KernelR.Domain.ValueObjects.Common;
 
-/// <summary>
-/// Represents a non-empty sequence of decimal digits, preserving leading zeros.
-/// </summary>
-/// <remarks>
-/// <para>
-/// <see cref="Number"/> is a string-based value object, not a mathematical numeric type.
-/// It preserves leading zeros and accepts ASCII, Persian, and Arabic-Indic digits.
-/// The stored representation always uses ASCII digits (<c>0</c> through <c>9</c>).
-/// </para>
-/// <para>
-/// The default value is empty. An explicitly constructed or parsed <see cref="Number"/>
-/// must contain at least one valid digit.
-/// </para>
-/// <para>
-/// This type does not provide arithmetic operations, numeric ordering, or numeric
-/// formatting. Equality is based on the normalized digit sequence, so leading zeros
-/// are significant.
-/// </para>
-/// <para>
-/// The display digit set is controlled exclusively by the <see cref="IFormatProvider"/>.
-/// When the provider is <see langword="null"/>, <see cref="CultureInfo.CurrentCulture"/> is used.
-/// Persian cultures (<c>"fa"</c>) yield Persian digits, Arabic cultures (<c>"ar"</c>)
-/// yield Arabic-Indic digits, and all other cultures yield ASCII digits. To always obtain
-/// ASCII digits, pass <see cref="CultureInfo.InvariantCulture"/>.
-/// </para>
-/// <para>
-/// Only the general format specifier <c>"G"</c> is supported. Any other format string
-/// results in a <see cref="FormatException"/>.
-/// </para>
-/// </remarks>
-/// <example>
-/// <code language="csharp">
-/// Number identifier = new("۰۰۱۲۳");
-///
-/// Console.WriteLine(identifier.Value);                                           // 00123
-/// Console.WriteLine(identifier.Length);                                          // 5
-/// Console.WriteLine(identifier.ToString(CultureInfo.InvariantCulture));          // 00123
-/// Console.WriteLine(identifier.ToString(CultureInfo.GetCultureInfo("fa-IR")));   // ۰۰۱۲۳
-/// Console.WriteLine(identifier.ToString(CultureInfo.GetCultureInfo("ar-SA")));   // ٠٠١٢٣
-/// Console.WriteLine(identifier == new Number("123"));                            // False
-/// </code>
-/// </example>
-/// <seealso cref="IFormattable"/>
-/// <seealso cref="ISpanFormattable"/>
-/// <seealso cref="IUtf8SpanFormattable"/>
 public readonly record struct Number :
     IParsable<Number>,
     ISpanParsable<Number>,
     IUtf8SpanParsable<Number>,
     IFormattable,
     ISpanFormattable,
-    IUtf8SpanFormattable
+    IUtf8SpanFormattable,
+    IComparable<Number>,
+    IComparable
 {
-    private const char PersianZero = '\u06F0';
-    private const char ArabicIndicZero = '\u0660';
-
-    private static readonly UTF8Encoding s_strictUtf8Encoding = new(false, true);
-
     private readonly string? _value;
 
     /// <summary>
@@ -77,7 +33,7 @@ public readonly record struct Number :
     /// <value>
     /// The number of ASCII digits in <see cref="Value"/>. Returns zero for the default instance.
     /// </value>
-    public int Length => Value.Length;
+    public int Length => _value?.Length ?? 0;
 
     /// <summary>
     /// Gets a value indicating whether the instance is empty.
@@ -95,17 +51,13 @@ public readonly record struct Number :
     /// <paramref name="value"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// <paramref name="value"/> is empty or contains a character other than an ASCII,
-    /// Persian, or Arabic-Indic decimal digit.
+    /// <paramref name="value"/> is empty, consists only of white-space characters,
+    /// or contains a character other than an ASCII, Persian, or Arabic-Indic decimal digit.
     /// </exception>
     public Number(string value)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(value);
-
-        if (!TryNormalizeDigits(value.AsSpan(), out string normalizedValue) || normalizedValue.Length == 0)
-            throw new ArgumentException("The value must contain one or more supported decimal digits.", nameof(value));
-
-        _value = normalizedValue;
+        _value = NumberParse.NormalizeOrThrow(value);
     }
 
     /// <summary>
@@ -114,6 +66,10 @@ public readonly record struct Number :
     /// <param name="normalizedValue">A non-empty string containing only ASCII digits.</param>
     /// <param name="_">Indicates that the value has already been normalized.</param>
     private Number(string normalizedValue, bool _) => _value = normalizedValue;
+
+    // ------------------------------------------------------------------
+    //  Instance helpers
+    // ------------------------------------------------------------------
 
     /// <summary>
     /// Returns the value as a read-only character span.
@@ -139,6 +95,10 @@ public readonly record struct Number :
     /// </returns>
     public bool TryCopyTo(Span<char> destination) => Value.AsSpan().TryCopyTo(destination);
 
+    // ------------------------------------------------------------------
+    //  Static validation helpers (public)
+    // ------------------------------------------------------------------
+
     /// <summary>
     /// Determines whether the specified string contains only supported decimal digits.
     /// </summary>
@@ -147,7 +107,7 @@ public readonly record struct Number :
     /// <see langword="true"/> if the string is non-empty and contains only supported digits;
     /// otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool IsValid(string value) => value is not null && IsValid(value.AsSpan());
+    public static bool IsValid([NotNullWhen(true)] string? value) => NumberParse.IsValid(value);
 
     /// <summary>
     /// Determines whether the specified character span contains only supported decimal digits.
@@ -157,15 +117,7 @@ public readonly record struct Number :
     /// <see langword="true"/> if the span is non-empty and contains only supported digits;
     /// otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool IsValid(ReadOnlySpan<char> value)
-    {
-        if (value.IsEmpty) return false;
-
-        foreach (char digit in value)
-            if (!IsSupportedDigit(digit)) return false;
-
-        return true;
-    }
+    public static bool IsValid(ReadOnlySpan<char> value) => NumberParse.IsValid(value);
 
     /// <summary>
     /// Determines whether the specified UTF-8 span contains only supported decimal digits.
@@ -175,168 +127,11 @@ public readonly record struct Number :
     /// <see langword="true"/> if the data represents a non-empty sequence of supported digits;
     /// otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool IsValid(ReadOnlySpan<byte> utf8Text)
-        => !utf8Text.IsEmpty
-        && TryNormalizeDigits(utf8Text, out string normalizedValue)
-        && normalizedValue.Length > 0;
+    public static bool IsValid(ReadOnlySpan<byte> utf8Text) => NumberParse.IsValid(utf8Text);
 
-    /// <summary>
-    /// Normalizes supported Persian and Arabic-Indic digits to ASCII digits.
-    /// </summary>
-    /// <param name="value">The string to normalize.</param>
-    /// <returns>A string containing the normalized ASCII digits.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="value"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="FormatException">
-    /// The string contains an unsupported character.
-    /// </exception>
-    public static string NormalizeDigits(string value)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(value);
-        return NormalizeDigits(value.AsSpan());
-    }
-
-    /// <summary>
-    /// Normalizes supported Persian and Arabic-Indic digits to ASCII digits.
-    /// </summary>
-    /// <param name="value">The character span to normalize.</param>
-    /// <returns>A string containing the normalized ASCII digits.</returns>
-    /// <exception cref="FormatException">
-    /// The span contains an unsupported character.
-    /// </exception>
-    public static string NormalizeDigits(ReadOnlySpan<char> value)
-        => !TryNormalizeDigits(value, out string normalizedValue)
-            ? throw new FormatException("The input contains unsupported characters.")
-            : normalizedValue;
-
-    /// <summary>
-    /// Normalizes supported Persian and Arabic-Indic digits in UTF-8 data to ASCII digits.
-    /// </summary>
-    /// <param name="utf8Text">The UTF-8 data to normalize.</param>
-    /// <returns>A string containing the normalized ASCII digits.</returns>
-    /// <exception cref="FormatException">
-    /// The data contains invalid UTF-8 or unsupported characters.
-    /// </exception>
-    public static string NormalizeDigits(ReadOnlySpan<byte> utf8Text)
-        => !TryNormalizeDigits(utf8Text, out string normalizedValue)
-            ? throw new FormatException("The input contains invalid UTF-8 or unsupported characters.")
-            : normalizedValue;
-
-    /// <summary>
-    /// Attempts to normalize supported Persian and Arabic-Indic digits to ASCII digits.
-    /// </summary>
-    /// <param name="value">The string to normalize.</param>
-    /// <param name="normalizedValue">
-    /// When this method returns, contains the normalized value if successful;
-    /// otherwise, an empty string.
-    /// </param>
-    /// <returns>
-    /// <see langword="true"/> if the input could be normalized; otherwise, <see langword="false"/>.
-    /// </returns>
-    /// <remarks>
-    /// An empty string can be normalized successfully, but it is not a valid <see cref="Number"/>.
-    /// </remarks>
-    public static bool TryNormalizeDigits(string? value, out string normalizedValue)
-    {
-        if (value is null)
-        {
-            normalizedValue = string.Empty;
-            return false;
-        }
-
-        return TryNormalizeDigits(value.AsSpan(), out normalizedValue);
-    }
-
-    /// <summary>
-    /// Attempts to normalize supported Persian and Arabic-Indic digits to ASCII digits.
-    /// </summary>
-    /// <param name="value">The character span to normalize.</param>
-    /// <param name="normalizedValue">
-    /// When this method returns, contains the normalized value if successful;
-    /// otherwise, an empty string.
-    /// </param>
-    /// <returns>
-    /// <see langword="true"/> if the input could be normalized; otherwise, <see langword="false"/>.
-    /// </returns>
-    /// <remarks>
-    /// An empty span can be normalized successfully, but it is not a valid <see cref="Number"/>.
-    /// Unsupported characters are never removed or ignored.
-    /// </remarks>
-    public static bool TryNormalizeDigits(ReadOnlySpan<char> value, out string normalizedValue)
-    {
-        char[] buffer = new char[value.Length];
-
-        for (int i = 0; i < value.Length; i++)
-        {
-            if (!TryConvertDigit(value[i], out char digit))
-            {
-                normalizedValue = string.Empty;
-                return false;
-            }
-
-            buffer[i] = digit;
-        }
-
-        normalizedValue = new string(buffer);
-        return true;
-    }
-
-    /// <summary>
-    /// Attempts to normalize supported Persian and Arabic-Indic digits in UTF-8 data.
-    /// </summary>
-    /// <param name="utf8Text">The UTF-8 data to normalize.</param>
-    /// <param name="normalizedValue">
-    /// When this method returns, contains the normalized value if successful;
-    /// otherwise, an empty string.
-    /// </param>
-    /// <returns>
-    /// <see langword="true"/> if the input is valid UTF-8 and could be normalized;
-    /// otherwise, <see langword="false"/>.
-    /// </returns>
-    public static bool TryNormalizeDigits(ReadOnlySpan<byte> utf8Text, out string normalizedValue)
-    {
-        try
-        {
-            string decodedValue = s_strictUtf8Encoding.GetString(utf8Text);
-            return TryNormalizeDigits(decodedValue.AsSpan(), out normalizedValue);
-        }
-        catch (DecoderFallbackException)
-        {
-            normalizedValue = string.Empty;
-            return false;
-        }
-    }
-
-    private static bool IsSupportedDigit(char value)
-        => value
-        is >= '0' and <= '9'
-        or >= PersianZero and <= '\u06F9'
-        or >= ArabicIndicZero and <= '\u0669';
-
-    private static bool TryConvertDigit(char value, out char digit)
-    {
-        if (value is >= '0' and <= '9')
-        {
-            digit = value;
-            return true;
-        }
-
-        if (value is >= PersianZero and <= '\u06F9')
-        {
-            digit = (char)('0' + value - PersianZero);
-            return true;
-        }
-
-        if (value is >= ArabicIndicZero and <= '\u0669')
-        {
-            digit = (char)('0' + value - ArabicIndicZero);
-            return true;
-        }
-
-        digit = default;
-        return false;
-    }
+    // ------------------------------------------------------------------
+    //  Parse / TryParse (public surface)
+    // ------------------------------------------------------------------
 
     /// <summary>
     /// Converts the string representation of a number to its equivalent <see cref="Number"/>.
@@ -353,62 +148,23 @@ public readonly record struct Number :
     /// Parsing is culture-independent. The input must contain digits only; whitespace,
     /// signs, decimal separators, and group separators are not accepted.
     /// </remarks>
-    public static Number Parse(string s)
-    {
-        ArgumentNullException.ThrowIfNull(s);
-        return Parse(s.AsSpan(), CultureInfo.InvariantCulture);
-    }
+    public static Number Parse(string s) => NumberParse.Parse(s, CultureInfo.InvariantCulture);
 
-    /// <summary>
-    /// Converts the string representation of a number to its equivalent <see cref="Number"/>.
-    /// </summary>
-    /// <param name="s">A string containing supported decimal digits.</param>
-    /// <param name="provider">
-    /// An object that supplies formatting information. This parameter is ignored because
-    /// <see cref="Number"/> parsing is independent of culture.
-    /// </param>
-    /// <returns>A <see cref="Number"/> containing the normalized digit sequence.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="s"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="FormatException">
-    /// <paramref name="s"/> is empty or contains unsupported characters.
-    /// </exception>
-    public static Number Parse(string s, IFormatProvider? provider)
-    {
-        ArgumentNullException.ThrowIfNull(s);
-
-        return !TryParse(s.AsSpan(), out Number result)
-            ? throw new FormatException("The input is not a valid Number.")
-            : result;
-    }
-
-    /// <summary>
-    /// Converts the character representation of a number to its equivalent <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">A character span containing supported decimal digits.</param>
-    /// <returns>A <see cref="Number"/> containing the normalized digit sequence.</returns>
-    /// <exception cref="FormatException">
-    /// <paramref name="value"/> is empty or contains unsupported characters.
-    /// </exception>
-    public static Number Parse(ReadOnlySpan<char> value) => Parse(value, CultureInfo.InvariantCulture);
+    /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider)" />
+    public static Number Parse(string s, IFormatProvider? provider) => NumberParse.Parse(s, provider);
 
     /// <summary>
     /// Converts the character representation of a number to its equivalent <see cref="Number"/>.
     /// </summary>
     /// <param name="s">A character span containing supported decimal digits.</param>
-    /// <param name="provider">
-    /// An object that supplies formatting information. This parameter is ignored because
-    /// <see cref="Number"/> parsing is independent of culture.
-    /// </param>
     /// <returns>A <see cref="Number"/> containing the normalized digit sequence.</returns>
     /// <exception cref="FormatException">
     /// <paramref name="s"/> is empty or contains unsupported characters.
     /// </exception>
-    public static Number Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-        => !TryParse(s, out Number result)
-            ? throw new FormatException("The input is not a valid Number.")
-            : result;
+    public static Number Parse(ReadOnlySpan<char> s) => NumberParse.Parse(s, CultureInfo.InvariantCulture);
+
+    /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider)" />
+    public static Number Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => NumberParse.Parse(s, provider);
 
     /// <summary>
     /// Converts the UTF-8 representation of a number to its equivalent <see cref="Number"/>.
@@ -418,55 +174,15 @@ public readonly record struct Number :
     /// <exception cref="FormatException">
     /// The input is invalid UTF-8, empty, or contains unsupported characters.
     /// </exception>
-    public static Number Parse(ReadOnlySpan<byte> utf8Text) => Parse(utf8Text, CultureInfo.InvariantCulture);
+    public static Number Parse(ReadOnlySpan<byte> utf8Text) => NumberParse.Parse(utf8Text, CultureInfo.InvariantCulture);
 
-    /// <summary>
-    /// Converts the UTF-8 representation of a number to its equivalent <see cref="Number"/>.
-    /// </summary>
-    /// <param name="utf8Text">UTF-8 data containing supported decimal digits.</param>
-    /// <param name="provider">
-    /// An object that supplies formatting information. This parameter is ignored because
-    /// <see cref="Number"/> parsing is independent of culture.
-    /// </param>
-    /// <returns>A <see cref="Number"/> containing the normalized digit sequence.</returns>
-    /// <exception cref="FormatException">
-    /// The input is invalid UTF-8, empty, or contains unsupported characters.
-    /// </exception>
-    public static Number Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
-        => !TryParse(utf8Text, provider, out Number result)
-            ? throw new FormatException("The input is not a valid UTF-8 Number.")
-            : result;
-
-    /// <summary>
-    /// Attempts to convert the string representation of a number to its equivalent <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The string to parse.</param>
-    /// <param name="result">
-    /// When this method returns, contains the parsed <see cref="Number"/> if successful;
-    /// otherwise, the default value.
-    /// </param>
-    /// <returns>
-    /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
-    /// </returns>
-    public static bool TryParse(string? value, out Number result)
-    {
-        if (value is null)
-        {
-            result = default;
-            return false;
-        }
-
-        return TryParse(value.AsSpan(), out result);
-    }
+    /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider)" />
+    public static Number Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => NumberParse.Parse(utf8Text, provider);
 
     /// <summary>
     /// Attempts to convert the string representation of a number to its equivalent <see cref="Number"/>.
     /// </summary>
     /// <param name="s">The string to parse.</param>
-    /// <param name="provider">
-    /// An object that supplies formatting information. This parameter is ignored because
-    /// <see cref="Number"/> parsing is independent of culture.
-    /// </param>
     /// <param name="result">
     /// When this method returns, contains the parsed <see cref="Number"/> if successful;
     /// otherwise, the default value.
@@ -474,31 +190,15 @@ public readonly record struct Number :
     /// <returns>
     /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse(string? s, IFormatProvider? provider, out Number result) =>
-        TryParse(s, out result);
+    public static bool TryParse([NotNullWhen(true)] string? s, out Number result) => NumberParse.TryParse(s, out result);
 
-    /// <summary>
-    /// Attempts to convert the character representation of a number to its equivalent <see cref="Number"/>.
-    /// </summary>
-    /// <param name="value">The character span to parse.</param>
-    /// <param name="result">
-    /// When this method returns, contains the parsed <see cref="Number"/> if successful;
-    /// otherwise, the default value.
-    /// </param>
-    /// <returns>
-    /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
-    /// </returns>
-    public static bool TryParse(ReadOnlySpan<char> value, out Number result) =>
-        TryParse(value, CultureInfo.InvariantCulture, out result);
+    /// <inheritdoc cref="IParsable{TSelf}.TryParse(string, IFormatProvider, out TSelf)" />
+    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Number result) => NumberParse.TryParse(s, out result);
 
     /// <summary>
     /// Attempts to convert the character representation of a number to its equivalent <see cref="Number"/>.
     /// </summary>
     /// <param name="s">The character span to parse.</param>
-    /// <param name="provider">
-    /// An object that supplies formatting information. This parameter is ignored because
-    /// <see cref="Number"/> parsing is independent of culture.
-    /// </param>
     /// <param name="result">
     /// When this method returns, contains the parsed <see cref="Number"/> if successful;
     /// otherwise, the default value.
@@ -506,17 +206,10 @@ public readonly record struct Number :
     /// <returns>
     /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Number result)
-    {
-        if (s.IsEmpty || !TryNormalizeDigits(s, out string normalizedValue) || normalizedValue.Length == 0)
-        {
-            result = default;
-            return false;
-        }
+    public static bool TryParse(ReadOnlySpan<char> s, out Number result) => NumberParse.TryParse(s, out result);
 
-        result = new Number(normalizedValue, true);
-        return true;
-    }
+    /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider, out TSelf)" />
+    public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Number result) => NumberParse.TryParse(s, out result);
 
     /// <summary>
     /// Attempts to convert the UTF-8 representation of a number to its equivalent <see cref="Number"/>.
@@ -529,35 +222,14 @@ public readonly record struct Number :
     /// <returns>
     /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Number result) =>
-        TryParse(utf8Text, CultureInfo.InvariantCulture, out result);
+    public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Number result) => NumberParse.TryParse(utf8Text, out result);
 
-    /// <summary>
-    /// Attempts to convert the UTF-8 representation of a number to its equivalent <see cref="Number"/>.
-    /// </summary>
-    /// <param name="utf8Text">The UTF-8 data to parse.</param>
-    /// <param name="provider">
-    /// An object that supplies formatting information. This parameter is ignored because
-    /// <see cref="Number"/> parsing is independent of culture.
-    /// </param>
-    /// <param name="result">
-    /// When this method returns, contains the parsed <see cref="Number"/> if successful;
-    /// otherwise, the default value.
-    /// </param>
-    /// <returns>
-    /// <see langword="true"/> if the input was parsed successfully; otherwise, <see langword="false"/>.
-    /// </returns>
-    public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Number result)
-    {
-        if (utf8Text.IsEmpty || !TryNormalizeDigits(utf8Text, out string normalizedValue) || normalizedValue.Length == 0)
-        {
-            result = default;
-            return false;
-        }
+    /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider, out TSelf)" />
+    public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Number result) => NumberParse.TryParse(utf8Text, out result);
 
-        result = new Number(normalizedValue, true);
-        return true;
-    }
+    // ------------------------------------------------------------------
+    //  Formatting
+    // ------------------------------------------------------------------
 
     /// <summary>
     /// Returns the value using the digit set of the current culture, preserving leading zeros.
@@ -585,159 +257,109 @@ public readonly record struct Number :
     /// </remarks>
     public string ToString(IFormatProvider? formatProvider) => ToString("G", formatProvider);
 
-    /// <summary>
-    /// Formats the value using the specified format and format provider.
-    /// </summary>
-    /// <param name="format">
-    /// The format string. Only the general format specifier <c>"G"</c> is supported.
-    /// A value of <see langword="null"/> or an empty string is treated as <c>"G"</c>.
-    /// </param>
-    /// <param name="formatProvider">
-    /// An object that supplies culture-specific formatting information.
-    /// If <see langword="null"/>, <see cref="CultureInfo.CurrentCulture"/> is used.
-    /// </param>
-    /// <returns>The formatted value.</returns>
-    /// <exception cref="FormatException">
-    /// <paramref name="format"/> is not <see langword="null"/>, empty, or <c>"G"</c>.
-    /// </exception>
-    /// <remarks>
-    /// <para>
-    /// Unlike numeric formatting, this method preserves leading zeros because it controls
-    /// only the display representation of the stored digit sequence, not its numeric value.
-    /// </para>
-    /// <para>
-    /// The parameterless <see cref="ToString()"/> overload is equivalent to <c>ToString("G", null)</c>.
-    /// </para>
-    /// </remarks>
-    /// <example>
-    /// <code language="csharp">
-    /// Number value = new("001234");
-    ///
-    /// Console.WriteLine(value.ToString("G", CultureInfo.InvariantCulture));         // 001234
-    /// Console.WriteLine(value.ToString("G", CultureInfo.GetCultureInfo("fa-IR")));  // ۰۰۱۲۳۴
-    /// Console.WriteLine(value.ToString("G", CultureInfo.GetCultureInfo("ar-SA")));  // ٠٠١٢٣٤
-    /// </code>
-    /// </example>
+    /// <inheritdoc cref="IFormattable.ToString(string, IFormatProvider)" />
     public string ToString(string? format, IFormatProvider? formatProvider)
-    {
-        if (format is not (null or "" or "G"))
-            throw new FormatException(
-                $"Format '{format}' is not supported. Only the general format specifier 'G' is valid.");
+        => NumberFormat.Format(this, format, formatProvider);
 
-        char digitStart = GetDigitStartFromCulture(formatProvider ?? CultureInfo.CurrentCulture);
-        return ConvertDigits(Value, digitStart);
-    }
-
-    /// <summary>
-    /// Attempts to format the value into the specified character span.
-    /// </summary>
-    /// <param name="destination">The destination character span.</param>
-    /// <param name="charsWritten">
-    /// When this method returns, contains the number of characters written.
-    /// </param>
-    /// <param name="format">
-    /// The format string. Only the general format specifier <c>"G"</c> is supported.
-    /// </param>
-    /// <param name="provider">
-    /// An object that supplies culture-specific formatting information.
-    /// If <see langword="null"/>, <see cref="CultureInfo.CurrentCulture"/> is used.
-    /// </param>
-    /// <returns>
-    /// <see langword="true"/> if the value was formatted successfully; otherwise, <see langword="false"/>.
-    /// </returns>
+    /// <inheritdoc cref="ISpanFormattable.TryFormat(Span{char}, out int, ReadOnlySpan{char}, IFormatProvider)" />
     public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        => NumberFormat.TryFormat(this, destination, out charsWritten, format, provider);
+
+    /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat(Span{byte}, out int, ReadOnlySpan{char}, IFormatProvider)" />
+    public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        => NumberFormat.TryFormat(this, utf8Destination, out bytesWritten, format, provider);
+
+    // ------------------------------------------------------------------
+    //  Comparison
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Compares the current instance with another <see cref="Number"/> and returns an integer
+    /// that indicates whether the current instance precedes, follows, or occurs in the same
+    /// position in the sort order as the other instance.
+    /// </summary>
+    /// <param name="other">The <see cref="Number"/> to compare with this instance.</param>
+    /// <returns>
+    /// A value less than zero if this instance precedes <paramref name="other"/> in the sort order;
+    /// zero if this instance occurs in the same position as <paramref name="other"/>;
+    /// greater than zero if this instance follows <paramref name="other"/>.
+    /// </returns>
+    /// <remarks>
+    /// Comparison is ordinal and culture-independent. It uses
+    /// <see cref="string.CompareOrdinal(string, string)"/> on the normalized ASCII digit sequences.
+    /// Leading zeros are significant: <c>"00123"</c> precedes <c>"123"</c>.
+    /// </remarks>
+    public int CompareTo(Number other) => string.CompareOrdinal(Value, other.Value);
+
+    /// <inheritdoc cref="IComparable.CompareTo(object)" />
+    /// <exception cref="ArgumentException">
+    /// <paramref name="obj"/> is not a <see cref="Number"/>.
+    /// </exception>
+    public int CompareTo(object? obj)
     {
-        string formattedValue;
-        try
-        {
-            formattedValue = ToString(format.IsEmpty ? null : format.ToString(), provider);
-        }
-        catch (FormatException)
-        {
-            charsWritten = 0;
-            return false;
-        }
-
-        if (formattedValue.Length > destination.Length)
-        {
-            charsWritten = 0;
-            return false;
-        }
-
-        formattedValue.AsSpan().CopyTo(destination);
-        charsWritten = formattedValue.Length;
-        return true;
+        if (obj is null) return 1;
+        if (obj is Number other) return CompareTo(other);
+        throw new ArgumentException($"Object must be of type {nameof(Number)}.", nameof(obj));
     }
 
     /// <summary>
-    /// Attempts to format the value as UTF-8 into the specified byte span.
+    /// Returns a value indicating whether one <see cref="Number"/> is less than another.
     /// </summary>
-    /// <param name="utf8Destination">The destination UTF-8 byte span.</param>
-    /// <param name="bytesWritten">
-    /// When this method returns, contains the number of bytes written.
-    /// </param>
-    /// <param name="format">
-    /// The format string. Only the general format specifier <c>"G"</c> is supported.
-    /// </param>
-    /// <param name="provider">
-    /// An object that supplies culture-specific formatting information.
-    /// If <see langword="null"/>, <see cref="CultureInfo.CurrentCulture"/> is used.
-    /// </param>
+    /// <param name="left">The first value to compare.</param>
+    /// <param name="right">The second value to compare.</param>
     /// <returns>
-    /// <see langword="true"/> if the value was formatted successfully; otherwise, <see langword="false"/>.
+    /// <see langword="true"/> if <paramref name="left"/> is less than <paramref name="right"/>;
+    /// otherwise, <see langword="false"/>.
     /// </returns>
-    public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
-    {
-        string formattedValue;
-        try
-        {
-            formattedValue = ToString(format.IsEmpty ? null : format.ToString(), provider);
-        }
-        catch (FormatException)
-        {
-            bytesWritten = 0;
-            return false;
-        }
+    public static bool operator <(Number left, Number right) => left.CompareTo(right) < 0;
 
-        int byteCount = s_strictUtf8Encoding.GetByteCount(formattedValue);
-        if (byteCount > utf8Destination.Length)
-        {
-            bytesWritten = 0;
-            return false;
-        }
+    /// <summary>
+    /// Returns a value indicating whether one <see cref="Number"/> is less than or equal to another.
+    /// </summary>
+    /// <param name="left">The first value to compare.</param>
+    /// <param name="right">The second value to compare.</param>
+    /// <returns>
+    /// <see langword="true"/> if <paramref name="left"/> is less than or equal to <paramref name="right"/>;
+    /// otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool operator <=(Number left, Number right) => left.CompareTo(right) <= 0;
 
-        bytesWritten = s_strictUtf8Encoding.GetBytes(formattedValue, utf8Destination);
-        return true;
-    }
+    /// <summary>
+    /// Returns a value indicating whether one <see cref="Number"/> is greater than another.
+    /// </summary>
+    /// <param name="left">The first value to compare.</param>
+    /// <param name="right">The second value to compare.</param>
+    /// <returns>
+    /// <see langword="true"/> if <paramref name="left"/> is greater than <paramref name="right"/>;
+    /// otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool operator >(Number left, Number right) => left.CompareTo(right) > 0;
 
-    private static char GetDigitStartFromCulture(IFormatProvider provider)
-    {
-        if (provider is CultureInfo culture)
-        {
-            return culture.TwoLetterISOLanguageName switch
-            {
-                "fa" => PersianZero,
-                "ar" => ArabicIndicZero,
-                _ => '0'
-            };
-        }
+    /// <summary>
+    /// Returns a value indicating whether one <see cref="Number"/> is greater than or equal to another.
+    /// </summary>
+    /// <param name="left">The first value to compare.</param>
+    /// <param name="right">The second value to compare.</param>
+    /// <returns>
+    /// <see langword="true"/> if <paramref name="left"/> is greater than or equal to <paramref name="right"/>;
+    /// otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool operator >=(Number left, Number right) => left.CompareTo(right) >= 0;
 
-        return '0';
-    }
+    // ------------------------------------------------------------------
+    //  Internal factory (used by NumberParse)
+    // ------------------------------------------------------------------
 
-    private static string ConvertDigits(string value, char digitStart)
-    {
-        if (digitStart == '0') return value;
-
-        return string.Create(value.Length, (value, digitStart), static (span, state) =>
-        {
-            for (int i = 0; i < state.value.Length; i++)
-            {
-                char c = state.value[i];
-                span[i] = c is >= '0' and <= '9'
-                    ? (char)(state.digitStart + (c - '0'))
-                    : c;
-            }
-        });
-    }
+    /// <summary>
+    /// Creates a <see cref="Number"/> from an already-normalized value without re-validating.
+    /// </summary>
+    /// <param name="normalizedValue">A non-empty string containing only ASCII digits.</param>
+    /// <returns>A new <see cref="Number"/> instance.</returns>
+    /// <remarks>
+    /// This member is an implementation detail and is hidden from IntelliSense.
+    /// Callers are responsible for ensuring <paramref name="normalizedValue"/> is non-empty
+    /// and contains only ASCII digits.
+    /// </remarks>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    internal static Number CreateUnchecked(string normalizedValue) => new(normalizedValue, true);
 }

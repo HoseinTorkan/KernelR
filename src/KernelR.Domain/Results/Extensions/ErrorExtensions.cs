@@ -1,8 +1,9 @@
+using KernelR.Domain.Results;
 using KernelR.Primitives.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
-namespace KernelR.Primitives.Results.Extensions;
+namespace KernelR.Domain.Results.Extensions;
 
 /// <summary>
 /// Provides extension methods for the <see cref="Error"/> type.

@@ -1,4 +1,4 @@
-namespace KernelR.Primitives.Results;
+namespace KernelR.Domain.Results;
 
 /// <summary>
 /// Defines the category of an error, indicating its nature.

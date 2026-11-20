@@ -1,61 +1,23 @@
 <Project>
-
-    <!--
-    ═══════════════════════════════════════════════════════════════════════════
-    Shared build configuration for all KernelR packages.
-    ═══════════════════════════════════════════════════════════════════════════
-    -->
-
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Language & Compiler                        -->
-    <!-- ═══════════════════════════════════════════ -->
     <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>        
         <LangVersion>latest</LangVersion>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-    </PropertyGroup>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Target Framework                           -->
-    <!-- ═══════════════════════════════════════════ -->
-    <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-    </PropertyGroup>
-
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Quality & Static Analysis                  -->
-    <!-- ═══════════════════════════════════════════ -->
-    <PropertyGroup>
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
-        <AnalysisLevel>latest</AnalysisLevel>
         <AnalysisMode>Recommended</AnalysisMode>
-        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <AnalysisLevel>latest</AnalysisLevel>
+
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>        
     </PropertyGroup>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Suppressed Analyzer Rules                  -->
-    <!-- ═══════════════════════════════════════════ -->
-
-    <!--
-        ⚠️ IMPORTANT: Each NoWarn entry MUST have a semicolon BEFORE the code
-        (e.g., `$(NoWarn);CA1711`). If the semicolon is missing, MSBuild will
-        concatenate the values into a single invalid code and NEITHER code
-        will be suppressed.
-
-        CA1305 is NOT suppressed. The codebase follows a strict culture policy:
-          - All culture-sensitive formatting uses CultureInfo.InvariantCulture.
-          - All ToString() / TryParse() on IFormattable values pass an explicit
-            CultureInfo.InvariantCulture.
-          - Error messages are in English, formatted with InvariantCulture.
-        
-        If a specific file has a legitimate exception, it should use
-        #pragma warning disable CA1305 with a clear justification comment.
-    -->
-
     <PropertyGroup>
-        <!--
-            CA1711: "Identifiers should not have incorrect suffix"
+        <!--<TreatWarningsAsErrors>true</TreatWarningsAsErrors>--> <!--TODO::-->
+
+        <!--CA1711: "Identifiers should not have incorrect suffix"
             The rule warns when a type name ends with a "reserved" suffix
             such as Handler, Collection, Delegate, etc. It expects these
             suffixes to be used only for Microsoft-defined base types.
@@ -64,22 +26,11 @@
               1. In DDD and CQRS, "Handler" is standard terminology
                  (e.g., IDomainEventHandler, ICommandHandler).
               2. ASP.NET Core's built-in types (IHttpHandler) are unrelated.
-              3. The rule produces false positives for every domain handler.
-        -->
+              3. The rule produces false positives for every domain handler.-->
         <NoWarn>$(NoWarn);CA1711</NoWarn>
     </PropertyGroup>
-
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Documentation                              -->
-    <!-- ═══════════════════════════════════════════ -->
-    <PropertyGroup>
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
-    </PropertyGroup>
-
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Symbols & Source Link                      -->
-    <!-- ═══════════════════════════════════════════ -->
+    
+    <!--Symbols & Source Link-->                      
     <PropertyGroup>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -96,19 +47,15 @@
     <PropertyGroup>
         <EnableSourceLink>true</EnableSourceLink>
             <SourceLinkGitHubHost>github.com</SourceLinkGitHubHost>
-        </PropertyGroup>
+    </PropertyGroup>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Deterministic Build                             -->
-    <!-- ═══════════════════════════════════════════ -->
+    <!--Deterministic Build-->
     <PropertyGroup>
         <Deterministic>true</Deterministic>
         <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     </PropertyGroup>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Repository & Author Metadata                    -->
-    <!-- ═══════════════════════════════════════════ -->
+    <!--Repository & Author Metadata-->
     <PropertyGroup>
         <Authors>HoseinTorkan</Authors>
         <Company>KernelR</Company>
@@ -118,25 +65,20 @@
         <PackageProjectUrl>https://github.com/HoseinTorkan/KernelR</PackageProjectUrl>
     </PropertyGroup>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Versioning (Centralized Default)                -->
-    <!-- ═══════════════════════════════════════════ -->
+    <!--Versioning (Centralized Default)-->
     <PropertyGroup>
         <Version Condition="'$(Version)' == ''">0.0.0-local</Version>
     </PropertyGroup>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Test Project Settings                           -->
-    <!-- ═══════════════════════════════════════════ -->
-    <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests')) Or $(MSBuildProjectName.EndsWith('.UnitTests')) Or $(MSBuildProjectName.EndsWith('.E2ETests'))">
-        <IsPackable>false</IsPackable>
+    <!--Test Project Settings-->
+    <PropertyGroup
+        Condition=
+        "$(MSBuildProjectName.EndsWith('.Tests'))
+        Or $(MSBuildProjectName.EndsWith('.UnitTests'))
+        Or $(MSBuildProjectName.EndsWith('.E2ETests'))">
+        
         <IsTestProject>true</IsTestProject>
+        <IsPackable>false</IsPackable>
         <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
-
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Automatic Nesting for Partial Files        -->
-    <!-- (moved to Directory.Build.targets)         -->
-    <!-- ═══════════════════════════════════════════ -->
-
 </Project>

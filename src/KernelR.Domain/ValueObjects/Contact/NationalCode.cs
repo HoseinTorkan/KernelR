@@ -1,6 +1,6 @@
+using KernelR.Domain.Results;
+using KernelR.Domain.Results.Extensions;
 using KernelR.Domain.ValueObjects.Common;
-using KernelR.Primitives.Results;
-using KernelR.Primitives.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 

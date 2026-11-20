@@ -1,5 +1,5 @@
-using KernelR.Primitives.Results;
-using KernelR.Primitives.Results.Extensions;
+using KernelR.Domain.Results;
+using KernelR.Domain.Results.Extensions;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;

@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace KernelR.Primitives.Results;
+namespace KernelR.Domain.Results;
 
 /// <summary>
 /// Represents the outcome of an operation that does not return a value.

@@ -22,5 +22,4 @@
             <DependentUpon>$([System.String]::Copy('%(Filename)').Split('.')[0]).cs</DependentUpon>
         </Compile>
     </ItemGroup>
-
 </Project>

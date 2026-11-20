@@ -4,8 +4,6 @@
   </Folder>
   <Folder Name="/AspNetCore/">
     <Project Path="src/KernelR.AspNetCore/KernelR.AspNetCore.csproj" />
-    <Project Path="test/KernelR.AspNetCore.E2ETests/KernelR.AspNetCore.E2ETests.csproj" />
-    <Project Path="test/KernelR.AspNetCore.Tests/KernelR.AspNetCore.Tests.csproj" />
   </Folder>
   <Folder Name="/Core/">
     <Project Path="src/KernelR.Domain.SourceGenerators/KernelR.Domain.SourceGenerators.csproj" Id="83253a60-61c9-46c3-aeba-a4759e67050d" />

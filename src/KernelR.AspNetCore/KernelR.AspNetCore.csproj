@@ -2,73 +2,23 @@
 
     <PropertyGroup>
 
-        <!-- 👇 اطلاعات پکیج -->
         <PackageId>KernelAbstractions.AspNetCore</PackageId>
-        <Version>1.0.0</Version>
-        <Authors>Hosein Torkan</Authors>
-        <Company>KernelAbstractions</Company>
         <Description>
-            ASP.NET Core integration for KernelAbstractions.Patterns. Provides the ApiResponse envelope for successful outcomes, RFC 7807 ProblemDetails for failures, Controller and Minimal API extensions, ErrorType-to-HTTP status code mapping, and Swagger schema filters.
+            ASP.NET Core integration for KernelAbstractions.Patterns.
+            Provides the ApiResponse envelope for successful outcomes,
+            RFC 7807 ProblemDetails for failures,
+            Controller and Minimal API extensions,
+            ErrorType-to-HTTP status code mapping,
+            and Swagger schema filters.
         </Description>
-        <PackageTags>aspnetcore;result;api-response;problem-details;ddd;web-api;error-handling;functional;swagger</PackageTags>
-
-        <!-- 👇 برای پکیج‌های عمومی (NuGet) -->
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <PublishRepositoryUrl>true</PublishRepositoryUrl>
-        <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <IncludeSymbols>true</IncludeSymbols>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-
-        <!-- 👇 برای پشتیبانی از C# 12 (Primary Constructor و ...) -->
-        <LangVersion>latest</LangVersion>
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
-    <ItemGroup>
+    <!--<ItemGroup>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <InternalsVisibleTo Include="KernelAbstractions.AspNetCore.Tests" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\KernelR.Domain\KernelR.Domain.csproj" />
-    </ItemGroup>
-
-    <!-- 👇 Nesting برای فایل‌های partial (DataSize) -->
-    <ItemGroup>
-        <Compile Update="Conversions\JsonConverters\ValueObjects\DataSizeJsonConverter.Object.cs">
-            <DependentUpon>DataSizeJsonConverter.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Conversions\JsonConverters\ValueObjects\DataSizeJsonConverter.String.cs">
-            <DependentUpon>DataSizeJsonConverter.cs</DependentUpon>
-        </Compile>
-    </ItemGroup>
-
-    <!-- 👇 Nesting برای فایل‌های partial (Size) -->
-    <ItemGroup>
-        <Compile Update="Conversions\JsonConverters\ValueObjects\SizeJsonConverter.Object.cs">
-            <DependentUpon>SizeJsonConverter.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Conversions\JsonConverters\ValueObjects\SizeJsonConverter.String.cs">
-            <DependentUpon>SizeJsonConverter.cs</DependentUpon>
-        </Compile>
-    </ItemGroup>
-
-    <!-- 👇 Nesting برای فایل‌های partial (Money) -->
-    <ItemGroup>
-        <Compile Update="Conversions\JsonConverters\ValueObjects\MoneyJsonConverter.Object.cs">
-            <DependentUpon>MoneyJsonConverter.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Conversions\JsonConverters\ValueObjects\MoneyJsonConverter.String.cs">
-            <DependentUpon>MoneyJsonConverter.cs</DependentUpon>
-        </Compile>
-    </ItemGroup>
+    </ItemGroup>-->
 
 </Project>

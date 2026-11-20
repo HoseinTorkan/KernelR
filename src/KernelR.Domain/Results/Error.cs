@@ -1,4 +1,4 @@
-namespace KernelR.Primitives.Results;
+namespace KernelR.Domain.Results;
 
 /// <summary>
 /// Represents an error that describes the failure of an operation.
