@@ -1,0 +1,9 @@
+<Project>
+    
+    <!--DependentUpon x.y.cs-->
+    <ItemGroup>
+        <Compile Update="**\*.cs">
+            <DependentUpon>$([System.String]::Copy('%(Filename)').Split('.')[0]).cs</DependentUpon>
+        </Compile>
+    </ItemGroup>
+</Project>

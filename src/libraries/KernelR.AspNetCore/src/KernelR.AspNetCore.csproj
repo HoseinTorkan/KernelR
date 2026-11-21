@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+
+        <PackageId>KernelAbstractions.AspNetCore</PackageId>
+        <Description>
+            ASP.NET Core integration for KernelAbstractions.Patterns.
+            Provides the ApiResponse envelope for successful outcomes,
+            RFC 7807 ProblemDetails for failures,
+            Controller and Minimal API extensions,
+            ErrorType-to-HTTP status code mapping,
+            and Swagger schema filters.
+        </Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <!--<ItemGroup>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    </ItemGroup>-->
+
+</Project>

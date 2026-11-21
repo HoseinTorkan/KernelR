@@ -1,0 +1,49 @@
+<Project>
+    
+    <!--All Projects Settings-->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <!--Package Projects Settings-->
+    <PropertyGroup Condition=
+                   "!($(MSBuildProjectName.EndsWith('.Tests'))
+                   Or $(MSBuildProjectName.EndsWith('.UnitTests'))
+                   Or $(MSBuildProjectName.EndsWith('.E2ETests')))">
+        
+        <IsPackable>true</IsPackable>
+        <Authors>HoseinTorkan</Authors>
+        <Company>KernelR</Company>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/HoseinTorkan/KernelR</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/HoseinTorkan/KernelR</PackageProjectUrl>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+
+        <!--<GenerateDocumentationFile>true</GenerateDocumentationFile>-->
+        <AnalysisMode>Recommended</AnalysisMode>
+        <AnalysisLevel>latest</AnalysisLevel>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <NoWarn>
+            $(NoWarn);
+            CA1711; <!--Warning text: Identifiers should not have incorrect suffix-->
+        </NoWarn>
+
+        <IncludeSymbols>false</IncludeSymbols>
+        <!--<SymbolPackageFormat>snupkg</SymbolPackageFormat>-->
+        <!--<DebugType>embedded</DebugType>-->
+        <EnableSourceLink>false</EnableSourceLink>
+        <!--<EmbedUntrackedSources>true</EmbedUntrackedSources>-->
+        <!--<SourceLinkGitHubHost>github.com</SourceLinkGitHubHost>-->
+    </PropertyGroup>
+    
+</Project>

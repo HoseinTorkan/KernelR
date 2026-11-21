@@ -1,0 +1,24 @@
+<Project>
+    <!--Central Package Management (CPM)-->
+    <!--Reference: https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management-->
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+
+    <!--Package Versions-->
+    <ItemGroup>
+        <!--Application Layer-->
+        <!-- <PackageVersion Include="FluentValidation" Version="11.9.0" /> -->
+        <!-- <PackageVersion Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.0" /> -->
+
+        <!--Infrastructure Layer-->
+        <!-- <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0" /> -->
+
+        <!--Testing (آینده)-->
+        <!-- <PackageVersion Include="xunit" Version="2.9.0" /> -->
+
+        <!--Roslyn-->
+        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
+        <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
+    </ItemGroup>
+</Project>

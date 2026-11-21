@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/KernelR.Domain.csproj" />
+  <Project Path="tests/KernelR.Domain.Tests/KernelR.Domain.Tests.csproj" />
+</Solution>

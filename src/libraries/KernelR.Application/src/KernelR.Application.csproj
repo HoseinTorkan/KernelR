@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+
+        <PackageId>KernelAbstractions.Application</PackageId>
+        <Description>
+            Application layer abstractions for Domain-Driven Design (DDD) and
+            Clean Architecture in .NET. Provides service contracts (current user,
+            auth tokens, OTP, SMS, PDF, accounting integration), shared models, and
+            FluentValidation integration.
+        </Description>
+    </PropertyGroup>
+
+    <!--<ItemGroup>
+        <PackageReference Include="FluentValidation" Version="12.2.0" />
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.2.0" />
+    </ItemGroup>-->
+</Project>

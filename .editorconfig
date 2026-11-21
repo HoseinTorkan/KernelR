@@ -1,0 +1,83 @@
+root = true
+
+# ──────────────────────────────────────────────────────────────
+# All files
+# ──────────────────────────────────────────────────────────────
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# ──────────────────────────────────────────────────────────────
+# C# files
+# ──────────────────────────────────────────────────────────────
+[*.cs]
+
+# ─── Explicit types (no var) ───
+# IDE0008: Use explicit type instead of 'var'
+# Setting this to 'error' directly makes var usage a compile error,
+# independent of TreatWarningsAsErrors.
+dotnet_diagnostic.IDE0008.severity = error
+
+# Keep the style preferences aligned with the diagnostic above.
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = false:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# ─── CA1000: Static members on generic types ───
+# Intentional: Result<T>.Success(T) requires T to be explicit.
+dotnet_diagnostic.CA1000.severity = none
+
+# ─── CA1716: Identifiers should not match keywords ───
+# 'Error' is the established domain name used by FluentResults, ErrorOr, etc.
+dotnet_diagnostic.CA1716.severity = none
+
+# ─── Code style ───
+csharp_style_namespace_declarations = file_scoped:error
+csharp_style_prefer_primary_constructors = true:suggestion
+
+# ─── Modern C# features (suggestions) ───
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+csharp_prefer_braces = true:suggestion
+
+# ──────────────────────────────────────────────────────────────
+# Test files (exceptions)
+# ──────────────────────────────────────────────────────────────
+[*Tests.cs]
+
+# ─── IDE0008: Use explicit type instead of 'var' ───
+# Tests read more naturally with 'var'; explicit types add noise.
+dotnet_diagnostic.IDE0008.severity = none
+
+# ─── CA1707: Identifiers should not contain underscores ───
+# Intentional: test method names use underscores for readability
+# (e.g. Create_ValidName_ReturnsSuccess).
+dotnet_diagnostic.CA1707.severity = none
+
+# ─── CA1051: Do not declare visible instance fields ───
+# Intentional: Tests may use protected fields to share state across test methods.
+dotnet_diagnostic.CA1051.severity = none
+
+# ─── CS1591: Missing XML comment for publicly visible type or member ───
+# Tests are self-documenting; XML comments on test methods add noise.
+dotnet_diagnostic.CS1591.severity = none
+
+# ─── IDE0130: Namespace does not match folder structure ───
+# Tests may be organized in subfolders without matching namespaces.
+dotnet_diagnostic.IDE0130.severity = none
+
+# ──────────────────────────────────────────────────────────────
+# File-specific exceptions
+# ──────────────────────────────────────────────────────────────
+
+# ─── IDE0130: Namespace does not match folder structure ───
+# DomainErrorJson.cs lives under TypeConverters/Serialization/ for
+# organization, but its namespace is ValueObjects so the Web layer
+# can consume it without referencing an implementation-detail namespace.
+[**/ValueObjects/TypeConverters/Serialization/DomainErrorJson.cs]
+dotnet_diagnostic.IDE0130.severity = none
