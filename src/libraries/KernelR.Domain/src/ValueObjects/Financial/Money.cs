@@ -242,7 +242,7 @@ public readonly record struct Money : IValueObject, IParsable<Money>, IComparabl
     public Result<bool> GreaterThan(Money other)
     {
         Result<bool> check = EnsureSameCurrency(other);
-        return check.IsFailure ? check.Error : Result<bool>.Success(Amount > other.Amount);
+        return check.IsFailure ? check.Error : Amount > other.Amount;
     }
 
     /// <summary>
@@ -253,7 +253,7 @@ public readonly record struct Money : IValueObject, IParsable<Money>, IComparabl
     public Result<bool> LessThan(Money other)
     {
         Result<bool> check = EnsureSameCurrency(other);
-        return check.IsFailure ? check.Error : Result<bool>.Success(Amount < other.Amount);
+        return check.IsFailure ? check.Error : Amount < other.Amount;
     }
 
     /// <summary>
@@ -264,7 +264,7 @@ public readonly record struct Money : IValueObject, IParsable<Money>, IComparabl
     public Result<bool> GreaterThanOrEqual(Money other)
     {
         Result<bool> check = EnsureSameCurrency(other);
-        return check.IsFailure ? check.Error : Result<bool>.Success(Amount >= other.Amount);
+        return check.IsFailure ? check.Error : Amount >= other.Amount;
     }
 
     /// <summary>
@@ -275,7 +275,7 @@ public readonly record struct Money : IValueObject, IParsable<Money>, IComparabl
     public Result<bool> LessThanOrEqual(Money other)
     {
         Result<bool> check = EnsureSameCurrency(other);
-        return check.IsFailure ? check.Error : Result<bool>.Success(Amount <= other.Amount);
+        return check.IsFailure ? check.Error : Amount <= other.Amount;
     }
 
     /// <summary>
@@ -285,7 +285,7 @@ public readonly record struct Money : IValueObject, IParsable<Money>, IComparabl
     /// <param name="right">The second amount.</param>
     /// <returns>The sum of the two amounts.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the currencies do not match.</exception>
-    public static Money operator +(Money left, Money right) => left.Add(right).OrThrowInvalidOperationException();
+    public static Money operator +(Money left, Money right) => left.Add(right);
 
     /// <summary>
     /// Subtracts one monetary amount from another of the same currency.

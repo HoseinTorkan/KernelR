@@ -21,12 +21,13 @@
             making it usable in any .NET application (Console, WPF, MAUI, Web API, etc.).
         </Description>
 
-        <!--<IsAotCompatible>true</IsAotCompatible>
-        <IsTrimmable>true</IsTrimmable>-->
+        <!--<IsAotCompatible>true</IsAotCompatible>-->
+        <!--<IsTrimmable>true</IsTrimmable>-->
     </PropertyGroup>
 
-    <ItemGroup Condition="Exists('..\..\..\docs\Domain\KernelR.Domain\README.md')">
-        <None Include="..\..\..\docs\Domain\KernelR.Domain\README.md" Pack="true" PackagePath="README.md" />
+    <ItemGroup>
+        <None Include="..\README.md" Pack="true" PackagePath="README.md" />
+        <None Include="../docs/**/*.md" Pack="true" PackagePath="Documents/%(RecursiveDir)" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

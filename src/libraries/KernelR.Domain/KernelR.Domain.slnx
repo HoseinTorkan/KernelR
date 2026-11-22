@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="gen/KernelR.Domain.SourceGenerators/src/KernelR.Domain.SourceGenerators.csproj" />
   <Project Path="src/KernelR.Domain.csproj" />
   <Project Path="tests/KernelR.Domain.Tests/KernelR.Domain.Tests.csproj" />
 </Solution>
