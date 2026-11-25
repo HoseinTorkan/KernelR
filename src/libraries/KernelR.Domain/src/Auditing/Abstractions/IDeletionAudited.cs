@@ -1,29 +1,58 @@
 namespace KernelR.Domain.Auditing.Abstractions;
 
 /// <summary>
-/// Combines deletion time, deleter tracking, and the soft-delete flag into a single contract.
+/// Defines a contract for types that track deletion time, deleter identity,
+/// and deletion status.
 /// </summary>
-/// <typeparam name="TUserId">The type of the user identifier.</typeparam>
+/// <typeparam name="TUserId">
+/// The type of the deleter's identifier.
+/// </typeparam>
 /// <remarks>
 /// <para>
-/// This interface is intended for entities that support soft-deletion. It inherits
-/// <see cref="ISoftDeletable"/> to provide the <c>IsDeleted</c> flag required by
-/// EF Core global query filters.
+/// This interface combines <see cref="IHasDeletionTime"/> and
+/// <see cref="IHasDeleter{TUserId}"/> to provide a single contract
+/// for deletion auditing.
 /// </para>
 /// <para>
-/// <b>Global Query Filter:</b> Implementations must ensure that soft-deleted entities
-/// are excluded from normal queries. In EF Core, this is typically achieved via a global
-/// query filter configured in <c>DbContext.OnModelCreating</c>:
+/// Implementations expose the deletion timestamp, the identifier of the user
+/// who deleted the entity, and whether the entity has been deleted.
 /// </para>
-/// <code>
-/// modelBuilder.Entity&lt;MyEntity&gt;().HasQueryFilter(e =&gt; !e.IsDeleted);
-/// </code>
+/// <para>
+/// The deletion status is represented by <see cref="IsDeleted"/> and may be
+/// used to distinguish deleted entities from active ones.
+/// </para>
+/// <para>
+/// This interface also defines operations for marking an entity as deleted
+/// and restoring it.
+/// </para>
 /// </remarks>
-/// <seealso cref="IHasDeletionTime"/>
-/// <seealso cref="IHasDeleter{TUserId}"/>
-/// <seealso cref="ISoftDeletable"/>
 public interface IDeletionAudited<TUserId> :
     IHasDeletionTime,
-    IHasDeleter<TUserId>,
-    ISoftDeletable
-    where TUserId : struct;
+    IHasDeleter<TUserId>
+    where TUserId : struct
+{
+    /// <summary>
+    /// Gets a value indicating whether the entity has been deleted.
+    /// </summary>
+    /// <remarks>
+    /// This property indicates the deletion state of the entity.
+    /// It does not define how deleted entities are filtered.
+    /// </remarks>
+    bool IsDeleted { get; }
+
+    /// <summary>
+    /// Marks the entity as deleted and updates its deletion audit information.
+    /// </summary>
+    /// <param name="deletedAt">
+    /// The timestamp at which the entity was deleted.
+    /// </param>
+    /// <param name="deletedBy">
+    /// The identifier of the user who deleted the entity.
+    /// </param>
+    void MarkAsDeleted(DateTimeOffset deletedAt, TUserId deletedBy);
+
+    /// <summary>
+    /// Restores the entity by clearing its deletion audit information.
+    /// </summary>
+    void Restore();
+}

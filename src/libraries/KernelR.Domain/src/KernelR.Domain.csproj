@@ -30,22 +30,21 @@
         <None Include="../docs/**/*.md" Pack="true" PackagePath="Documents/%(RecursiveDir)" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <!--<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
         <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
-    </PropertyGroup>
+    </PropertyGroup>-->
 
-
-    <!--Source Generator (Analyzer)-->
+    <!--Source Generator (Analyzer)--><!--
     <ItemGroup>
-        <!-- 
+        --><!-- 
             This reference loads the Source Generator as a Roslyn analyzer.
             OutputItemType="Analyzer" ensures it runs at compile-time.
             ReferenceOutputAssembly="false" prevents its DLL from being copied
             to the consuming project's output folder.
-        -->
-        <ProjectReference Include="..\KernelR.Domain.SourceGenerators\KernelR.Domain.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    </ItemGroup>
+        --><!--
+        <ProjectReference Include="../gen/KernelR.Domain.SourceGenerators/src/KernelR.Domain.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
+    </ItemGroup>-->
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Include Source Generator in NuGet Package  -->
@@ -54,9 +53,9 @@
         Packs the Generator's DLL into the "analyzers/dotnet/cs" folder inside
         the NuGet package. This is the convention Roslyn uses to locate analyzers.
     -->
-    <ItemGroup>
+    <!--<ItemGroup>
         <None Include="..\KernelR.Domain.SourceGenerators\bin\$(Configuration)\netstandard2.0\KernelR.Domain.SourceGenerators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    </ItemGroup>
+    </ItemGroup>-->
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Ensure Generator is Built Before Packing   -->
@@ -65,8 +64,8 @@
         Guarantees that the Source Generator is compiled before NuGet packaging.
         Without this, "dotnet pack" may fail with "File not found" if the
         Generator hasn't been built manually yet.
-    -->
+    --><!--
     <Target Name="BuildSourceGenerators" BeforeTargets="Pack">
         <MSBuild Projects="..\KernelR.Domain.SourceGenerators\KernelR.Domain.SourceGenerators.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
-    </Target>
+    </Target>-->
 </Project>

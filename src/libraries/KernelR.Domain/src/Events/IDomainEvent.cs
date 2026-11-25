@@ -6,16 +6,17 @@ namespace KernelR.Domain.Events;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Domain events are typically raised by aggregate roots and dispatched after
-/// the aggregate has been successfully persisted.
+/// Domain events are typically raised by aggregate roots to represent
+/// significant changes in the domain.
 /// </para>
 /// <para>
-/// <see cref="OccurredOn"/> is expressed as a <see cref="DateTimeOffset"/> so
-/// that the instant is unambiguous regardless of the storage or display
-/// time zone, and so that events can be ordered reliably.
-/// The property is read-only on the interface so implementations are free to
-/// use <c>init</c> or a private setter; the only contract is that the value is
-/// available after construction.
+/// <see cref="OccurredOn"/> represents the instant when the event occurred.
+/// Using <see cref="DateTimeOffset"/> makes the timestamp unambiguous
+/// regardless of the time zone in which it is stored or displayed.
+/// Implementations should use UTC for this value.
+/// </para>
+/// <para>
+/// The timestamp alone does not guarantee a strict ordering of events.
 /// </para>
 /// </remarks>
 /// <example>
@@ -26,17 +27,14 @@ namespace KernelR.Domain.Events;
 /// </code>
 /// </example>
 /// <seealso cref="DomainEvent"/>
-/// <seealso cref="Abstractions.IAggregateRoot{TId}"/>
+/// <seealso cref="KernelR.Domain.Abstractions.IAggregateRoot{TId}"/>
 public interface IDomainEvent
 {
     /// <summary>
-    /// Gets the moment when this event occurred.
+    /// Gets the instant when this event occurred.
     /// </summary>
     /// <value>
-    /// A <see cref="DateTimeOffset"/> representing the exact instant of the event.
+    /// A <see cref="DateTimeOffset"/> representing the event occurrence time.
     /// </value>
-    /// <remarks>
-    /// Implementations should persist this value in UTC.
-    /// </remarks>
     DateTimeOffset OccurredOn { get; }
 }

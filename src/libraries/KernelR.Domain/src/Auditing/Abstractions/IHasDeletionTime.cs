@@ -1,31 +1,19 @@
 namespace KernelR.Domain.Auditing.Abstractions;
 
 /// <summary>
-/// Defines a contract for entities that track their soft-deletion time.
+/// Defines a contract for types that track their deletion time.
 /// </summary>
 /// <remarks>
-/// <para>
-/// This interface is typically implemented alongside <see cref="IHasDeleter{TUserId}"/>
-/// and <see cref="ISoftDeletable"/> (via <see cref="IDeletionAudited{TUserId}"/>)
-/// to form a complete soft-deletion audit trail.
-/// </para>
-/// <para>
-/// <b>UTC Requirement:</b> Implementations should always persist this value in UTC.
-/// Local time should be applied only at the presentation layer (UI), not in the domain or database.
-/// </para>
+/// The deletion timestamp is nullable because an entity may not have been
+/// deleted yet.
 /// </remarks>
 public interface IHasDeletionTime
 {
     /// <summary>
-    /// Gets the moment when this entity was soft-deleted.
+    /// Gets the timestamp at which the entity was deleted.
     /// </summary>
-    /// <value>
-    /// A <see cref="DateTimeOffset"/> representing the exact instant of soft-deletion,
-    /// or <see langword="null"/> if the entity has not been deleted.
-    /// </value>
     /// <remarks>
-    /// This value is usually set by the persistence layer (e.g., an EF Core interceptor)
-    /// when a delete operation is intercepted and converted into an update.
+    /// The value is <see langword="null"/> when the entity has not been deleted.
     /// </remarks>
     DateTimeOffset? DeletedAt { get; }
 }

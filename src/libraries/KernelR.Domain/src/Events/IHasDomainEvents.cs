@@ -1,41 +1,29 @@
 namespace KernelR.Domain.Events;
 
 /// <summary>
-/// Defines a contract for entities that track domain events.
+/// Defines a contract for objects that maintain domain events.
 /// </summary>
 /// <remarks>
-/// <para>
-/// This is a marker interface used by the persistence layer (e.g., an EF Core
-/// interceptor) to identify entities that have pending domain events, without
-/// taking a dependency on <see cref="Abstractions.IAggregateRoot{TId}"/>.
-/// </para>
-/// <para>
-/// <b>Read-only by design:</b> This interface exposes only the <i>reading</i> and
-/// <i>clearing</i> of events. Raising new events (via <c>AddDomainEvent</c>) is a
-/// write operation that belongs to <see cref="Abstractions.IAggregateRoot{TId}"/>.
-/// Plain entities that are not aggregate roots should not raise events directly;
-/// they should let their aggregate root do so.
-/// </para>
+/// Domain events can be recorded and cleared through this contract.
+/// It does not define how or when domain events are dispatched.
 /// </remarks>
-/// <seealso cref="Abstractions.IAggregateRoot{TId}"/>
-/// <seealso cref="IDomainEvent"/>
 public interface IHasDomainEvents
 {
     /// <summary>
-    /// Gets the collection of domain events raised by this entity.
+    /// Gets the domain events recorded by the current instance.
     /// </summary>
-    /// <value>
-    /// A read-only collection of pending <see cref="IDomainEvent"/> instances.
-    /// Returns an empty collection if no events have been raised.
-    /// </value>
     IReadOnlyCollection<IDomainEvent> DomainEvents { get; }
 
     /// <summary>
-    /// Clears all domain events from this entity.
+    /// Records a domain event on the current instance.
     /// </summary>
-    /// <remarks>
-    /// Called by the persistence layer after the collected events have been
-    /// dispatched, so they are not dispatched again on the next save.
-    /// </remarks>
+    /// <param name="domainEvent">
+    /// The domain event to record.
+    /// </param>
+    void AddDomainEvent(IDomainEvent domainEvent);
+
+    /// <summary>
+    /// Clears all domain events recorded by the current instance.
+    /// </summary>
     void ClearDomainEvents();
 }

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" PrivateAssets="all" />
+        <PackageReference Include="xunit" PrivateAssets="all" />
+
+        <!-- Runners and Collectors should not be exposed as dependencies -->
+        <PackageReference Include="xunit.runner.visualstudio" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitiv" PrivateAssets="all" />
+        
+        <PackageReference Include="coverlet.collector" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\src\KernelR.Domain.csproj" />
+    </ItemGroup>
+
+     <!--Implicit Usings for Test Project--> 
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+</Project>

@@ -1,29 +1,25 @@
 namespace KernelR.Domain.Auditing.Abstractions;
 
 /// <summary>
-/// Defines a contract for entities that track the user who soft-deleted them.
+/// Defines a contract for types that track the identity of the user
+/// who deleted the entity.
 /// </summary>
 /// <typeparam name="TUserId">
-/// The type of the user identifier. Typically a <see cref="Guid"/> or a strongly-typed ID.
+/// The type of the deleter's identifier.
 /// </typeparam>
 /// <remarks>
-/// This interface is typically implemented alongside <see cref="IHasDeletionTime"/>
-/// and <see cref="ISoftDeletable"/> (via <see cref="IDeletionAudited{TUserId}"/>)
-/// to form a complete soft-deletion audit trail.
+/// The deleter's identifier is nullable because an entity may not have been
+/// deleted yet.
 /// </remarks>
 public interface IHasDeleter<TUserId>
     where TUserId : struct
 {
     /// <summary>
-    /// Gets the identifier of the user who soft-deleted this entity.
+    /// Gets the identifier of the user who deleted the entity.
     /// </summary>
-    /// <value>
-    /// The unique identifier of the deleting user, or <see langword="null"/>
-    /// if the entity has not been deleted.
-    /// </value>
     /// <remarks>
-    /// This value is usually set by the persistence layer (e.g., an EF Core interceptor)
-    /// using the current user's ID from an <c>ICurrentUser</c> service.
+    /// The value is <see langword="null"/> when the entity has not been deleted
+    /// or when the deleter's identity is not available.
     /// </remarks>
     TUserId? DeletedBy { get; }
 }

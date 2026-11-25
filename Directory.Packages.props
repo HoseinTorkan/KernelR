@@ -14,10 +14,15 @@
         <!--Infrastructure Layer-->
         <!-- <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0" /> -->
 
-        <!--Testing (آینده)-->
-        <!-- <PackageVersion Include="xunit" Version="2.9.0" /> -->
+        <!--Testing-->
+        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+        <PackageVersion Include="xunit" Version="2.9.2" />
+        <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+        <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
 
-        <!--Roslyn-->
+
+
+                <!--Roslyn-->
         <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
         <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
     </ItemGroup>

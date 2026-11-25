@@ -1,26 +1,25 @@
 namespace KernelR.Domain.Events;
 
 /// <summary>
-/// Provides a base implementation of <see cref="IDomainEvent"/> that
-/// supplies a UTC timestamp (<see cref="OccurredOn"/>) automatically.
+/// Provides a base implementation of <see cref="IDomainEvent"/> with an
+/// automatically initialized UTC occurrence timestamp.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Inherit from this record to avoid repeating the boilerplate of
-/// capturing the occurrence time in every domain event.
+/// Inherit from this record to avoid repeating the occurrence timestamp
+/// initialization in individual domain event implementations.
 /// </para>
 /// <para>
-/// <see cref="OccurredOn"/> is expressed as a <see cref="DateTimeOffset"/> so
-/// that the instant is unambiguous regardless of the storage or display
-/// time zone, and so that comparisons between events are always correct.
-/// The default value is the current UTC time; the property is
-/// <see langword="init"/>-only so tests and replay scenarios can override it
-/// while the event remains immutable after construction.
+/// <see cref="OccurredOn"/> is initialized to the current UTC time when
+/// the event is created. The property is <see langword="init"/>-only
+/// to allow its value to be specified or overridden during initialization,
+/// while preventing subsequent modifications.
 /// </para>
 /// <para>
-/// <b>Why <see langword="record"/>?</b> Domain events are inherently value objects:
-/// two events with the same data represent the same occurrence. Using a record
-/// gives value equality and immutability out of the box.
+/// This record provides value-based equality through record semantics.
+/// Derived records may include their own data in equality comparisons.
+/// Equality does not imply that two instances represent the same
+/// occurrence in the domain.
 /// </para>
 /// </remarks>
 /// <example>
