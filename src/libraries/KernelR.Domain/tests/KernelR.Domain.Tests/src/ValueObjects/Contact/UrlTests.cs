@@ -1,5 +1,4 @@
 using KernelR.Domain.ValueObjects.Network;
-using KernelR.Patterns.Results;
 
 namespace KernelR.Domain.Tests.ValueObjects.Contact;
 

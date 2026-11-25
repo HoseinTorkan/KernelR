@@ -1,5 +1,4 @@
 using KernelR.Domain.ValueObjects.Common;
-using KernelR.Patterns.Results;
 
 namespace KernelR.Domain.Tests.ValueObjects.Common;
 

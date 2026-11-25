@@ -1,6 +1,5 @@
 using KernelR.Domain.Enums;
 using KernelR.Domain.ValueObjects.Measurement;
-using KernelR.Patterns.Results;
 
 namespace KernelR.Domain.Tests.ValueObjects.Measurement;
 

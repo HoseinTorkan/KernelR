@@ -1,6 +1,5 @@
 using KernelR.Domain.Enums;
 using KernelR.Domain.ValueObjects.Apparel;
-using KernelR.Patterns.Results;
 
 namespace KernelR.Domain.Tests.ValueObjects.Apparel;
 

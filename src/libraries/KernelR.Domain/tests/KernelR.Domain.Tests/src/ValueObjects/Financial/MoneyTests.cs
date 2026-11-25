@@ -1,5 +1,4 @@
 using KernelR.Domain.ValueObjects.Financial;
-using KernelR.Patterns.Results;
 
 namespace KernelR.Domain.Tests.ValueObjects.Financial;
 
