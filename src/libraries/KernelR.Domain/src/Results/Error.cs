@@ -4,22 +4,22 @@ namespace KernelR.Domain.Results;
 /// Represents an error that describes the failure of an operation.
 /// </summary>
 /// <remarks>
-/// An error always contains a code for programmatic identification,
+/// An error contains a code for programmatic identification,
 /// a human-readable message, and a type that indicates its nature.
-/// <para>
-/// Errors are used in conjunction with <see cref="Result"/> and <see cref="Result{T}"/>
-/// to describe why an operation failed. They replace the need for throwing exceptions
-/// in expected failure scenarios.
-/// </para>
-/// <para>
-/// An <see cref="Error"/> instance is guaranteed to have non-empty <see cref="Code"/>
-/// and <see cref="Message"/> values; null and whitespace inputs are rejected at construction.
-/// </para>
+/// Errors are used with <see cref="Result"/> and <see cref="Result{T}"/>
+/// to represent expected failure scenarios without throwing exceptions.
 /// </remarks>
 /// <example>
 /// <code>
-/// var notFound = new Error("PRODUCT_NOT_FOUND", "Product was not found.", ErrorType.NotFound);
-/// var validation = new Error("INVALID_EMAIL", "Email format is invalid.", ErrorType.ValidationError);
+/// var notFound = new Error(
+///     "PRODUCT_NOT_FOUND",
+///     "Product was not found.",
+///     ErrorType.NotFound);
+///
+/// var validation = new Error(
+///     "INVALID_EMAIL",
+///     "Email format is invalid.",
+///     ErrorType.ValidationError);
 /// </code>
 /// </example>
 /// <seealso cref="ErrorType"/>
@@ -28,52 +28,43 @@ namespace KernelR.Domain.Results;
 public sealed record Error
 {
     /// <summary>
-    /// Gets the unique code identifying this error.
+    /// Gets the code identifying the error.
     /// </summary>
-    /// <value>A stable, machine-readable identifier (e.g., "PRODUCT_NOT_FOUND").</value>
-    /// <remarks>
-    /// The code is intended for programmatic identification and should be
-    /// stable across versions.
-    /// </remarks>
     public string Code { get; }
 
     /// <summary>
-    /// Gets the human-readable message of this error.
+    /// Gets the human-readable message describing the error.
     /// </summary>
-    /// <value>A description of the error for display or logging.</value>
-    /// <remarks>
-    /// The message is intended for display to users or for logging.
-    /// It should be concise and informative.
-    /// </remarks>
     public string Message { get; }
 
     /// <summary>
-    /// Gets the type of this error, indicating its nature
-    /// (e.g., validation error, not found, conflict).
+    /// Gets the type indicating the nature of the error.
     /// </summary>
-    /// <value>The <see cref="ErrorType"/> category of the error.</value>
     public ErrorType ErrorType { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Error"/> class.
     /// </summary>
-    /// <param name="code">
-    /// A stable, machine-readable identifier for the error (e.g. <c>"PRODUCT_NOT_FOUND"</c>).
-    /// Must not be <see langword="null"/>, empty, or whitespace.
-    /// </param>
-    /// <param name="message">
-    /// A human-readable description of the error.
-    /// Must not be <see langword="null"/>, empty, or whitespace.
-    /// </param>
+    /// <param name="code">The stable, machine-readable error code.</param>
+    /// <param name="message">The human-readable error message.</param>
     /// <param name="errorType">The category of the error.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="code"/> or <paramref name="message"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ArgumentException">
-    /// <paramref name="code"/> or <paramref name="message"/> is <see langword="null"/>,
-    /// empty, or whitespace.
+    /// Thrown when <paramref name="code"/> or <paramref name="message"/> is empty or consists only of whitespace.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="errorType"/> is not a defined value.
     /// </exception>
     public Error(string code, string message, ErrorType errorType)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        if (!Enum.IsDefined(errorType))
+            throw new ArgumentOutOfRangeException(nameof(errorType));
+
 
         Code = code;
         Message = message;

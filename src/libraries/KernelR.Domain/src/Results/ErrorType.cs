@@ -1,94 +1,154 @@
+
 namespace KernelR.Domain.Results;
 
 /// <summary>
 /// Defines the category of an error, indicating its nature.
 /// </summary>
 /// <remarks>
-/// Values are grouped by category and spaced numerically to allow future
-/// additions without renumbering existing members. 
+/// Values are assigned to numeric ranges by category to allow future
+/// additions without changing the values of existing members.
+/// Categories provide a basis for mapping errors to HTTP status codes
+/// and other error-handling policies.
 /// </remarks>
 /// <seealso cref="Error"/>
 public enum ErrorType
 {
     /// <summary>
-    /// Unspecified or unknown error type (default value).
+    /// Indicates that the error type has not been specified.
     /// </summary>
-    /// <remarks>
-    /// This value is essential for scenarios where an <see cref="Error"/> is created 
-    /// without explicitly specifying a type (e.g., during deserialization). 
-    /// It prevents the default value from falling outside the defined enum range.
-    /// </remarks>
     None = 0,
 
-    /// <summary>The input is not valid.</summary>
+    // Validation
+
+    /// <summary>
+    /// The input failed validation.
+    /// </summary>
     ValidationError = 20,
 
-    /// <summary>The provided input is invalid or malformed.</summary>
+    /// <summary>
+    /// The provided input is invalid.
+    /// </summary>
     InvalidInput = 21,
 
-    /// <summary>A required field is missing.</summary>
+    /// <summary>
+    /// A required field is missing.
+    /// </summary>
     RequiredField = 22,
 
-    /// <summary>The format of the provided value is invalid.</summary>
+    /// <summary>
+    /// The provided value has an invalid format.
+    /// </summary>
     InvalidFormat = 23,
 
-    /// <summary>The requested resource was not found.</summary>
+    // Resource
+
+    /// <summary>
+    /// The requested resource was not found.
+    /// </summary>
     NotFound = 30,
 
-    /// <summary>The resource already exists (duplicate).</summary>
+    /// <summary>
+    /// A resource with the same identifying value already exists.
+    /// </summary>
     Duplicate = 31,
 
-    /// <summary>The operation conflicts with the current state of the resource.</summary>
+    /// <summary>
+    /// The operation conflicts with the current state of a resource.
+    /// </summary>
     Conflict = 32,
 
-    /// <summary>The caller is not authenticated.</summary>
+    // Authentication and authorization
+
+    /// <summary>
+    /// The caller is not authenticated.
+    /// </summary>
     Unauthorized = 40,
 
-    /// <summary>The caller does not have permission to perform the operation.</summary>
+    /// <summary>
+    /// The caller is not permitted to perform the requested operation.
+    /// </summary>
     Forbidden = 41,
 
-    /// <summary>The authentication token is invalid or expired.</summary>
+    /// <summary>
+    /// The authentication token is invalid or expired.
+    /// </summary>
     InvalidToken = 42,
 
-    /// <summary>Too many failed attempts; the caller is temporarily blocked.</summary>
+    /// <summary>
+    /// The caller exceeded the allowed number of attempts.
+    /// </summary>
     TooManyAttempts = 43,
 
-    /// <summary>A business rule was violated.</summary>
+    // Business rules
+
+    /// <summary>
+    /// The operation violates a business rule.
+    /// </summary>
     BusinessRuleViolation = 50,
 
-    /// <summary>Insufficient stock for the requested operation.</summary>
+    /// <summary>
+    /// The available stock is insufficient for the requested operation.
+    /// </summary>
     InsufficientStock = 51,
 
-    /// <summary>The current status does not allow the requested operation.</summary>
+    /// <summary>
+    /// The current status does not allow the requested operation.
+    /// </summary>
     InvalidStatus = 52,
 
-    /// <summary>The amount is below the minimum allowed.</summary>
+    /// <summary>
+    /// The amount is below the allowed minimum.
+    /// </summary>
     MinimumAmount = 53,
 
-    /// <summary>The amount exceeds the maximum allowed.</summary>
+    /// <summary>
+    /// The amount exceeds the allowed maximum.
+    /// </summary>
     MaximumAmount = 54,
 
-    /// <summary>An infrastructure error occurred.</summary>
+    // Infrastructure
+
+    /// <summary>
+    /// An infrastructure-related error occurred.
+    /// </summary>
     Infrastructure = 60,
 
-    /// <summary>A database error occurred.</summary>
+    /// <summary>
+    /// A database operation failed.
+    /// </summary>
     DatabaseError = 61,
 
-    /// <summary>A network error occurred while communicating with a downstream service.</summary>
+    /// <summary>
+    /// A network operation failed.
+    /// </summary>
     NetworkError = 62,
 
-    /// <summary>An external service returned an error.</summary>
+    /// <summary>
+    /// An external service operation failed.
+    /// </summary>
     ExternalServiceError = 63,
 
-    /// <summary>A file-related error occurred.</summary>
+    /// <summary>
+    /// A file-related operation failed.
+    /// </summary>
     FileError = 64,
 
-    /// <summary>The operation timed out (caller-side).</summary>
+    // Operational
+
+    /// <summary>
+    /// The operation exceeded the allowed time.
+    /// </summary>
     Timeout = 70,
 
-    /// <summary>A concurrency conflict occurred (optimistic concurrency violation).</summary>
+    /// <summary>
+    /// An operation failed due to a concurrency conflict.
+    /// </summary>
     Concurrency = 71,
 
-    /// <summary>An unexpected or uncategorized error occurred.</summary>
+    // General
+
+    /// <summary>
+    /// An unexpected or uncategorized error occurred.
+    /// </summary>
     UnknownError = 80
 }

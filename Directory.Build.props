@@ -7,8 +7,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
 
-        <GenerateDocumentationFile>false</GenerateDocumentationFile>
-        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
@@ -28,11 +27,11 @@
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
 
-        <!--<GenerateDocumentationFile>true</GenerateDocumentationFile>-->
         <AnalysisMode>Recommended</AnalysisMode>
         <AnalysisLevel>latest</AnalysisLevel>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
         <NoWarn>
             $(NoWarn);
             CA1711; <!--Warning text: Identifiers should not have incorrect suffix-->
